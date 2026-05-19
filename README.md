@@ -10,10 +10,6 @@ Vivran turns static lectures into an intelligent system that answers, analyzes, 
 - **See exactly where students struggle**: Concept-level heatmaps, lecture drop-off graphs, and student-level diagnostics. Know which segments of a lecture lose the class before the exam.
 - **No hallucinations. Only your content**: Strict knowledge boundaries. Vivran refuses to speculate beyond what's in the course. Every answer is traceable, source-cited, and academically defensible.
 
-## 🛠️ Technologies
-
-- **Frontend**: Vanilla HTML5, CSS3, and JavaScript
-- **Design**: Custom UI/UX with modern glassmorphism, scroll-reveal animations, responsive layouts, and dynamic DOM interactions.
 
 ## 👥 Team
 
@@ -21,13 +17,3 @@ Built by people who lived the problem at SRCC, New Delhi 🇮🇳.
 
 - **Rachit Jain** (Co-founder & CEO) - [LinkedIn](https://www.linkedin.com/in/rachitjain28/) | jainrachit4042@gmail.com
 - **Vaanchhit Agarwal** (Co-founder & CTO) - [LinkedIn](https://www.linkedin.com/in/vaanchhit-agarwal-549036296/) | vaanchhit06@gmail.com
-
-## 💻 Getting Started (Development)
-
-1. Clone the repository.
-2. Open `Index.html` in your web browser.
-3. To test the live chat simulation and analytics mockups, navigate to the **Live Product** or **Analytics** sections on the page.
-
-## 📄 License
-
-© 2025 Vivran Technologies. All rights reserved.
