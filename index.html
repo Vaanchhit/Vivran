@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vivran — Course Intelligence Platform</title>
+  <link rel="icon" type="image/png" href="Vivran Logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
@@ -799,7 +800,118 @@
     }
 
     /* ─────────────────────────────────────────────── */
-    /*  SECTION 8 — FINAL CTA                          */
+    /*  SECTION 8 — SUPPORTED BY                      */
+    /* ─────────────────────────────────────────────── */
+    #support {
+      padding: 44px 0;
+    }
+    .support-header {
+      text-align: center;
+      max-width: 520px;
+      margin: 0 auto 18px;
+    }
+    .support-header p {
+      margin-top: 0;
+      font-size: 0.82rem;
+      color: var(--text-3);
+    }
+    .support-grid {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .support-card {
+      position: relative;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,.06);
+      border-radius: 18px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 82px;
+      min-width: 264px;
+      width: 264px;
+      backdrop-filter: blur(6px);
+      transition: border-color .22s, background-color .22s, transform .22s;
+      overflow: hidden;
+    }
+    .support-card:hover {
+      border-color: rgba(255,255,255,.14);
+      background: rgba(255,255,255,.02);
+      transform: translateY(-1px);
+    }
+    .support-card-google {
+      background: rgba(255,255,255,.98);
+      border-color: rgba(255,255,255,.18);
+    }
+    .support-card-google:hover {
+      background: #fff;
+    }
+    .support-card::after {
+      content: '';
+      position: absolute;
+      inset: -20% auto -20% -35%;
+      width: 38%;
+      transform: translateX(-180%) skewX(-22deg);
+      background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.02) 30%, rgba(255,255,255,.18) 50%, rgba(255,255,255,.02) 70%, transparent 100%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .support-card:hover::after {
+      opacity: 1;
+      animation: support-sheen 1.15s ease;
+    }
+    @keyframes support-sheen {
+      from { transform: translateX(-180%) skewX(-22deg); }
+      to { transform: translateX(430%) skewX(-22deg); }
+    }
+    .support-logo-wrap {
+      min-height: auto;
+      border-radius: 0;
+      background: transparent;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+    }
+    .support-logo-img {
+      max-width: 100%;
+      max-height: 38px;
+      object-fit: contain;
+      display: block;
+    }
+    .support-logo-google {
+      max-width: none;
+      max-height: none;
+      width: 236px;
+      transform: scale(1.26) translateY(1px);
+      transform-origin: center;
+    }
+    .support-logo-google-crop {
+      width: 100%;
+      max-width: 236px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .support-logo-eleven {
+      width: 158px;
+      max-height: 30px;
+    }
+    .support-copy {
+      display: none;
+    }
+
+    /* ─────────────────────────────────────────────── */
+    /*  SECTION 9 — FINAL CTA                          */
     /* ─────────────────────────────────────────────── */
     #cta {
       text-align: center;
@@ -855,6 +967,10 @@
       .hero-ctas { flex-direction: column; }
       .analytics-stat-row { flex-direction: column; gap: 12px; }
       .team-card { flex-direction: column; }
+      #support { padding: 36px 0; }
+      .support-card { min-width: 100%; width: 100%; padding: 16px; }
+      .support-logo-img { max-height: 34px; }
+      .support-logo-eleven { max-height: 28px; }
     }
 
     /* Loading shimmer */
@@ -1323,7 +1439,7 @@
         <div class="team-avatar" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">RJ</div>
         <div class="team-info">
           <h3><a href="https://www.linkedin.com/in/rachitjain28/" target="_blank" style="color:var(--text-1);text-decoration:underline;text-decoration-color:var(--accent-1);">Rachit Jain</a></h3>
-          <div class="team-role">Co-founder & CEO</div>
+          <div class="team-role">Co-founder</div>
           <div style="font-size:0.8rem;margin-bottom:10px;"><a href="mailto:jainrachit4042@gmail.com" style="color:var(--text-2);text-decoration:none;">jainrachit4042@gmail.com</a></div>
           <p>20 years old. SRCC Commerce. Spent 2 years trying to understand macroeconomics from 1-hour lectures with no way to ask a follow-up question at 2am. Now building the answer.</p>
           <div class="team-tag">
@@ -1336,13 +1452,41 @@
         <div class="team-avatar" style="background:linear-gradient(135deg,#0EA5E9,#4FC3F7);">VA</div>
         <div class="team-info">
           <h3><a href="https://www.linkedin.com/in/vaanchhit-agarwal-549036296/" target="_blank" style="color:var(--text-1);text-decoration:underline;text-decoration-color:var(--accent-2);">Vaanchhit Agarwal</a></h3>
-          <div class="team-role">Co-founder & CTO</div>
+          <div class="team-role">Co-founder</div>
           <div style="font-size:0.8rem;margin-bottom:10px;"><a href="mailto:vaanchhit06@gmail.com" style="color:var(--text-2);text-decoration:none;">vaanchhit06@gmail.com</a></div>
           <p>20 years old. SRCC Commerce. Obsessed with the infrastructure problem — how do you make a professor's knowledge available at 3am for every student, simultaneously, without lying?</p>
           <div class="team-tag">
             <svg width="10" height="10" fill="none" viewBox="0 0 10 10"><path d="M5 1l1.18 2.39L9 3.82 7 5.77l.47 2.74L5 7.19l-2.47 1.32L3 5.77 1 3.82l2.82-.43z" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/></svg>
             SRCC · Delhi University
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ╔══════════════════════════════╗ -->
+<!-- ║  SUPPORTED BY               ║ -->
+<!-- ╚══════════════════════════════╝ -->
+<section id="support" class="section-pad-sm">
+  <div class="container">
+    <div class="support-header">
+      <span class="section-eyebrow reveal">Supported By</span>
+      <p class="reveal reveal-d1">Early support across infrastructure and voice.</p>
+    </div>
+    <div class="support-grid">
+      <div class="support-card support-card-google reveal reveal-d1">
+        <div class="support-logo-wrap">
+          <div class="support-logo-google-crop">
+            <img class="support-logo-img support-logo-google" src="Google Cloud Startup Program.jpg" alt="Google Cloud Startup Program" loading="lazy" />
+          </div>
+        </div>
+      </div>
+      <div class="support-card reveal reveal-d2">
+        <div class="support-logo-wrap">
+          <img class="support-logo-img support-logo-eleven" src="https://eleven-public-cdn.elevenlabs.io/payloadcms/cy7rxce8uki-IIElevenLabsGrants%201.webp?utm_campaign=43529628-Grant&utm_medium=email&_hsenc=p2ANqtz-_NIIR1yrXuYKx1KKSR3DlAmRiySwsjd-hRsP10s-SuTLlTZ8QiCM_3eV8rJtjxJKB5bcr9cH2a0OpFwzfmCi_SZJg2Jw&_hsmi=418807354&utm_content=418807354&utm_source=hs_email" alt="ElevenLabs Grants" loading="lazy" />
         </div>
       </div>
     </div>
@@ -1382,7 +1526,7 @@
     <div class="footer-inner">
       <div>
         <a href="#" class="logo" style="font-size:1.05rem;">
-          <img src="Vivran Logo.png".png" alt="Vivran Logo" style="height: 22px; width: auto; border-radius: 5px; object-fit: contain;" />
+          <img src="Vivran Logo.png" alt="Vivran Logo" style="height: 22px; width: auto; border-radius: 5px; object-fit: contain;" />
           Vivran
         </a>
         <p class="footer-copy" style="margin-top:8px;">Making every minute of education count.</p>
