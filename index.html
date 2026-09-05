@@ -2398,7 +2398,15 @@ function handleLogin(event) {
   }
   if (username === 'vaanchhit' && password === '123456') {
     message.textContent = '';
-    setAppMode('is-dashboard');
+    const session = {
+      username: 'vaanchhit',
+      name: 'Vaanchhit Agarwal',
+      role: 'teacher',
+      school: 'Delhi Public School',
+      authenticated: true
+    };
+    localStorage.setItem('vivran_user_session', JSON.stringify(session));
+    window.location.href = 'http://localhost:3000/teacher';
     return;
   }
   message.textContent = 'Invalid teacher credentials for this beta.';

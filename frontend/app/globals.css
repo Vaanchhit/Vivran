@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #09090E;
+    --bg-card: rgba(255, 255, 255, 0.035);
+    --border: rgba(255, 255, 255, 0.07);
+    --border-hi: rgba(255, 255, 255, 0.13);
+    --text-1: #F4F4F6;
+    --text-2: #8B8B99;
+    --text-3: #55555F;
+    --accent-1: #7C6EFA;
+    --accent-2: #4FC3F7;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--text-1);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.03em;
+  }
+}
+
+.grad-text {
+  background: linear-gradient(130deg, #C4B5FD 0%, #818CF8 40%, #67E8F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.grad-btn {
+  background: linear-gradient(135deg, #7C6EFA 0%, #9C72F7 45%, #4FC3F7 100%);
+  box-shadow: 0 0 28px rgba(124, 110, 250, 0.28);
+}
+
+.grad-btn:hover {
+  box-shadow: 0 0 42px rgba(124, 110, 250, 0.5);
+}

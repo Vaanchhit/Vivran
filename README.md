@@ -1,19 +1,86 @@
-# Vivran — Course Intelligence Platform
+# Vivran — Teacher-first AI content and teaching workflow platform
 
-> **विवरण से समझ तक · From Information to Understanding**
+Vivran is designed around a simple principle:
 
-Vivran turns static lectures into an intelligent system that answers, analyzes, and adapts — in real time. No hallucinations. Only your content.
+Teacher intent + teacher knowledge -> high-quality teaching outputs.
 
-## 🚀 Features
+The MVP focuses on four teacher workflows:
 
-- **Ask your course anything**: Students get 24/7 access to an AI trained exclusively on professor-uploaded material. Instant, grounded answers referencing exact lecture timestamps and page numbers.
-- **See exactly where students struggle**: Concept-level heatmaps, lecture drop-off graphs, and student-level diagnostics. Know which segments of a lecture lose the class before the exam.
-- **No hallucinations. Only your content**: Strict knowledge boundaries. Vivran refuses to speculate beyond what's in the course. Every answer is traceable, source-cited, and academically defensible.
+- Coursework planning
+- Classroom content creation
+- Assessment creation
+- Interactive coursework
 
+The central interaction model is the Smart Prompt Box, which lets a teacher write a natural request and receive a structured output plan and editable workspace.
 
-## 👥 Team
+## Product goals
 
-Built by people who lived the problem at SRCC, New Delhi 🇮🇳.
+Vivran helps teachers plan, prepare, teach, and assess faster without requiring them to understand prompt engineering.
 
-- **Rachit Jain** (Co-founder & CEO) - [LinkedIn](https://www.linkedin.com/in/rachitjain28/) | jainrachit4042@gmail.com
-- **Vaanchhit Agarwal** (Co-founder & CTO) - [LinkedIn](https://www.linkedin.com/in/vaanchhit-agarwal-549036296/) | vaanchhit06@gmail.com
+The system is intentionally scoped to a small, robust MVP for the first 5–100 teachers.
+
+## Architecture
+
+- Frontend: Next.js
+- Backend: FastAPI
+- Database: Supabase PostgreSQL + pgvector + Storage
+- Background jobs: lightweight async processing
+- AI model layers:
+  - Open / Local: intent understanding, prompt compilation, classification, metadata extraction
+  - Cheap cloud: normal content generation
+  - Premium: complex reasoning-heavy generation
+
+Important exclusions from the MVP:
+
+- AI Teacher Twin
+- AI Grading
+
+These remain future or coming-soon capabilities.
+
+## Core project model
+
+Vivran uses a shared project architecture rather than isolated apps for each output type.
+
+Example project:
+
+- Class 10 Biology — Tissues
+  - course plan
+  - lesson plan
+  - slides
+  - worksheet
+  - quiz
+  - assessment
+  - interactive lesson block
+
+## Example teacher prompt
+
+> Plan my next three weeks of Class 10 biology and create the slides, worksheets and quizzes I need for each lesson.
+
+This request is parsed into structured requirements and transformed into a project with multiple editable artifacts.
+
+## Run locally
+
+Backend:
+
+cd backend
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+Frontend:
+
+cd frontend
+npm install
+npm run dev -- --hostname 0.0.0.0 --port 3000
+
+## Current MVP status
+
+This workspace contains a working product shell with:
+
+- teacher workflow landing page
+- backend API endpoints for prompt parsing and workflow capabilities
+- AI tier abstraction service
+- shared project workflow architecture
+
+This is deliberately not a full LMS, PowerPoint tool, Canva clone, or school management product.
