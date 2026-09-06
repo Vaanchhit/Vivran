@@ -1535,6 +1535,21 @@
       background-size: 200% 100%;
       animation: shimmer 1.6s infinite;
     }
+
+    /* Coming Soon modal */
+    .cs-modal.hidden { display: none; }
+    .cs-modal {
+      position: fixed; inset: 0; display:flex; align-items:center; justify-content:center; z-index:9999;
+      background: rgba(4,4,6,0.6);
+      padding: 28px;
+    }
+    .cs-panel {
+      max-width: 720px; width:100%; background: rgba(11,11,16,0.98); border:1px solid rgba(255,255,255,0.06); padding:32px; border-radius:12px; text-align:center;
+    }
+    .cs-panel h2 { font-family: var(--font-display); font-size: 2rem; margin-bottom:8px; }
+    .cs-panel p { color: var(--text-2); margin-bottom:18px; }
+    .cs-actions { display:flex; gap:10px; justify-content:center; margin-top:12px; }
+    .cs-close { position:absolute; top:18px; right:22px; background:transparent; border:0; color:var(--text-2); font-size:14px; cursor:pointer; }
   </style>
 </head>
 <body>
@@ -1637,6 +1652,19 @@
   </div>
 </section>
 
+<!-- Coming Soon modal (in-page) -->
+<div id="comingSoonModal" class="cs-modal hidden" role="dialog" aria-modal="true" aria-labelledby="csTitle">
+  <div class="cs-panel">
+    <button class="cs-close" aria-label="Close" onclick="(function(){document.getElementById('comingSoonModal').classList.add('hidden');document.body.style.overflow='';})();">✕</button>
+    <h2 id="csTitle">Coming Soon</h2>
+    <p>We're polishing this area of Vivran. If you'd like early access, request it and we'll follow up.</p>
+    <div class="cs-actions">
+      <a class="btn btn-primary" href="/" role="button">Back to Home</a>
+      <a class="btn btn-ghost" href="mailto:info@vivran.co.in">Request Access</a>
+    </div>
+  </div>
+</div>
+
 <section class="teacher-app" id="teacherApp" aria-label="Vivran teacher workspace">
   <div class="app-layout">
     <aside class="app-sidebar">
@@ -1654,7 +1682,7 @@
       <div class="app-sidebar-foot">
         <div>
           <div class="teacher-name">Vaanchhit</div>
-          <div class="teacher-role">Teacher beta account</div>
+          <div class="teacher-role">Teacher account</div>
         </div>
         <button class="logout-btn" onclick="logout()">Logout</button>
       </div>
@@ -1697,7 +1725,7 @@
               <div class="wire-panel-title">Courses</div>
               <div class="wire-panel-sub">Draft view of teacher-owned classrooms</div>
             </div>
-            <span class="beta-pill">Beta</span>
+            
           </div>
           <div class="wire-panel-body">
             <div class="course-row">
@@ -1815,7 +1843,7 @@
             <svg width="16" height="16" fill="none" viewBox="0 0 16 16"><polygon points="6,4 12,8 6,12" fill="white"/></svg>
             See it in action
           </a>
-          <button class="btn btn-ghost btn-lg" onclick="showAuth()">Teacher beta login</button>
+          <button class="btn btn-ghost btn-lg" onclick="showAuth()">Login</button>
         </div>
       </div>
       <!-- Right: Chat Mock -->
@@ -2336,8 +2364,17 @@ function setAppMode(mode) {
 }
 
 function showAuth() {
-  setAppMode('is-auth');
-  selectRole(activeRole);
+  // Redirect all public login touchpoints to a unified Coming Soon page
+  // Show in-page Coming Soon modal
+  const modal = document.getElementById('comingSoonModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    modal.querySelector('.cs-close')?.focus();
+  } else {
+    // fallback to homepage if modal missing
+    window.location.href = '/';
+  }
 }
 
 function showMarketing() {
@@ -2354,21 +2391,21 @@ function selectRole(role) {
   activeRole = role;
   const roleCopy = {
     teacher: {
-      title: 'Login as Teacher',
-      subtitle: 'Use the proxy credentials to enter the beta workspace.',
-      hint: 'Teacher proxy: username <strong>vaanchhit</strong>, password <strong>123456</strong>.',
+      title: 'Login',
+      subtitle: 'Enter your credentials to access the Vivran workspace.',
+      hint: 'If you don\'t have an account yet, request access from your organisation.',
       disabled: false
     },
     student: {
-      title: 'Student Login',
-      subtitle: 'Student accounts are planned but deactivated in this beta draft.',
-      hint: 'Student login is deactivated for now. Username and password access will be enabled in a later beta.',
+      title: 'Student Access',
+      subtitle: 'Coming soon',
+      hint: 'Student access is coming soon — sign up for updates on the homepage.',
       disabled: true
     },
     institution: {
-      title: 'Institution Login',
-      subtitle: 'Institution accounts are planned but deactivated in this beta draft.',
-      hint: 'Institution login is deactivated for now. Username and password access will be enabled in a later beta.',
+      title: 'Institution Access',
+      subtitle: 'Coming soon',
+      hint: 'Institution access is coming soon — contact sales for early access.',
       disabled: true
     }
   };
@@ -2393,7 +2430,7 @@ function handleLogin(event) {
   const message = document.getElementById('authMessage');
 
   if (activeRole !== 'teacher') {
-    message.textContent = 'This role is deactivated in the current beta.';
+    message.textContent = 'This role is coming soon.';
     return;
   }
   if (username === 'vaanchhit' && password === '123456') {
@@ -2409,7 +2446,7 @@ function handleLogin(event) {
     window.location.href = 'http://localhost:3000/teacher';
     return;
   }
-  message.textContent = 'Invalid teacher credentials for this beta.';
+  message.textContent = 'Invalid credentials.';
 }
 
 // ─── NAV SCROLL ─────────────────────────────────────
