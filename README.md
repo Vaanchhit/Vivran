@@ -84,3 +84,22 @@ This workspace contains a working product shell with:
 - shared project workflow architecture
 
 This is deliberately not a full LMS, PowerPoint tool, Canva clone, or school management product.
+
+## Workspace structure
+
+The repo is organized to separate the public landing site and stakeholder experiences:
+
+- `landing` — Main public website and marketing pages.
+- `teacher` (stakeholder-a) — Teacher workspace (primary product).
+- `student` (stakeholder-b) — Student experience (Coming Soon).
+- `institution` (stakeholder-c) — Institution/admin experience (Coming Soon).
+- `shared` — Shared components, auth, and utilities used across stakeholders.
+
+Student and Institution experiences are intentionally stubbed as "Coming Soon". The app routes are:
+
+- `/landing` — public landing
+- `/teacher` — teacher workspace
+- `/student` — student coming-soon page
+- `/institution` — institution coming-soon page
+
+Keep features simple and avoid overengineering: add shared utilities to `frontend/app/shared` and keep stakeholder-specific logic inside their routes.

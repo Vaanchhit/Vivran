@@ -11,7 +11,7 @@ export default function RootPage() {
     if (saved) {
       router.replace("/teacher");
     } else {
-      router.replace("/login");
+      router.replace("/landing");
     }
   }, [router]);
 
