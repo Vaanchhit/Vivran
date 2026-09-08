@@ -843,12 +843,21 @@
       background: rgba(255,255,255,.02);
       transform: translateY(-1px);
     }
-    .support-card-google {
+    .support-card-google,
+    .support-card-white {
       background: rgba(255,255,255,.98);
       border-color: rgba(255,255,255,.18);
     }
-    .support-card-google:hover {
+    .support-card-google:hover,
+    .support-card-white:hover {
       background: #fff;
+    }
+    .support-card-eleven {
+      background: #000;
+      border-color: rgba(255,255,255,.14);
+    }
+    .support-card-eleven:hover {
+      background: #0b0b0b;
     }
     .support-card::after {
       content: '';
@@ -903,8 +912,12 @@
       overflow: hidden;
     }
     .support-logo-eleven {
-      width: 158px;
-      max-height: 30px;
+      width: 172px;
+      max-height: 32px;
+    }
+    .support-logo-cartesia {
+      max-width: 180px;
+      max-height: 34px;
     }
     .support-copy {
       display: none;
@@ -2290,9 +2303,14 @@
           </div>
         </div>
       </div>
-      <div class="support-card reveal reveal-d2">
+      <div class="support-card support-card-eleven reveal reveal-d2">
         <div class="support-logo-wrap">
           <img class="support-logo-img support-logo-eleven" src="https://eleven-public-cdn.elevenlabs.io/payloadcms/cy7rxce8uki-IIElevenLabsGrants%201.webp?utm_campaign=43529628-Grant&utm_medium=email&_hsenc=p2ANqtz-_NIIR1yrXuYKx1KKSR3DlAmRiySwsjd-hRsP10s-SuTLlTZ8QiCM_3eV8rJtjxJKB5bcr9cH2a0OpFwzfmCi_SZJg2Jw&_hsmi=418807354&utm_content=418807354&utm_source=hs_email" alt="ElevenLabs Grants" loading="lazy" />
+        </div>
+      </div>
+      <div class="support-card support-card-white reveal reveal-d3">
+        <div class="support-logo-wrap">
+          <img class="support-logo-img support-logo-cartesia" src="Cartesia Startups Logo.png" alt="Cartesia Startup Program" loading="lazy" />
         </div>
       </div>
     </div>
