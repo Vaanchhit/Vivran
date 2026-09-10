@@ -1,16 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-
-export type Role = "teacher" | "student" | "institution";
-
-export interface UserSession {
-  username: string;
-  name: string;
-  role: Role;
-  school?: string;
-  authenticated: boolean;
-}
+import type { Role, UserSession } from "@/types";
 
 interface AuthContextType {
   user: UserSession | null;
@@ -62,7 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   if (loading) {
-    return <div className="min-h-screen bg-[#09090E] flex items-center justify-center text-[#8B8B99]">Loading Vivran...</div>;
+    return <div className="min-h-screen bg-background flex items-center justify-center text-muted">Loading Vivran...</div>;
   }
 
   return (

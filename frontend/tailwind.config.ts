@@ -13,10 +13,10 @@ const config: Config = {
       colors: {
         background: "var(--bg)",
         foreground: "var(--text-1)",
-        card: {
-          DEFAULT: "var(--bg-card)",
-          foreground: "var(--text-1)",
-        },
+        muted: "var(--text-2)",
+        card: "var(--bg-card)",
+        surface: "var(--surface)",
+        "surface-2": "var(--surface-2)",
         border: "var(--border)",
         accent: {
           DEFAULT: "#7C6EFA",
@@ -32,4 +32,3 @@ const config: Config = {
   plugins: [],
 };
 export default config;
-

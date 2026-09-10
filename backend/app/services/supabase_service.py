@@ -6,12 +6,15 @@ using the `supabase` Python SDK later.
 """
 from __future__ import annotations
 
-import os
 import httpx
 from typing import Any, Dict
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
+from app.core.config import settings
+
+# The service role key must NEVER be exposed to the frontend; it is used
+# server-side only (Supabase RLS still applies to anon requests).
+SUPABASE_URL = settings.supabase_url
+SUPABASE_KEY = settings.supabase_service_role_key or settings.supabase_anon_key
 
 
 def _headers() -> Dict[str, str]:

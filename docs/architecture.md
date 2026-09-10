@@ -10,13 +10,14 @@ The product centers on converting **Teacher Intent + Teacher Material** into **S
 
 ## Stakeholder Architecture
 
-1. **Public Website (`index.html`)**
+1. **Public Website (`frontend/public/index.html`)**
    - The public startup landing page for Vivran.
-   - Preserved in root (`index.html`) to maintain all image assets and external entry points.
+   - Preserved in the frontend `public/` directory to maintain image assets and external entry points. The Next.js `/landing` route renders a matching dark-theme hero.
 
 2. **Authenticated Teacher Product (`frontend/`)**
    - Next.js / React / TypeScript / Tailwind CSS application.
    - Auth-gated teacher workspace containing the **Smart Prompt Box**, **Plan**, **Create**, **Assess**, **Interactive Coursework**, and **Teacher Materials**.
+   - Theme-switchable (`dark`/`light`) via CSS variables + `lib/theme-context.tsx`.
 
 3. **Backend Engine (`backend/`)**
    - FastAPI Python application implementing the **Three-Tier AI Router** (Open/Local Ollama → Cheap Cloud → Premium Cloud), **Document Ingestion**, **pgvector RAG**, **Deterministic Assessment Validation**, and **Media Provider Integrations** (Cartesia & ElevenLabs).
@@ -27,32 +28,29 @@ The product centers on converting **Teacher Intent + Teacher Material** into **S
 
 ```
 searchbox/ (Vivran Workspace Root)
-├── index.html                 # Public Vivran Startup Website
-├── Google Cloud Startup...jpg # Public website assets
-├── Vivran Logo.png            # Public website logo
 ├── README.md                  # Project overview
 ├── docs/                      # Architectural documentation
 │   └── architecture.md
 ├── frontend/                  # Authenticated Teacher Product (Next.js)
-│   ├── app/                   # Next.js App Router (login, teacher dashboard, workflows)
-│   ├── components/            # UI components (prompt, projects, planning, artifacts, assessments, materials)
-│   ├── lib/                   # Auth context, class utilities
+│   ├── app/                   # Next.js App Router (landing, login, teacher dashboard, workflows)
+│   ├── components/            # UI components (theme-toggle, global-header, sidebar, smart-prompt-box)
+│   ├── lib/                   # Auth context, theme context, class utilities
 │   ├── services/              # API communication layer
 │   └── types/                 # TypeScript interfaces and contracts
 └── backend/                   # FastAPI Backend
     ├── requirements.txt
     ├── .env.example
     └── app/
-        ├── main.py            # FastAPI entry point
+        ├── main.py            # FastAPI entry point (mounts the api/ routers + CORS)
         ├── core/              # Config, security, logging
-        ├── api/               # API routes (materials, courses, projects, assessments, questions, coursework, media, generation)
+        ├── api/               # Active API routes (health, assessments, projects, materials, teacher_workflows)
         ├── ai/                # Three-tier AI router, models, prompt compiler, schemas, validators
-        ├── database/          # Schema, queries, models
+        ├── database/          # Schema (single source of truth: database/schema.sql)
         ├── generation/        # Planning, artifacts, assessments, coursework generation
         ├── ingestion/         # PDF, DOCX, PPTX, YouTube ingestion & chunking
         ├── retrieval/         # Vector embeddings, semantic search, reranking
         ├── media/             # Cartesia & ElevenLabs media integrations
-        └── workers/           # Background job queue processing
+        └── services/          # Supabase service + SQLite job worker
 ```
 
 ---

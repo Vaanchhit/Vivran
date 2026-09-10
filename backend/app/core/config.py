@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
 
+    # CORS
+    cors_origins: str = "http://localhost:3000,http://localhost:3001"
+
     class Config:
         env_file = ".env"
         case_sensitive = False

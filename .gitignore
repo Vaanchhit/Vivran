@@ -5,10 +5,6 @@ node_modules/
 __pycache__/
 *.pyc
 .env
-.venv/
-**/.venv/
-node_modules/
-.next/
-__pycache__/
-*.pyc
-.env
+frontend/tsconfig.tsbuildinfo
+.DS_Store
+backend/jobs.sqlite

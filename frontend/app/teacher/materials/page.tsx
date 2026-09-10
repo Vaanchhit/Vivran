@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FolderOpen, Upload, FileText, Youtube, CheckCircle2, Clock } from "lucide-react";
+import { FolderOpen, Upload, FileText, CheckCircle2, Clock } from "lucide-react";
 
 export default function MaterialsPage() {
   const materials = [
@@ -13,12 +13,12 @@ export default function MaterialsPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <div className="border-b border-white/5 pb-6 flex items-center justify-between">
+      <div className="border-b border-border pb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold font-display text-white flex items-center gap-2.5">
+          <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
             <FolderOpen className="w-6 h-6 text-[#7C6EFA]" /> Teacher Materials & Knowledge Base
           </h1>
-          <p className="text-sm text-[#8B8B99] mt-1">
+          <p className="text-sm text-muted mt-1">
             Upload PDFs, DOCX, PPTX, and YouTube URLs. Ground generated content in teacher-owned materials.
           </p>
         </div>
@@ -29,29 +29,29 @@ export default function MaterialsPage() {
       </div>
 
       {/* Drag and Drop Zone */}
-      <div className="p-8 rounded-2xl border-2 border-dashed border-white/10 bg-white/[0.01] flex flex-col items-center justify-center text-center space-y-3">
+      <div className="p-8 rounded-2xl border-2 border-dashed border-border bg-card flex flex-col items-center justify-center text-center space-y-3">
         <div className="p-3 rounded-full bg-[#7C6EFA]/10 text-[#7C6EFA]">
           <Upload className="w-6 h-6" />
         </div>
-        <div className="text-sm font-semibold text-white">Drag and drop teaching material files here</div>
-        <div className="text-xs text-[#8B8B99]">Supported formats: PDF, DOCX, PPTX, or YouTube URLs</div>
+        <div className="text-sm font-semibold text-foreground">Drag and drop teaching material files here</div>
+        <div className="text-xs text-muted">Supported formats: PDF, DOCX, PPTX, or YouTube URLs</div>
       </div>
 
       {/* Material List (Spec §18) */}
       <div className="space-y-3">
-        <div className="text-sm font-bold text-white font-display">Indexed Materials</div>
+        <div className="text-sm font-bold text-foreground font-display">Indexed Materials</div>
 
         <div className="space-y-2">
           {materials.map((mat) => (
             <div
               key={mat.title}
-              className="p-4 rounded-xl bg-[#0F0F16] border border-white/10 flex items-center justify-between text-xs"
+              className="p-4 rounded-xl bg-surface border border-border flex items-center justify-between text-xs"
             >
               <div className="flex items-center gap-3 min-w-0">
                 <FileText className="w-4 h-4 text-[#4FC3F7] shrink-0" />
                 <div className="min-w-0">
-                  <div className="font-semibold text-white truncate">{mat.title}</div>
-                  <div className="text-[#8B8B99] text-[11px] mt-0.5">{mat.type} · {mat.size} · {mat.chunks} source chunks</div>
+                  <div className="font-semibold text-foreground truncate">{mat.title}</div>
+                  <div className="text-muted text-[11px] mt-0.5">{mat.type} · {mat.size} · {mat.chunks} source chunks</div>
                 </div>
               </div>
 

@@ -14,11 +14,11 @@ export default function CreatePage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <div className="border-b border-white/5 pb-6">
-        <h1 className="text-2xl font-extrabold font-display text-white flex items-center gap-2.5">
+      <div className="border-b border-border pb-6">
+        <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
           <Sparkles className="w-6 h-6 text-[#7C6EFA]" /> Pillar 2 — Classroom Content Creation
         </h1>
-        <p className="text-sm text-[#8B8B99] mt-1">
+        <p className="text-sm text-muted mt-1">
           Generate classroom-ready teaching artifacts directly from your teacher intent and source material.
         </p>
       </div>
@@ -29,16 +29,16 @@ export default function CreatePage() {
           return (
             <div
               key={art.title}
-              className="p-5 rounded-2xl bg-[#0F0F16] border border-white/10 space-y-3 hover:border-[#7C6EFA]/40 transition-all cursor-pointer group"
+              className="p-5 rounded-2xl bg-surface border border-border space-y-3 hover:border-[#7C6EFA]/40 transition-all cursor-pointer group"
             >
               <div className={`p-2.5 rounded-xl bg-white/5 w-fit ${art.color}`}>
                 <Icon className="w-5 h-5" />
               </div>
-              <div className="font-bold text-base text-white font-display flex items-center justify-between">
+              <div className="font-bold text-base text-foreground font-display flex items-center justify-between">
                 {art.title}
                 <span className="text-xs text-[#7C6EFA] opacity-0 group-hover:opacity-100 transition-opacity">Create →</span>
               </div>
-              <p className="text-xs text-[#8B8B99] leading-relaxed">
+              <p className="text-xs text-muted leading-relaxed">
                 {art.desc}
               </p>
             </div>

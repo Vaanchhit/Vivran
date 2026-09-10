@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
+import { parseTeacherIntent } from "@/services/api";
 
 interface IntentInterpretation {
   raw_prompt: string;
@@ -10,10 +11,8 @@ interface IntentInterpretation {
   topics: string[];
   marks: number | null;
   difficulty: string;
-  application_weight: string;
-  question_types: string[];
-  duration_minutes: number | null;
-  source_material: string;
+  application_weight: number;
+  requested_artifacts: string[];
 }
 
 export function SmartPromptBox() {
@@ -40,15 +39,9 @@ export function SmartPromptBox() {
     setMissingInfoMsg(null);
 
     try {
-      const res = await fetch("http://localhost:8000/api/workflow/parse-intent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ teacher_prompt: text }),
-      });
-      const data = await res.json();
-      
-      // Construct structured requirements display per Spec §5
-      const parsed = data.intent || {};
+      const data = await parseTeacherIntent(text);
+
+      const parsed = data.intent;
       const promptLower = text.toLowerCase();
 
       // Simple clarification check per Spec §5
@@ -60,13 +53,13 @@ export function SmartPromptBox() {
         raw_prompt: text,
         grade: parsed.grade || "Class 10",
         subject: parsed.subject || "Biology",
-        topics: parsed.topics || ["Tissues", "Cell Structure"],
-        marks: promptLower.includes("80") ? 80 : promptLower.includes("40") ? 40 : 20,
-        difficulty: promptLower.includes("hard") || promptLower.includes("difficult") ? "Hard" : "Medium",
-        application_weight: promptLower.includes("application") ? "50% Application" : "Balanced",
-        question_types: ["MCQ", "Short Answer", "Assertion-Reason"],
-        duration_minutes: 45,
-        source_material: "NCERT Class 10 Biology.pdf",
+        topics: parsed.topics?.length ? parsed.topics : ["Tissues", "Cell Structure"],
+        marks: parsed.marks ?? (promptLower.includes("80") ? 80 : promptLower.includes("40") ? 40 : 20),
+        difficulty: parsed.difficulty
+          ? parsed.difficulty.charAt(0).toUpperCase() + parsed.difficulty.slice(1)
+          : "Medium",
+        application_weight: parsed.application_weight,
+        requested_artifacts: parsed.requested_artifacts || [],
       });
     } catch (err) {
       // Offline fallback interpretation so the UX always functions seamlessly
@@ -77,26 +70,32 @@ export function SmartPromptBox() {
         topics: ["Electricity", "Ohm's Law"],
         marks: 40,
         difficulty: "Hard",
-        application_weight: "60% Application-based",
-        question_types: ["MCQ", "Numerical", "Assertion-Reason"],
-        duration_minutes: 45,
-        source_material: "Uploaded Textbook PDF",
+        application_weight: 0.6,
+        requested_artifacts: ["course_plan", "lesson_plan", "slides", "worksheet", "quiz"],
       });
     } finally {
       setLoading(false);
     }
   };
 
+  const focusLabel = interpretation
+    ? interpretation.application_weight >= 0.7
+      ? "Application-focused"
+      : interpretation.application_weight >= 0.55
+        ? "Balanced · Application-heavy"
+        : "Conceptual focus"
+    : "Balanced";
+
   return (
     <div className="w-full space-y-6">
       {/* Main Smart Prompt Box Container */}
-      <div className="bg-[#0F0F16] border border-white/10 rounded-2xl p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden">
+      <div className="bg-surface border border-border rounded-2xl p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden">
         <div className="flex items-center justify-between mb-3">
-          <label className="text-sm font-semibold font-display text-white flex items-center gap-2">
+          <label className="text-sm font-semibold font-display text-foreground flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#7C6EFA]" />
             What would you like to create?
           </label>
-          <span className="text-xs text-[#8B8B99]">Natural Language Intent Engine</span>
+          <span className="text-xs text-muted">Natural Language Intent Engine</span>
         </div>
 
         {/* Textarea Input Box */}
@@ -105,12 +104,12 @@ export function SmartPromptBox() {
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
             placeholder="Tell Vivran what you need... e.g. 'Teach Class 10 Economics — Money and Credit tomorrow. Make a 45-minute lesson, 8 slides, a worksheet, and a 5-question exit quiz.'"
-            className="w-full h-32 p-4 bg-white/[0.03] border border-white/10 rounded-xl text-white placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-all resize-none leading-relaxed"
+            className="w-full h-32 p-4 bg-card border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-all resize-none leading-relaxed"
           />
           <button
             type="button"
             title="Voice Input"
-            className="absolute right-3 bottom-4 p-2 rounded-lg text-[#8B8B99] hover:text-white hover:bg-white/10 transition-colors"
+            className="absolute right-3 bottom-4 p-2 rounded-lg text-muted hover:text-foreground hover:bg-white/10 transition-colors"
           >
             <Mic className="w-4 h-4 text-[#4FC3F7]" />
           </button>
@@ -127,7 +126,7 @@ export function SmartPromptBox() {
                   setPromptText(chip.sample);
                   handleRunSmartPrompt(chip.sample);
                 }}
-                className="px-3 py-1.5 rounded-lg border border-white/10 bg-white/[0.02] text-xs font-medium text-[#8B8B99] hover:text-white hover:border-[#7C6EFA]/40 hover:bg-[#7C6EFA]/10 transition-all"
+                className="px-3 py-1.5 rounded-lg border border-border bg-card text-xs font-medium text-muted hover:text-foreground hover:border-[#7C6EFA]/40 hover:bg-[#7C6EFA]/10 transition-all"
               >
                 {chip.label}
               </button>
@@ -138,7 +137,7 @@ export function SmartPromptBox() {
             type="button"
             onClick={() => handleRunSmartPrompt()}
             disabled={loading || !promptText.trim()}
-            className="px-5 py-2.5 bg-gradient-to-r from-[#7C6EFA] to-[#4FC3F7] text-white text-xs font-semibold rounded-xl shadow-lg shadow-[#7C6EFA]/25 hover:opacity-95 transition-all flex items-center gap-2 disabled:opacity-50"
+            className="grad-btn px-5 py-2.5 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
           >
             {loading ? "Interpreting..." : "Interpret Intent"} <ArrowRight className="w-3.5 h-3.5" />
           </button>
@@ -147,9 +146,9 @@ export function SmartPromptBox() {
 
       {/* "I understood" Requirements Block (Spec §5) */}
       {interpretation && (
-        <div className="bg-[#0F0F16]/90 border border-[#7C6EFA]/30 rounded-2xl p-6 shadow-xl space-y-4 animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-center justify-between border-b border-white/5 pb-3">
-            <div className="flex items-center gap-2 text-white font-display text-sm font-semibold">
+        <div className="bg-surface/90 border border-[#7C6EFA]/30 rounded-2xl p-6 shadow-xl space-y-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center justify-between border-b border-border pb-3">
+            <div className="flex items-center gap-2 text-foreground font-display text-sm font-semibold">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               Vivran Understood Your Requirements:
             </div>
@@ -160,22 +159,44 @@ export function SmartPromptBox() {
 
           {/* Extracted requirement chips */}
           <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white font-medium">
+            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
               Grade: <strong className="text-[#4FC3F7]">{interpretation.grade}</strong>
             </span>
-            <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white font-medium">
+            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
               Subject: <strong className="text-[#4FC3F7]">{interpretation.subject}</strong>
             </span>
-            <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white font-medium">
+            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
               Marks: <strong className="text-[#4FC3F7]">{interpretation.marks || 40}</strong>
             </span>
-            <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white font-medium">
+            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
               Difficulty: <strong className="text-[#4FC3F7]">{interpretation.difficulty}</strong>
             </span>
-            <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-white font-medium">
-              Focus: <strong className="text-[#4FC3F7]">{interpretation.application_weight}</strong>
+            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
+              Focus: <strong className="text-[#4FC3F7]">{focusLabel}</strong>
             </span>
           </div>
+
+          {/* Extracted topics + artifacts */}
+          {interpretation.topics.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {interpretation.topics.map((topic) => (
+                <span
+                  key={topic}
+                  className="px-2.5 py-1 rounded-lg bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 text-xs text-[#4FC3F7] font-medium"
+                >
+                  {topic}
+                </span>
+              ))}
+              {interpretation.requested_artifacts.map((artifact) => (
+                <span
+                  key={artifact}
+                  className="px-2.5 py-1 rounded-lg bg-white/5 border border-border text-xs text-muted"
+                >
+                  {artifact.replace(/_/g, " ")}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Missing info prompt if needed */}
           {missingInfoMsg && (
@@ -186,29 +207,29 @@ export function SmartPromptBox() {
           )}
 
           {/* Additional Editable Controls */}
-          <div className="pt-2 border-t border-white/5">
-            <div className="text-xs text-[#8B8B99] font-medium mb-3 flex items-center gap-1.5">
+          <div className="pt-2 border-t border-border">
+            <div className="text-xs text-muted font-medium mb-3 flex items-center gap-1.5">
               <Sliders className="w-3.5 h-3.5 text-[#7C6EFA]" /> Additional Controls & Scoping:
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button className="px-3 py-2 bg-white/[0.02] border border-white/10 rounded-xl text-left text-xs text-[#8B8B99] hover:text-white hover:border-white/20 transition-all">
-                <div className="text-[10px] text-[#55555F]">Question Mix</div>
-                <div className="font-semibold text-white mt-0.5">MCQ + Short + Numericals</div>
+              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
+                <div className="text-[10px] text-foreground/50">Question Mix</div>
+                <div className="font-semibold text-foreground mt-0.5">MCQ + Short + Numericals</div>
               </button>
 
-              <button className="px-3 py-2 bg-white/[0.02] border border-white/10 rounded-xl text-left text-xs text-[#8B8B99] hover:text-white hover:border-white/20 transition-all">
-                <div className="text-[10px] text-[#55555F]">Duration</div>
-                <div className="font-semibold text-white mt-0.5">{interpretation.duration_minutes} Mins</div>
+              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
+                <div className="text-[10px] text-foreground/50">Duration</div>
+                <div className="font-semibold text-foreground mt-0.5">45 Mins</div>
               </button>
 
-              <button className="px-3 py-2 bg-white/[0.02] border border-white/10 rounded-xl text-left text-xs text-[#8B8B99] hover:text-white hover:border-white/20 transition-all">
-                <div className="text-[10px] text-[#55555F]">Bloom's Taxonomy</div>
-                <div className="font-semibold text-white mt-0.5">Apply & Analyze</div>
+              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
+                <div className="text-[10px] text-foreground/50">Bloom's Taxonomy</div>
+                <div className="font-semibold text-foreground mt-0.5">Apply & Analyze</div>
               </button>
 
-              <button className="px-3 py-2 bg-white/[0.02] border border-white/10 rounded-xl text-left text-xs text-[#8B8B99] hover:text-white hover:border-white/20 transition-all">
-                <div className="text-[10px] text-[#55555F]">Source Material</div>
-                <div className="font-semibold text-[#4FC3F7] mt-0.5 truncate">{interpretation.source_material}</div>
+              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
+                <div className="text-[10px] text-foreground/50">Source Material</div>
+                <div className="font-semibold text-[#4FC3F7] mt-0.5 truncate">Uploaded Textbook PDF</div>
               </button>
             </div>
           </div>
@@ -218,7 +239,7 @@ export function SmartPromptBox() {
             <button
               type="button"
               onClick={() => alert("Generation started! Project created under 'Class 10 Biology'.")}
-              className="px-6 py-2.5 bg-[#7C6EFA] hover:bg-[#684af3] text-white text-xs font-semibold rounded-xl transition-all shadow-md shadow-[#7C6EFA]/20 flex items-center gap-2"
+              className="grad-btn px-6 py-2.5 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
             >
               Confirm & Generate Outputs <Sparkles className="w-3.5 h-3.5" />
             </button>
@@ -228,4 +249,3 @@ export function SmartPromptBox() {
     </div>
   );
 }
-

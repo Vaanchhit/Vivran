@@ -16,7 +16,7 @@ export default function RootPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#09090E] flex items-center justify-center text-[#8B8B99] font-sans">
+    <div className="min-h-screen bg-background flex items-center justify-center text-muted font-sans">
       Redirecting to Vivran Workspace...
     </div>
   );

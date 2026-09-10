@@ -38,7 +38,7 @@ def generate_assessment(
         ],
     )
 
-    validation = validate_assessment(assessment, total_marks=total_marks)
+    validation = validate_assessment(assessment, target_marks=total_marks)
     return {
         "assessment": assessment.model_dump(),
         "validation": validation.to_dict(),

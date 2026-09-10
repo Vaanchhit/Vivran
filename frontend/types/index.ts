@@ -25,12 +25,12 @@ export interface Project {
   id: string;
   title: string;
   type: "Course Pack" | "Assessment Pack" | "Interactive Coursework" | "Lesson Pack";
-  updatedAt: string;
+  updated: string;
   artifacts: string[];
 }
 
 export interface Question {
-  id: number;
+  id: string;
   num: string;
   type: string;
   marks: number;
@@ -42,4 +42,3 @@ export interface Question {
   bloom?: string;
   source?: string;
 }
-

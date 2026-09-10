@@ -1,11 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Space+Grotesk:wght@500;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+
   :root {
     --bg: #09090E;
     --bg-card: rgba(255, 255, 255, 0.035);
+    --surface: #0F0F16;
+    --surface-2: #0C0C12;
     --border: rgba(255, 255, 255, 0.07);
     --border-hi: rgba(255, 255, 255, 0.13);
     --text-1: #F4F4F6;
@@ -13,33 +18,77 @@
     --text-3: #55555F;
     --accent-1: #7C6EFA;
     --accent-2: #4FC3F7;
+    --grad: linear-gradient(135deg, #7C6EFA 0%, #9C72F7 45%, #4FC3F7 100%);
+    --grad-text: linear-gradient(130deg, #C4B5FD 0%, #818CF8 40%, #67E8F9 100%);
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --noise-opacity: 0.55;
+  }
+
+  [data-theme="light"] {
+    --bg: #FAFAFD;
+    --bg-card: rgba(15, 15, 22, 0.035);
+    --surface: #FFFFFF;
+    --surface-2: #F2F2F7;
+    --border: rgba(15, 15, 22, 0.09);
+    --border-hi: rgba(15, 15, 22, 0.16);
+    --text-1: #111118;
+    --text-2: #5A5A66;
+    --text-3: #9A9AA6;
+    --accent-1: #7C6EFA;
+    --accent-2: #10A0E0;
+    --noise-opacity: 0.2;
   }
 
   body {
     background-color: var(--bg);
     color: var(--text-1);
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
   }
 
+  /* subtle noise overlay to match landing visuals */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.045'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--noise-opacity);
+  }
+
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: var(--font-display);
     letter-spacing: -0.03em;
+  }
+
+  /* Utility class used in components for display headings */
+  .font-display { font-family: var(--font-display); }
+
+  /* Gradient text accent (matching landing .grad-text) */
+  .grad-text {
+    background: linear-gradient(130deg, #C4B5FD 0%, #818CF8 40%, #67E8F9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 }
 
-.grad-text {
-  background: linear-gradient(130deg, #C4B5FD 0%, #818CF8 40%, #67E8F9 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
+/* Primary button: 3-stop gradient with purple glow (landing .btn-primary) */
 .grad-btn {
   background: linear-gradient(135deg, #7C6EFA 0%, #9C72F7 45%, #4FC3F7 100%);
   box-shadow: 0 0 28px rgba(124, 110, 250, 0.28);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .grad-btn:hover {
   box-shadow: 0 0 42px rgba(124, 110, 250, 0.5);
+}
+
+/* Glass ghost button (landing .btn-ghost) */
+.glass-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-hi);
+  backdrop-filter: blur(8px);
 }
