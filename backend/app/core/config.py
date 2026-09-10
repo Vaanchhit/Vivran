@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""
 
+    # Supabase Auth JWT validation (JWT_SECRET from Supabase project settings)
+    supabase_jwt_secret: str = "change-me-in-production"
+    jwt_algorithm: str = "HS256"
+
     # CORS
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
 

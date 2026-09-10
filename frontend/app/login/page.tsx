@@ -1,35 +1,67 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import type { Role } from "@/types";
 import { Shield, BookOpen, GraduationCap, Building2, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center text-muted">
+          Loading...
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
-  const { login } = useAuth();
+  const searchParams = useSearchParams();
+  const { login, loginWithGoogle } = useAuth();
   const [selectedRole, setSelectedRole] = useState<Role>("teacher");
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const authError = searchParams.get("error");
+  const next = searchParams.get("next") || "/teacher";
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSubmitting(true);
 
     if (selectedRole !== "teacher") {
       setError("This role space is coming soon.");
+      setSubmitting(false);
       return;
     }
 
-    const success = login(username, password, selectedRole);
-    if (success) {
-      router.push("/teacher");
-    } else {
-      setError("Invalid credentials. Hint: vaanchhit / 123456");
+    try {
+      const ok = await login(email.trim(), password);
+      if (ok) {
+        router.push(next);
+      } else {
+        setError("Invalid email or password. Please try again.");
+      }
+    } catch {
+      setError("Could not sign in. Check your connection and try again.");
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const handleGoogleLogin = useCallback(async () => {
+    setError("");
+    await loginWithGoogle();
+  }, [loginWithGoogle]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
@@ -124,14 +156,16 @@ export default function LoginPage() {
           <form className="space-y-4" onSubmit={handleLoginSubmit}>
             <div>
               <label className="block text-xs font-medium text-muted mb-1.5">
-                Username
+                Email
               </label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username (e.g. vaanchhit)"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your school email"
                 disabled={selectedRole !== "teacher"}
+                autoComplete="email"
+                required
                 className="w-full h-11 px-3.5 bg-white/5 border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-colors disabled:opacity-50"
               />
             </div>
@@ -144,8 +178,10 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password (e.g. 123456)"
+                placeholder="Enter your password"
                 disabled={selectedRole !== "teacher"}
+                autoComplete="current-password"
+                required
                 className="w-full h-11 px-3.5 bg-white/5 border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-colors disabled:opacity-50"
               />
             </div>
@@ -156,21 +192,50 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* Hint Box */}
-            <div className="p-3.5 rounded-xl bg-card border border-border text-xs text-muted leading-relaxed">
-              🔑 <strong className="text-foreground">Teacher Beta Access:</strong> Username{" "}
-              <code className="text-[#4FC3F7] bg-white/10 px-1.5 py-0.5 rounded">vaanchhit</code>,
-              password <code className="text-[#4FC3F7] bg-white/10 px-1.5 py-0.5 rounded">123456</code>.
-            </div>
+            {authError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
+                Sign-in could not be completed. Please try again.
+              </div>
+            )}
 
             <button
               type="submit"
-              disabled={selectedRole !== "teacher"}
+              disabled={selectedRole !== "teacher" || submitting}
               className="w-full h-11 bg-gradient-to-r from-[#7C6EFA] to-[#4FC3F7] text-white font-medium text-sm rounded-xl shadow-lg shadow-[#7C6EFA]/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Enter Teacher Terminal <ArrowRight className="w-4 h-4" />
+              {submitting ? "Signing in..." : "Enter Teacher Terminal"}{" "}
+              {!submitting && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-border" />
+            </div>
+            <div className="relative flex justify-center text-xs text-muted">
+              <span className="bg-surface px-3">or</span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={selectedRole !== "teacher"}
+            className="w-full h-11 bg-white/5 border border-border rounded-xl text-sm font-medium text-foreground hover:bg-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z" />
+              <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z" />
+            </svg>
+            Continue with Google
+          </button>
+
+          <div className="mt-6 p-3.5 rounded-xl bg-card border border-border text-xs text-muted leading-relaxed">
+            🔑 <strong className="text-foreground">Teacher Beta:</strong> Use your school email. New
+            accounts are auto-provisioned with a private workspace on first login.
+          </div>
         </div>
       </div>
     </div>

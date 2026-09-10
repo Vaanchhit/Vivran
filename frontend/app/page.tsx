@@ -7,12 +7,9 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const saved = localStorage.getItem("vivran_user_session");
-    if (saved) {
-      router.replace("/teacher");
-    } else {
-      router.replace("/landing");
-    }
+    // The middleware redirects authenticated users landing on "/" to /teacher;
+    // anonymous visitors go to the marketing landing page.
+    router.replace("/landing");
   }, [router]);
 
   return (
@@ -21,4 +18,3 @@ export default function RootPage() {
     </div>
   );
 }
-

@@ -10,6 +10,7 @@ def generate_assessment(
     topics: List[str],
     total_marks: int = 40,
     difficulty: str = "medium",
+    created_by: str = "system",
 ) -> Dict[str, Any]:
     assessment = AssessmentSchema(
         title=f"{grade} {subject} Test Paper",
@@ -17,6 +18,7 @@ def generate_assessment(
         grade=grade,
         total_marks=total_marks,
         duration_minutes=45,
+        created_by=created_by,
         sections=[
             SectionSchema(
                 name="Section A (MCQs)",
@@ -48,12 +50,14 @@ def generate_assessment(
 def regenerate_single_question(
     question_id: str,
     option: str,  # harder, easier, application, conceptual, case
+    created_by: str = "system",
 ) -> Dict[str, Any]:
     """Regenerates ONLY the selected question (§15), preserving overall assessment constraints."""
     return {
         "status": "regenerated",
         "question_id": question_id,
         "option_applied": option,
+        "requested_by": created_by,
         "new_question": {
             "question_text": f"Regenerated question variant ({option}).",
             "answer": "Updated sample answer.",

@@ -40,17 +40,19 @@ searchbox/ (Vivran Workspace Root)
 └── backend/                   # FastAPI Backend
     ├── requirements.txt
     ├── .env.example
+    ├── migrations/            # SQL source of truth (run in order)
+    │   ├── 0001_core_tables.sql   # core schema (§32–45)
+    │   └── 0002_auth_rls.sql      # triggers + RLS policies
     └── app/
         ├── main.py            # FastAPI entry point (mounts the api/ routers + CORS)
-        ├── core/              # Config, security, logging
-        ├── api/               # Active API routes (health, assessments, projects, materials, teacher_workflows)
+        ├── core/              # Config, security, logging, JWT auth
+        ├── api/               # Active API routes (health, auth, assessments, projects, materials, teacher_workflows)
         ├── ai/                # Three-tier AI router, models, prompt compiler, schemas, validators
-        ├── database/          # Schema (single source of truth: database/schema.sql)
         ├── generation/        # Planning, artifacts, assessments, coursework generation
         ├── ingestion/         # PDF, DOCX, PPTX, YouTube ingestion & chunking
         ├── retrieval/         # Vector embeddings, semantic search, reranking
         ├── media/             # Cartesia & ElevenLabs media integrations
-        └── services/          # Supabase service + SQLite job worker
+        └── services/          # Supabase service, provisioning, SQLite job worker
 ```
 
 ---

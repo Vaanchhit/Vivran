@@ -29,6 +29,8 @@ class AssessmentSchema(BaseModel):
     grade: str
     total_marks: int
     duration_minutes: int
+    created_by: Optional[str] = "system"
+    workspace_id: Optional[str] = None
     sections: List[SectionSchema]
 
 

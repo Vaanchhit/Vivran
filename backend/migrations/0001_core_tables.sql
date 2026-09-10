@@ -1,4 +1,5 @@
--- PostgreSQL + pgvector schema for Vivran Master Specification (§32–45)
+-- Vivran migration 0001 — core schema (§32–45)
+-- Run in order: 0001 then 0002. Applies to a Supabase/Postgres database.
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS vector;
@@ -6,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- §33 teacher_profiles
 CREATE TABLE IF NOT EXISTS teacher_profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id text NOT NULL UNIQUE,
+  user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL,
   school text,
   subjects text[],
@@ -19,7 +20,7 @@ CREATE TABLE IF NOT EXISTS teacher_profiles (
 -- §34 workspaces
 CREATE TABLE IF NOT EXISTS workspaces (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  owner_id text NOT NULL,
+  owner_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   name text NOT NULL,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
@@ -77,7 +78,7 @@ CREATE TABLE IF NOT EXISTS projects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
   course_id uuid REFERENCES courses(id) ON DELETE SET NULL,
-  created_by text NOT NULL,
+  created_by uuid NOT NULL REFERENCES auth.users(id),
   title text NOT NULL,
   type text NOT NULL, -- course_plan, lesson, classroom_pack, assessment, interactive_course
   specification_json jsonb,
@@ -115,7 +116,7 @@ CREATE TABLE IF NOT EXISTS assessments (
   project_id uuid REFERENCES projects(id) ON DELETE CASCADE,
   workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
   course_id uuid REFERENCES courses(id) ON DELETE SET NULL,
-  created_by text NOT NULL,
+  created_by uuid NOT NULL REFERENCES auth.users(id),
   title text NOT NULL,
   type text NOT NULL,
   specification_json jsonb,
@@ -180,7 +181,7 @@ CREATE TABLE IF NOT EXISTS media_assets (
 CREATE TABLE IF NOT EXISTS generation_jobs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id uuid REFERENCES workspaces(id) ON DELETE CASCADE,
-  user_id text NOT NULL,
+  user_id uuid NOT NULL REFERENCES auth.users(id),
   project_id uuid REFERENCES projects(id) ON DELETE SET NULL,
   task_type text NOT NULL,
   status text NOT NULL DEFAULT 'queued', -- queued, processing, completed, failed
@@ -202,4 +203,4 @@ CREATE INDEX IF NOT EXISTS idx_source_chunks_material ON source_chunks(material_
 CREATE INDEX IF NOT EXISTS idx_projects_workspace ON projects(workspace_id);
 CREATE INDEX IF NOT EXISTS idx_questions_assessment ON questions(assessment_id);
 CREATE INDEX IF NOT EXISTS idx_generation_jobs_status ON generation_jobs(status);
-
+CREATE INDEX IF NOT EXISTS idx_workspaces_owner ON workspaces(owner_id);

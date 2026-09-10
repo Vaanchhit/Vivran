@@ -1,10 +1,14 @@
 export type Role = "teacher" | "student" | "institution";
 
 export interface UserSession {
-  username: string;
+  id: string;
+  email: string;
   name: string;
+  username: string;
   role: Role;
   school?: string;
+  avatar_url?: string;
+  workspace_id?: string;
   authenticated: boolean;
 }
 

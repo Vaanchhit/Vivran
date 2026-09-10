@@ -63,7 +63,7 @@ export default function LandingPage() {
         </p>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Link href="/teacher" className="grad-btn px-7 py-3.5 rounded-2xl text-white font-semibold flex items-center gap-2 group">
+          <Link href="/login" className="grad-btn px-7 py-3.5 rounded-2xl text-white font-semibold flex items-center gap-2 group">
             Enter Teacher Workspace
             <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </Link>
@@ -122,7 +122,7 @@ export default function LandingPage() {
             Built as a small MVP for the first 5&ndash;100 teachers.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 relative">
-            <Link href="/teacher" className="grad-btn px-7 py-3.5 rounded-2xl text-white font-semibold">
+            <Link href="/login" className="grad-btn px-7 py-3.5 rounded-2xl text-white font-semibold">
               Start Teaching
             </Link>
             <Link href="/student" className="glass-btn px-7 py-3.5 rounded-2xl text-muted hover:text-foreground transition-colors">

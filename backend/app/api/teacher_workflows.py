@@ -1,7 +1,10 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+
 from app.ai.router import AIRequest, ModelRouter
 from app.ai.prompt_compiler import compile_teacher_prompt
+from app.api.deps import require_teacher
+from app.core.auth import CurrentUser
 
 router = APIRouter(prefix="/workflow", tags=["teacher-workflows"])
 model_router = ModelRouter()
@@ -14,7 +17,10 @@ class TeacherIntentRequest(BaseModel):
 
 
 @router.post("/parse-intent")
-def parse_intent(payload: TeacherIntentRequest) -> dict:
+def parse_intent(
+    payload: TeacherIntentRequest,
+    user: CurrentUser = Depends(require_teacher),
+) -> dict:
     prompt = payload.teacher_prompt.strip()
     compiled_intent = compile_teacher_prompt(prompt)
     
@@ -31,6 +37,7 @@ def parse_intent(payload: TeacherIntentRequest) -> dict:
     return {
         "intent": compiled_intent.model_dump(),
         "ai_route": ai_route,
+        "requested_by": user.user_id,
         "message": "Intent parsed via Tier 1 OpenLocal model and routed to content planning pipeline.",
     }
 
