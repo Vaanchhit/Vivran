@@ -8,3 +8,5 @@ __pycache__/
 frontend/tsconfig.tsbuildinfo
 .DS_Store
 backend/jobs.sqlite
+.env.local
+.env*.local
