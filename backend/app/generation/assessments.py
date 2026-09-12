@@ -70,7 +70,7 @@ def generate_assessment(
             logger.warning("Retrieval for assessment generation failed (continuing ungrounded): %s", e)
 
     prompt = _build_prompt(grade, subject, topics, total_marks, difficulty, context)
-    generator = generate_premium_cloud if (difficulty == "hard" or total_marks >= 60) else generate_cheap_cloud
+    wants_premium = difficulty == "hard" or total_marks >= 60
 
     assessment: Optional[AssessmentSchema] = None
     validation = None
@@ -78,7 +78,14 @@ def generate_assessment(
 
     for _attempt in range(2):
         feedback = f"\n\nYour previous attempt was invalid: {last_error}. Fix it." if last_error else ""
-        result = generator(prompt + feedback, task="assessment_creation", system_prompt=_SYSTEM_PROMPT, json_mode=True)
+        result = None
+        if wants_premium:
+            result = generate_premium_cloud(prompt + feedback, task="assessment_creation", system_prompt=_SYSTEM_PROMPT, json_mode=True)
+            if not result.get("success"):
+                logger.warning("Premium tier unavailable (%s); falling back to cheap tier", result.get("error"))
+                result = None
+        if result is None:
+            result = generate_cheap_cloud(prompt + feedback, task="assessment_creation", system_prompt=_SYSTEM_PROMPT, json_mode=True)
         if not result.get("success"):
             last_error = result.get("error")
             continue

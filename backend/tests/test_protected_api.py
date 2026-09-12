@@ -43,10 +43,10 @@ def test_assessments_require_auth(client):
     assert client.post("/api/assessments/generate", json=payload).status_code == 401
 
 
-def test_assessments_generate_authenticated(client, auth_headers):
-    # No GEMINI_API_KEY is configured in the test environment (tests stay
-    # offline/deterministic), so generation degrades gracefully rather than
-    # fabricating content — assert that contract instead of AI output.
+def test_assessments_generate_authenticated(client, auth_headers, monkeypatch):
+    # Force the "no AI key configured" path regardless of what's in the
+    # developer's local .env — tests must stay deterministic and offline.
+    monkeypatch.setattr("app.core.config.settings.gemini_api_key", "")
     payload = {"grade": "10", "subject": "Biology", "topics": ["Tissues"], "total_marks": 40}
     resp = client.post("/api/assessments/generate", json=payload, headers=auth_headers)
     assert resp.status_code == 200

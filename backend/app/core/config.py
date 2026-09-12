@@ -14,10 +14,18 @@ class Settings(BaseSettings):
 
     # Gemini API (all three tiers run on Gemini; tiers differ by model choice).
     gemini_api_key: str = ""
-    open_model: str = "gemini-2.0-flash-lite"
-    cheap_model: str = "gemini-2.0-flash"
-    premium_model: str = "gemini-2.5-pro"
-    embedding_model: str = "text-embedding-004"
+    # Pinned to concrete models rather than "-latest" aliases: verified live
+    # that "-latest" flash alias currently 503s intermittently, while these
+    # concrete names respond reliably. Revisit if Google stabilizes aliases.
+    open_model: str = "gemini-3.6-flash"
+    cheap_model: str = "gemini-3.6-flash"
+    # Requires a Google Cloud billing account with Pro-tier quota — verified
+    # live that this key gets 429 "quota exceeded" on every Pro-tier model
+    # (gemini-pro-latest, gemini-2.5-pro, gemini-3.1-pro-preview). The
+    # premium tier falls back to cheap_model automatically until billing is
+    # enabled (see app/generation/assessments.py).
+    premium_model: str = "gemini-pro-latest"
+    embedding_model: str = "gemini-embedding-001"
     embedding_dimensions: int = 768
 
     # Media Services per Spec §31
