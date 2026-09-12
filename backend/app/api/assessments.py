@@ -8,6 +8,7 @@ from app.api.deps import require_teacher
 from app.core.auth import CurrentUser
 from app.generation.assessments import generate_assessment, regenerate_single_question
 from app.generation.pdf_export import render_assessment_pdf
+from app.media.tally import TallyService
 from app.services.provisioning import ensure_teacher_workspace
 from app.services.supabase_service import SupabaseError
 
@@ -63,6 +64,32 @@ def api_export_assessment_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
     )
+
+
+class AssessmentTallyRequest(BaseModel):
+    assessment: Dict[str, Any]
+
+
+@router.post("/assessments/export/tally")
+def api_export_assessment_tally(
+    payload: AssessmentTallyRequest,
+    user: CurrentUser = Depends(require_teacher),
+):
+    mcq_questions = [
+        {"question_text": q["question_text"], "options": q.get("options") or []}
+        for sec in payload.assessment.get("sections", [])
+        for q in sec.get("questions", [])
+        if q.get("question_type") == "mcq"
+    ]
+    result = TallyService().create_mcq_form(payload.assessment.get("title", "Assessment"), mcq_questions)
+    if result["status"] == "not_configured":
+        raise HTTPException(status_code=503, detail=result["error"])
+    if result["status"] == "failed":
+        raise HTTPException(status_code=502, detail=result["error"])
+    total_questions = sum(len(sec.get("questions", [])) for sec in payload.assessment.get("sections", []))
+    result["mcq_count"] = len(mcq_questions)
+    result["skipped_non_mcq"] = total_questions - len(mcq_questions)
+    return result
 
 
 class QuestionRegenerateRequest(BaseModel):

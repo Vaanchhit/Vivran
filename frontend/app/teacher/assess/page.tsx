@@ -1,8 +1,16 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { BookMarked, Download, FileCheck2, Loader2, RefreshCw, AlertCircle } from "lucide-react";
-import { downloadAssessmentPdf, generateAssessmentPaper, listMaterials, regenerateQuestion, type Material, type Source } from "@/services/api";
+import { BookMarked, Download, ExternalLink, FileCheck2, Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import {
+  downloadAssessmentPdf,
+  exportAssessmentToTally,
+  generateAssessmentPaper,
+  listMaterials,
+  regenerateQuestion,
+  type Material,
+  type Source,
+} from "@/services/api";
 import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
 
 interface UIQuestion {
@@ -37,6 +45,8 @@ export default function AssessPage() {
   const [durationMinutes, setDurationMinutes] = useState<number | null>(null);
   const [questions, setQuestions] = useState<UIQuestion[]>([]);
   const [exporting, setExporting] = useState(false);
+  const [exportingTally, setExportingTally] = useState(false);
+  const [tallyResult, setTallyResult] = useState<{ form_url: string; mcq_count: number; skipped_non_mcq: number } | null>(null);
   const [questionIds, setQuestionIds] = useState<string[]>([]);
   const [groundedOn, setGroundedOn] = useState(0);
   const [sources, setSources] = useState<Source[]>([]);
@@ -111,34 +121,52 @@ export default function AssessPage() {
     }
   };
 
+  const buildAssessmentPayload = () => {
+    const sectionOrder: string[] = [];
+    const bySection = new Map<string, UIQuestion[]>();
+    for (const q of questions) {
+      const key = q.section || "Section";
+      if (!bySection.has(key)) {
+        bySection.set(key, []);
+        sectionOrder.push(key);
+      }
+      bySection.get(key)!.push(q);
+    }
+    return {
+      title,
+      grade,
+      subject,
+      total_marks: totalMarks,
+      duration_minutes: durationMinutes,
+      sections: sectionOrder.map((name) => ({ name, questions: bySection.get(name) })),
+    };
+  };
+
   const exportPdf = async () => {
     if (!title) return;
     setExporting(true);
     setError(null);
     try {
-      const sectionOrder: string[] = [];
-      const bySection = new Map<string, UIQuestion[]>();
-      for (const q of questions) {
-        const key = q.section || "Section";
-        if (!bySection.has(key)) {
-          bySection.set(key, []);
-          sectionOrder.push(key);
-        }
-        bySection.get(key)!.push(q);
-      }
-      const assessment = {
-        title,
-        grade,
-        subject,
-        total_marks: totalMarks,
-        duration_minutes: durationMinutes,
-        sections: sectionOrder.map((name) => ({ name, questions: bySection.get(name) })),
-      };
-      await downloadAssessmentPdf(assessment);
+      await downloadAssessmentPdf(buildAssessmentPayload());
     } catch (err) {
       setError(err instanceof Error ? err.message : "PDF export failed.");
     } finally {
       setExporting(false);
+    }
+  };
+
+  const exportTally = async () => {
+    if (!title) return;
+    setExportingTally(true);
+    setError(null);
+    setTallyResult(null);
+    try {
+      const result = await exportAssessmentToTally(buildAssessmentPayload());
+      setTallyResult(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Tally export failed.");
+    } finally {
+      setExportingTally(false);
     }
   };
 
@@ -214,8 +242,31 @@ export default function AssessPage() {
                   {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                   Export PDF
                 </button>
+                {questions.some((q) => q.question_type === "mcq") && (
+                  <button
+                    type="button"
+                    onClick={exportTally}
+                    disabled={exportingTally}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-[#7C6EFA]/40 disabled:opacity-50"
+                  >
+                    {exportingTally ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                    Export to Tally
+                  </button>
+                )}
               </div>
             </div>
+
+            {tallyResult && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-3 text-xs text-emerald-300">
+                <span>
+                  Tally quiz created with {tallyResult.mcq_count} MCQ{tallyResult.mcq_count !== 1 ? "s" : ""}
+                  {tallyResult.skipped_non_mcq > 0 ? ` (${tallyResult.skipped_non_mcq} non-MCQ question${tallyResult.skipped_non_mcq !== 1 ? "s" : ""} skipped)` : ""}.
+                </span>
+                <a href={tallyResult.form_url} target="_blank" rel="noopener noreferrer" className="underline shrink-0">
+                  Open form →
+                </a>
+              </div>
+            )}
 
             <div className="space-y-3">
               {questions.map((question, i) => (

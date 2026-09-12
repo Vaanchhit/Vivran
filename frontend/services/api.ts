@@ -180,6 +180,14 @@ export async function downloadAssessmentPdf(assessment: Record<string, unknown>,
   URL.revokeObjectURL(url);
 }
 
+export async function exportAssessmentToTally(assessment: Record<string, unknown>) {
+  return request<{ status: string; form_url: string; form_id: string; mcq_count: number; skipped_non_mcq: number }>(
+    "POST",
+    "/assessments/export/tally",
+    { assessment },
+  );
+}
+
 export async function regenerateQuestion(questionId: string, option: string) {
   return request<{ status: string; question_id: string; option_applied: string; new_question: unknown }>(
     "POST",
