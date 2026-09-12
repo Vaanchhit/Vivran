@@ -16,6 +16,7 @@ from app.services.supabase_service import SupabaseError, ensure_bucket, upload_f
 
 DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # ElevenLabs public "Rachel" voice
 DEFAULT_IMAGE_MODEL = "gemini-2.5-flash-image"
+DEFAULT_VIDEO_MODEL = "veo-3.1-fast-generate-001"
 
 
 class ElevenLabsService:
@@ -79,7 +80,35 @@ class ElevenLabsService:
         generation_id = r.json()["id"]
         return self._poll_flow("image", generation_id, poll_timeout_seconds)
 
-    def _poll_flow(self, kind: str, generation_id: str, timeout_seconds: float) -> Dict[str, Any]:
+    def generate_video(
+        self,
+        prompt: str,
+        model_id: str = DEFAULT_VIDEO_MODEL,
+        aspect_ratio: str = "16:9",
+        duration_secs: int = 8,
+        poll_timeout_seconds: float = 240.0,
+    ) -> Dict[str, Any]:
+        if not self.is_configured():
+            return {"provider": "elevenlabs", "status": "not_configured", "error": "ELEVENLABS_API_KEY is not set"}
+
+        try:
+            with httpx.Client(timeout=30.0) as client:
+                r = client.post(
+                    "https://api.elevenlabs.io/v1/flows/video",
+                    headers=self._headers(),
+                    json={"model_id": model_id, "prompt": prompt, "aspect_ratio": aspect_ratio, "duration_secs": duration_secs},
+                )
+        except httpx.HTTPError as e:
+            return {"provider": "elevenlabs", "status": "failed", "error": str(e)}
+
+        if r.status_code != 200:
+            return {"provider": "elevenlabs", "status": "failed", "error": f"{r.status_code}: {r.text[:400]}"}
+
+        generation_id = r.json()["id"]
+        # Video generation is much slower than images — poll with a longer timeout.
+        return self._poll_flow("video", generation_id, poll_timeout_seconds, poll_interval=5.0)
+
+    def _poll_flow(self, kind: str, generation_id: str, timeout_seconds: float, poll_interval: float = 2.0) -> Dict[str, Any]:
         deadline = time.monotonic() + timeout_seconds
         last: Optional[Dict[str, Any]] = None
         try:
@@ -93,7 +122,7 @@ class ElevenLabsService:
                         break
                     if last["status"] == "failed":
                         return {"provider": "elevenlabs", "status": "failed", "error": last.get("error", "generation failed")}
-                    time.sleep(2.0)
+                    time.sleep(poll_interval)
         except httpx.HTTPError as e:
             return {"provider": "elevenlabs", "status": "failed", "error": str(e)}
 

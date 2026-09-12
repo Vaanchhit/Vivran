@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Video as VideoIcon, Loader2, AlertCircle } from "lucide-react";
 import {
   generateImage,
   generateInteractiveCoursework,
   generateLessonNotes,
   generateNarration,
   generateSlides,
+  generateVideo,
   generateWorksheet,
   type InteractiveResult,
   type LessonNotesResult,
@@ -16,14 +17,15 @@ import {
 } from "@/services/api";
 import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
 
-type ArtifactKey = "slides" | "worksheet" | "lesson_notes" | "narration" | "image" | "interactive";
+type ArtifactKey = "slides" | "worksheet" | "lesson_notes" | "narration" | "image" | "video" | "interactive";
 
 const ARTIFACTS: { key: ArtifactKey; title: string; icon: typeof Presentation; color: string; desc: string }[] = [
   { key: "slides", title: "Presentation Slides", icon: Presentation, color: "text-amber-400", desc: "Editable slide deck outline, key hooks, and speaker notes." },
   { key: "worksheet", title: "Worksheets", icon: FileSpreadsheet, color: "text-emerald-400", desc: "Practice questions with an answer key." },
   { key: "lesson_notes", title: "Lesson Notes", icon: BookOpenCheck, color: "text-[#4FC3F7]", desc: "Structured teaching notes with real-life examples & a recap." },
   { key: "narration", title: "Narration Audio", icon: Mic, color: "text-purple-400", desc: "Real narrated audio for a lesson script (ElevenLabs / Cartesia)." },
-  { key: "image", title: "AI Image", icon: ImageIcon, color: "text-orange-400", desc: "Generate a diagram or illustration from a prompt (ElevenLabs Flows — requires Pro plan)." },
+  { key: "image", title: "AI Image", icon: ImageIcon, color: "text-orange-400", desc: "Generate a diagram or illustration from a prompt. Review labels before use — AI-generated text in images can be inaccurate." },
+  { key: "video", title: "AI Video", icon: VideoIcon, color: "text-sky-400", desc: "Generate a short educational video clip from a prompt (takes 1-3 minutes)." },
   { key: "interactive", title: "Classroom Activities", icon: MessageSquare, color: "text-pink-400", desc: "Interactive lesson blocks: activities, scenarios & quick checks." },
 ];
 
@@ -34,6 +36,8 @@ export default function CreatePage() {
   const [subject, setSubject] = useState("");
   const [script, setScript] = useState("");
   const [imagePrompt, setImagePrompt] = useState("");
+  const [videoPrompt, setVideoPrompt] = useState("");
+  const [videoDuration, setVideoDuration] = useState<4 | 6 | 8>(8);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SlidesResult | WorksheetResult | LessonNotesResult | InteractiveResult | { media_url: string } | null>(null);
@@ -49,6 +53,7 @@ export default function CreatePage() {
       else if (active === "interactive") setResult(await generateInteractiveCoursework(topic, 15, grade || undefined, subject || undefined));
       else if (active === "narration") setResult(await generateNarration(script));
       else if (active === "image") setResult(await generateImage(imagePrompt));
+      else if (active === "video") setResult(await generateVideo(videoPrompt, "16:9", videoDuration));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed.");
     } finally {
@@ -117,6 +122,24 @@ export default function CreatePage() {
               placeholder="Describe the diagram or illustration you want, e.g. 'A labeled diagram of a plant cell, textbook style'…"
               className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
             />
+          ) : active === "video" ? (
+            <div className="space-y-3">
+              <textarea
+                value={videoPrompt}
+                onChange={(e) => setVideoPrompt(e.target.value)}
+                placeholder="Describe the video clip you want, e.g. 'A simple animation of water evaporating from a leaf, educational style'…"
+                className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
+              />
+              <select
+                value={videoDuration}
+                onChange={(e) => setVideoDuration(Number(e.target.value) as 4 | 6 | 8)}
+                className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground"
+              >
+                <option value={4}>4 seconds</option>
+                <option value={6}>6 seconds</option>
+                <option value={8}>8 seconds</option>
+              </select>
+            </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic (required)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
@@ -131,12 +154,18 @@ export default function CreatePage() {
             onClick={run}
             disabled={
               loading ||
-              (active === "narration" ? !script.trim() : active === "image" ? !imagePrompt.trim() : !topic.trim())
+              (active === "narration"
+                ? !script.trim()
+                : active === "image"
+                  ? !imagePrompt.trim()
+                  : active === "video"
+                    ? !videoPrompt.trim()
+                    : !topic.trim())
             }
             className="grad-btn px-5 py-2.5 text-white text-xs font-semibold rounded-xl flex items-center gap-2 disabled:opacity-50"
           >
             {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {loading ? "Generating…" : "Generate"}
+            {loading ? (active === "video" ? "Generating video (1-3 min)…" : "Generating…") : "Generate"}
           </button>
 
           {error && (
@@ -198,6 +227,10 @@ export default function CreatePage() {
           {result && active === "image" && "media_url" in result && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={result.media_url} alt={imagePrompt} className="w-full rounded-xl border border-border pt-2" />
+          )}
+
+          {result && active === "video" && "media_url" in result && (
+            <video controls className="w-full rounded-xl border border-border pt-2" src={result.media_url} />
           )}
 
           {result && "sources" in result && result.sources && result.sources.length > 0 && (

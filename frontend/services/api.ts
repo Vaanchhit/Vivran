@@ -310,6 +310,21 @@ export async function generateNarration(script: string, provider: "elevenlabs" |
   return request<{ provider: string; status: string; media_url: string }>("POST", "/content/narration", { script, provider });
 }
 
+export async function transcribeAudio(audio: Blob): Promise<string> {
+  const form = new FormData();
+  form.append("file", audio, "recording.webm");
+  const { text } = await requestForm<{ text: string }>("/content/transcribe", form);
+  return text;
+}
+
 export async function generateImage(prompt: string, aspectRatio: string = "1:1") {
   return request<{ provider: string; status: string; media_url: string }>("POST", "/content/image", { prompt, aspect_ratio: aspectRatio });
+}
+
+export async function generateVideo(prompt: string, aspectRatio: string = "16:9", durationSecs: 4 | 6 | 8 = 8) {
+  return request<{ provider: string; status: string; media_url: string }>("POST", "/content/video", {
+    prompt,
+    aspect_ratio: aspectRatio,
+    duration_secs: durationSecs,
+  });
 }

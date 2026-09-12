@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     cartesia_api_key: str = ""
     elevenlabs_api_key: str = ""
 
+    # Tally.so — MCQ-test-to-form export
+    tally_api_key: str = ""
+
     # Supabase Infrastructure
     supabase_url: str = ""
     supabase_anon_key: str = ""

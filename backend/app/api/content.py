@@ -1,7 +1,7 @@
 """Classroom Content Creation (§13) & Interactive Coursework (§28) API."""
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.api.deps import require_teacher
@@ -104,6 +104,39 @@ def api_generate_image(
     if result["status"] == "failed":
         raise HTTPException(status_code=502, detail=result["error"])
     return result
+
+
+class VideoRequest(BaseModel):
+    prompt: str
+    aspect_ratio: str = "16:9"
+    duration_secs: int = 8
+
+
+@router.post("/video")
+def api_generate_video(
+    payload: VideoRequest,
+    user: CurrentUser = Depends(require_teacher),
+):
+    result = ElevenLabsService().generate_video(payload.prompt, aspect_ratio=payload.aspect_ratio, duration_secs=payload.duration_secs)
+    if result["status"] == "not_configured":
+        raise HTTPException(status_code=503, detail=result["error"])
+    if result["status"] == "failed":
+        raise HTTPException(status_code=502, detail=result["error"])
+    return result
+
+
+@router.post("/transcribe")
+async def api_transcribe_audio(
+    file: UploadFile = File(...),
+    user: CurrentUser = Depends(require_teacher),
+):
+    audio_bytes = await file.read()
+    result = CartesiaService().transcribe(audio_bytes, file.filename or "audio.webm", file.content_type or "audio/webm")
+    if result["status"] == "not_configured":
+        raise HTTPException(status_code=503, detail=result["error"])
+    if result["status"] == "failed":
+        raise HTTPException(status_code=502, detail=result["error"])
+    return {"text": result["text"]}
 
 
 class NarrationRequest(BaseModel):

@@ -2,26 +2,16 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
-import { generateAssessmentPaper, generateCoursePlan, parseTeacherIntent } from "@/services/api";
+import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
+import { generateAssessmentPaper, generateCoursePlan, parseTeacherIntent, transcribeAudio } from "@/services/api";
 
-// Minimal shape for the Web Speech API — not in TS's default DOM lib, and
-// only webkit-prefixed in Safari/older Chrome.
-interface SpeechRecognitionLike extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: ((event: { error: string }) => void) | null;
-  onend: (() => void) | null;
-}
-
-function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
-  if (typeof window === "undefined") return null;
-  const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
-  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+function micApiAvailable(): boolean {
+  return (
+    typeof navigator !== "undefined" &&
+    !!navigator.mediaDevices?.getUserMedia &&
+    typeof window !== "undefined" &&
+    typeof window.MediaRecorder !== "undefined"
+  );
 }
 
 interface IntentInterpretation {
@@ -45,38 +35,55 @@ export function SmartPromptBox() {
   const [generating, setGenerating] = useState(false);
   const [generateResult, setGenerateResult] = useState<{ ok: boolean; message: string; href?: string } | null>(null);
   const [listening, setListening] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [micSupported, setMicSupported] = useState(true);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
-    setMicSupported(getSpeechRecognition() !== null);
+    setMicSupported(micApiAvailable());
   }, []);
 
-  const toggleMic = () => {
+  const toggleMic = async () => {
     if (listening) {
-      recognitionRef.current?.stop();
+      mediaRecorderRef.current?.stop();
       return;
     }
-    const SpeechRecognition = getSpeechRecognition();
-    if (!SpeechRecognition) return;
+    if (!micApiAvailable()) return;
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = false;
-    recognition.lang = "en-US";
-    recognition.onresult = (event) => {
-      // `results` accumulates the whole session; only the most recent entry
-      // is the newly-finalized phrase (interimResults is off).
-      const latest = event.results[event.results.length - 1]?.[0]?.transcript;
-      if (!latest) return;
-      setPromptText((prev) => (prev.trim() ? `${prev.trim()} ${latest}` : latest));
-    };
-    recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        setListening(false);
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        if (blob.size === 0) return;
+        setTranscribing(true);
+        setErrorMsg(null);
+        try {
+          const text = await transcribeAudio(blob);
+          if (text.trim()) {
+            setPromptText((prev) => (prev.trim() ? `${prev.trim()} ${text.trim()}` : text.trim()));
+          }
+        } catch (err) {
+          setErrorMsg(err instanceof Error ? err.message : "Voice transcription failed.");
+        } finally {
+          setTranscribing(false);
+        }
+      };
+
+      mediaRecorderRef.current = recorder;
+      recorder.start();
+      setListening(true);
+    } catch {
+      setErrorMsg("Microphone access was denied or is unavailable.");
+    }
   };
 
   const shortcutChips = [
@@ -202,13 +209,25 @@ export function SmartPromptBox() {
           <button
             type="button"
             onClick={toggleMic}
-            disabled={!micSupported}
-            title={micSupported ? (listening ? "Stop voice input" : "Voice input") : "Voice input not supported in this browser"}
-            className={`absolute right-3 bottom-4 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+            disabled={!micSupported || transcribing}
+            title={
+              !micSupported
+                ? "Voice input not supported in this browser"
+                : transcribing
+                  ? "Transcribing…"
+                  : listening
+                    ? "Stop voice input"
+                    : "Voice input"
+            }
+            className={`absolute right-3 bottom-4 p-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               listening ? "bg-red-500/20 text-red-400" : "text-muted hover:text-foreground hover:bg-white/10"
             }`}
           >
-            <Mic className={`w-4 h-4 ${listening ? "text-red-400 animate-pulse" : "text-[#4FC3F7]"}`} />
+            {transcribing ? (
+              <Loader2 className="w-4 h-4 text-[#4FC3F7] animate-spin" />
+            ) : (
+              <Mic className={`w-4 h-4 ${listening ? "text-red-400 animate-pulse" : "text-[#4FC3F7]"}`} />
+            )}
           </button>
         </div>
 
