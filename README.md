@@ -60,18 +60,23 @@ This request is parsed into structured requirements and transformed into a proje
 
 ## Run locally
 
+Database: apply `backend/migrations/0001_core_tables.sql`, `0002_auth_rls.sql`,
+then `0003_vector_search.sql` in order against your Supabase project's SQL editor.
+
 Backend:
 
 cd backend
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
+cp .env.example .env  # then fill in GEMINI_API_KEY + SUPABASE_* (SERVICE_ROLE_KEY and JWT_SECRET included)
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 Frontend:
 
 cd frontend
 npm install
+cp .env.local.example .env.local  # set NEXT_PUBLIC_API_URL to the backend URL above
 npm run dev -- --hostname 0.0.0.0 --port 3000
 
 ## Current MVP status

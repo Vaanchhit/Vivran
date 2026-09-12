@@ -1,6 +1,10 @@
 """Prompt Compiler (§25) — Converts natural language teacher prompts into structured intent."""
-from typing import Dict, Any, List
-from pydantic import BaseModel
+from typing import List
+from pydantic import BaseModel, ValidationError
+
+from app.ai.gemini_client import GeminiError, generate_json
+from app.core.config import settings
+from app.core.logging import logger
 
 
 class StructuredIntent(BaseModel):
@@ -14,7 +18,36 @@ class StructuredIntent(BaseModel):
     requested_artifacts: List[str] = []
 
 
-def compile_teacher_prompt(raw_prompt: str) -> StructuredIntent:
+_SYSTEM_PROMPT = """You are Vivran's intent-parsing engine for teacher requests (Tier 1, §25).
+Extract structured intent from a natural-language teacher prompt. Respond ONLY with JSON matching:
+{
+  "task_type": "course_plan" | "lesson" | "classroom_pack" | "assessment" | "interactive_course",
+  "grade": string (e.g. "Class 10"),
+  "subject": string,
+  "topics": string[],
+  "marks": integer or null,
+  "difficulty": "easy" | "medium" | "hard",
+  "application_weight": number between 0 and 1 (share of application-style vs conceptual questions),
+  "requested_artifacts": array from ["course_plan","lesson_plan","slides","worksheet","quiz","assessment","video","interactive_course"]
+}
+Infer grade/subject/topics even if only loosely implied. Default difficulty to "medium" and application_weight to 0.5 if not implied."""
+
+
+def compile_teacher_prompt(raw_prompt: str) -> tuple[StructuredIntent, bool]:
+    """Parses teacher intent with the Tier-1 Gemini model.
+
+    Returns (intent, degraded) — degraded=True means the Gemini call failed
+    and a deterministic keyword-based heuristic was used instead.
+    """
+    try:
+        data = generate_json(raw_prompt, system_prompt=_SYSTEM_PROMPT, model=settings.open_model, temperature=0.1)
+        return StructuredIntent(**data), False
+    except (GeminiError, ValidationError, TypeError) as e:
+        logger.warning("AI intent parsing failed, using heuristic fallback: %s", e)
+        return _compile_teacher_prompt_heuristic(raw_prompt), True
+
+
+def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
     prompt_lower = raw_prompt.lower()
     
     # Extract topics

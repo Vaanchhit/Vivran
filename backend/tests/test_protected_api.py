@@ -44,11 +44,16 @@ def test_assessments_require_auth(client):
 
 
 def test_assessments_generate_authenticated(client, auth_headers):
+    # No GEMINI_API_KEY is configured in the test environment (tests stay
+    # offline/deterministic), so generation degrades gracefully rather than
+    # fabricating content — assert that contract instead of AI output.
     payload = {"grade": "10", "subject": "Biology", "topics": ["Tissues"], "total_marks": 40}
     resp = client.post("/api/assessments/generate", json=payload, headers=auth_headers)
     assert resp.status_code == 200
     body = resp.json()
-    assert body["assessment"]["created_by"] is not None
+    assert body["assessment"] is None
+    assert body["validation"]["valid"] is False
+    assert body["validation"]["errors"]
 
 
 def test_parse_intent_scopes_to_user(client, auth_headers):

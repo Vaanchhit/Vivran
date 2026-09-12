@@ -8,6 +8,8 @@ Deterministic model routing:
 from dataclasses import dataclass
 from typing import Any, Dict
 
+from app.core.config import settings
+
 
 @dataclass
 class AIRequest:
@@ -25,13 +27,13 @@ class ModelRouter:
 
         if task in {"intent", "compilation", "classification", "clarification"} or complexity == "simple":
             tier = "open_local"
-            model_name = "qwen2.5:7b"
+            model_name = settings.open_model
         elif complexity == "complex" or task == "assessment_creation_heavy":
             tier = "premium"
-            model_name = "gpt-4o"
+            model_name = settings.premium_model
         else:
             tier = "cheap_cloud"
-            model_name = "gpt-4o-mini"
+            model_name = settings.cheap_model
 
         return {
             "model_tier": tier,

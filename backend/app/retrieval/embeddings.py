@@ -1,9 +1,9 @@
-"""Vector Embedding Service (§21) — Configurable open-source embedding models (e.g. BGE-M3 / e5)."""
+"""Vector Embedding Service (§21) — Gemini text-embedding-004."""
 from typing import List
 
+from app.ai.gemini_client import embed_text as _embed_text
 
-def generate_embedding(text: str) -> List[float]:
-    """Generates vector embedding for text chunk."""
-    # Placeholder 1536-dim normalized vector representation
-    return [0.01] * 1536
 
+def generate_embedding(text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> List[float]:
+    """Generates a real vector embedding for a text chunk via the Gemini API."""
+    return _embed_text(text, task_type=task_type)

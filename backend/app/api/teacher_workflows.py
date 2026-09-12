@@ -22,8 +22,8 @@ def parse_intent(
     user: CurrentUser = Depends(require_teacher),
 ) -> dict:
     prompt = payload.teacher_prompt.strip()
-    compiled_intent = compile_teacher_prompt(prompt)
-    
+    compiled_intent, degraded = compile_teacher_prompt(prompt)
+
     ai_route = model_router.route(
         AIRequest(
             prompt=prompt,
@@ -38,7 +38,12 @@ def parse_intent(
         "intent": compiled_intent.model_dump(),
         "ai_route": ai_route,
         "requested_by": user.user_id,
-        "message": "Intent parsed via Tier 1 OpenLocal model and routed to content planning pipeline.",
+        "degraded": degraded,
+        "message": (
+            "Intent parsed via Tier 1 model and routed to content planning pipeline."
+            if not degraded
+            else "AI intent parsing was unavailable; used a deterministic keyword fallback."
+        ),
     }
 
 

@@ -2,16 +2,18 @@
 
 Upload -> Supabase Storage -> extract text -> chunk -> embed -> pgvector -> READY
 """
-from typing import Dict, Any, List
+from io import BytesIO
+from typing import Any, Dict
+
+from pypdf import PdfReader
 
 
-def parse_pdf(file_path: str) -> Dict[str, Any]:
-    """Extracts text and page structure from PDF document."""
-    return {
-        "status": "extracted",
-        "file_path": file_path,
-        "pages": [
-            {"page_number": 1, "text": "Sample PDF page text for Class 10 Biology Tissues."},
-        ],
-    }
-
+def parse_pdf(file_bytes: bytes) -> Dict[str, Any]:
+    """Extracts text per page from a PDF file's raw bytes."""
+    reader = PdfReader(BytesIO(file_bytes))
+    pages = []
+    for i, page in enumerate(reader.pages, start=1):
+        text = (page.extract_text() or "").strip()
+        if text:
+            pages.append({"page_number": i, "text": text})
+    return {"status": "extracted", "pages": pages}

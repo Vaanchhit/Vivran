@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
-import { parseTeacherIntent } from "@/services/api";
+import { generateAssessmentPaper, generateCoursePlan, parseTeacherIntent } from "@/services/api";
 
 interface IntentInterpretation {
   raw_prompt: string;
@@ -20,6 +21,10 @@ export function SmartPromptBox() {
   const [loading, setLoading] = useState(false);
   const [interpretation, setInterpretation] = useState<IntentInterpretation | null>(null);
   const [missingInfoMsg, setMissingInfoMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [degraded, setDegraded] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [generateResult, setGenerateResult] = useState<{ ok: boolean; message: string; href?: string } | null>(null);
 
   const shortcutChips = [
     { label: "Test Paper", sample: "Create a difficult 80-mark Class 12 Economics paper for Chapters 1-5 with 50% application questions." },
@@ -37,12 +42,16 @@ export function SmartPromptBox() {
 
     setLoading(true);
     setMissingInfoMsg(null);
+    setErrorMsg(null);
+    setInterpretation(null);
 
     try {
       const data = await parseTeacherIntent(text);
 
       const parsed = data.intent;
       const promptLower = text.toLowerCase();
+
+      setDegraded(data.degraded);
 
       // Simple clarification check per Spec §5
       if (!promptLower.includes("class") && !promptLower.includes("grade") && !parsed.grade) {
@@ -62,19 +71,50 @@ export function SmartPromptBox() {
         requested_artifacts: parsed.requested_artifacts || [],
       });
     } catch (err) {
-      // Offline fallback interpretation so the UX always functions seamlessly
-      setInterpretation({
-        raw_prompt: text,
-        grade: "Class 10",
-        subject: "Science",
-        topics: ["Electricity", "Ohm's Law"],
-        marks: 40,
-        difficulty: "Hard",
-        application_weight: 0.6,
-        requested_artifacts: ["course_plan", "lesson_plan", "slides", "worksheet", "quiz"],
-      });
+      setErrorMsg(err instanceof Error ? err.message : "Could not reach the Vivran backend. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleConfirmAndGenerate = async () => {
+    if (!interpretation) return;
+    setGenerating(true);
+    setGenerateResult(null);
+
+    const wantsAssessment = interpretation.requested_artifacts.some((a) => ["assessment", "quiz"].includes(a));
+
+    try {
+      if (wantsAssessment) {
+        const { assessment, validation } = await generateAssessmentPaper(
+          interpretation.grade,
+          interpretation.subject,
+          interpretation.topics,
+          interpretation.marks ?? 40,
+          interpretation.difficulty.toLowerCase(),
+        );
+        if (!assessment) {
+          setGenerateResult({ ok: false, message: `Generation failed: ${validation.errors.join("; ")}` });
+        } else {
+          setGenerateResult({ ok: true, message: `Assessment "${(assessment as { title: string }).title}" generated.`, href: "/teacher/assess" });
+        }
+      } else {
+        const { course_plan } = await generateCoursePlan({
+          title: `${interpretation.grade} ${interpretation.subject} — ${interpretation.topics.join(", ")}`,
+          grade: interpretation.grade,
+          subject: interpretation.subject,
+          topics: interpretation.topics,
+        });
+        if (course_plan.error) {
+          setGenerateResult({ ok: false, message: `Generation failed: ${course_plan.error}` });
+        } else {
+          setGenerateResult({ ok: true, message: `Course plan "${course_plan.title}" generated.`, href: "/teacher/plan" });
+        }
+      }
+    } catch (err) {
+      setGenerateResult({ ok: false, message: err instanceof Error ? err.message : "Generation failed." });
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -144,6 +184,13 @@ export function SmartPromptBox() {
         </div>
       </div>
 
+      {errorMsg && (
+        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-300">
+          <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+          {errorMsg}
+        </div>
+      )}
+
       {/* "I understood" Requirements Block (Spec §5) */}
       {interpretation && (
         <div className="bg-surface/90 border border-[#7C6EFA]/30 rounded-2xl p-6 shadow-xl space-y-4 animate-in fade-in slide-in-from-top-2">
@@ -156,6 +203,13 @@ export function SmartPromptBox() {
               Ready for Generation
             </span>
           </div>
+
+          {degraded && (
+            <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-[11px] text-amber-300">
+              <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              AI intent parsing was unavailable — this used a simpler keyword-based fallback.
+            </div>
+          )}
 
           {/* Extracted requirement chips */}
           <div className="flex flex-wrap gap-2">
@@ -234,14 +288,32 @@ export function SmartPromptBox() {
             </div>
           </div>
 
+          {generateResult && (
+            <div
+              className={`p-3 rounded-xl flex items-center justify-between gap-3 text-xs border ${
+                generateResult.ok
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300"
+                  : "bg-red-500/10 border-red-500/20 text-red-300"
+              }`}
+            >
+              <span>{generateResult.message}</span>
+              {generateResult.ok && generateResult.href && (
+                <Link href={generateResult.href} className="underline shrink-0">
+                  View result →
+                </Link>
+              )}
+            </div>
+          )}
+
           {/* Confirm & Generate trigger */}
           <div className="flex justify-end pt-2">
             <button
               type="button"
-              onClick={() => alert("Generation started! Project created under 'Class 10 Biology'.")}
-              className="grad-btn px-6 py-2.5 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2"
+              onClick={handleConfirmAndGenerate}
+              disabled={generating}
+              className="grad-btn px-6 py-2.5 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
             >
-              Confirm & Generate Outputs <Sparkles className="w-3.5 h-3.5" />
+              {generating ? "Generating..." : "Confirm & Generate Outputs"} <Sparkles className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
