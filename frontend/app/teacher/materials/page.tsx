@@ -154,8 +154,16 @@ export default function MaterialsPage() {
                 <div className="min-w-0">
                   <div className="font-semibold text-foreground truncate">{mat.title}</div>
                   <div className="text-muted text-[11px] mt-0.5">
-                    {mat.type.toUpperCase()} {mat.chunk_count !== undefined ? `· ${mat.chunk_count} source chunks` : ""}
+                    {mat.type.toUpperCase()}
+                    {(mat.metadata?.chunk_count ?? mat.chunk_count) !== undefined
+                      ? ` · ${mat.metadata?.chunk_count ?? mat.chunk_count} source chunks`
+                      : ""}
                   </div>
+                  {mat.metadata?.summary && (
+                    <div className="text-muted/80 text-[11px] mt-1 leading-relaxed line-clamp-2">
+                      {mat.metadata.summary}
+                    </div>
+                  )}
                 </div>
               </div>
 

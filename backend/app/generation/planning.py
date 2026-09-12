@@ -3,10 +3,11 @@ import json
 from typing import Any, Dict, List, Optional
 
 from app.ai.cheap_model import generate_cheap_cloud
+from app.ai.prompt_snippets import LEVEL_INSTRUCTION
 from app.core.logging import logger
 from app.retrieval.search import search_knowledge_base
 
-_SYSTEM_PROMPT = """You are Vivran's course & lesson planning engine (§12) for Indian school teachers.
+_SYSTEM_PROMPT = """You are Vivran's course & lesson planning engine (§12) for school teachers and college professors.
 Produce a multi-week course plan as JSON matching exactly this shape:
 {
   "title": string, "grade": string, "subject": string, "duration_weeks": integer,
@@ -18,7 +19,8 @@ Produce a multi-week course plan as JSON matching exactly this shape:
     }
   ]
 }
-Sequence topics logically, building on prior weeks. Return JSON only."""
+Sequence topics logically, building on prior weeks. Return JSON only.
+""" + LEVEL_INSTRUCTION
 
 
 def generate_course_plan(
@@ -71,4 +73,8 @@ def generate_course_plan(
         }
 
     plan["grounded_on"] = len(context)
+    plan["sources"] = [
+        {"chunk_id": c["chunk_id"], "source_material": c.get("source_material"), "page_number": c.get("page_number"), "excerpt": c["content"][:200]}
+        for c in context
+    ]
     return plan

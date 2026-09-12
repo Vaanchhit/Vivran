@@ -1,9 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight } from "lucide-react";
 import { generateAssessmentPaper, generateCoursePlan, parseTeacherIntent } from "@/services/api";
+
+// Minimal shape for the Web Speech API — not in TS's default DOM lib, and
+// only webkit-prefixed in Safari/older Chrome.
+interface SpeechRecognitionLike extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+}
+
+function getSpeechRecognition(): (new () => SpeechRecognitionLike) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as unknown as { SpeechRecognition?: new () => SpeechRecognitionLike; webkitSpeechRecognition?: new () => SpeechRecognitionLike };
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
 
 interface IntentInterpretation {
   raw_prompt: string;
@@ -25,6 +44,40 @@ export function SmartPromptBox() {
   const [degraded, setDegraded] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateResult, setGenerateResult] = useState<{ ok: boolean; message: string; href?: string } | null>(null);
+  const [listening, setListening] = useState(false);
+  const [micSupported, setMicSupported] = useState(true);
+  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+
+  useEffect(() => {
+    setMicSupported(getSpeechRecognition() !== null);
+  }, []);
+
+  const toggleMic = () => {
+    if (listening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SpeechRecognition = getSpeechRecognition();
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+    recognition.onresult = (event) => {
+      // `results` accumulates the whole session; only the most recent entry
+      // is the newly-finalized phrase (interimResults is off).
+      const latest = event.results[event.results.length - 1]?.[0]?.transcript;
+      if (!latest) return;
+      setPromptText((prev) => (prev.trim() ? `${prev.trim()} ${latest}` : latest));
+    };
+    recognition.onerror = () => setListening(false);
+    recognition.onend = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  };
 
   const shortcutChips = [
     { label: "Test Paper", sample: "Create a difficult 80-mark Class 12 Economics paper for Chapters 1-5 with 50% application questions." },
@@ -148,10 +201,14 @@ export function SmartPromptBox() {
           />
           <button
             type="button"
-            title="Voice Input"
-            className="absolute right-3 bottom-4 p-2 rounded-lg text-muted hover:text-foreground hover:bg-white/10 transition-colors"
+            onClick={toggleMic}
+            disabled={!micSupported}
+            title={micSupported ? (listening ? "Stop voice input" : "Voice input") : "Voice input not supported in this browser"}
+            className={`absolute right-3 bottom-4 p-2 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
+              listening ? "bg-red-500/20 text-red-400" : "text-muted hover:text-foreground hover:bg-white/10"
+            }`}
           >
-            <Mic className="w-4 h-4 text-[#4FC3F7]" />
+            <Mic className={`w-4 h-4 ${listening ? "text-red-400 animate-pulse" : "text-[#4FC3F7]"}`} />
           </button>
         </div>
 

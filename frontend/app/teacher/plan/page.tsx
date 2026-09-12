@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { CalendarRange, BookOpen, Clock, Target, Loader2, AlertCircle } from "lucide-react";
 import { generateCoursePlan, type CoursePlan } from "@/services/api";
+import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
 
 export default function PlanPage() {
   const [grade, setGrade] = useState("Class 9");
@@ -83,8 +84,9 @@ export default function PlanPage() {
 
       {/* Generation form */}
       <div className="p-5 rounded-2xl bg-surface border border-border grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-        <input value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="Grade" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
+        <input value={grade} onChange={(e) => setGrade(e.target.value)} list="grade-options" placeholder="Grade / Year" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
+        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject / Course" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
+        <datalist id="grade-options">{GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}</datalist>
         <input value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="Topics (comma-separated)" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground md:col-span-2" />
         <input type="number" value={durationWeeks} onChange={(e) => setDurationWeeks(Number(e.target.value))} placeholder="Weeks" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
         <button
@@ -127,6 +129,17 @@ export default function PlanPage() {
               </div>
             ))}
           </div>
+
+          {plan.sources && plan.sources.length > 0 && (
+            <div className="pt-3 border-t border-border space-y-1.5">
+              <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">Grounded in your materials</div>
+              {plan.sources.map((s) => (
+                <div key={s.chunk_id} className="text-[11px] text-muted">
+                  <span className="text-[#4FC3F7] font-medium">{s.source_material}{s.page_number ? ` · p.${s.page_number}` : ""}</span> — {s.excerpt}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

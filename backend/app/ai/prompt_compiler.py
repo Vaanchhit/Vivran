@@ -18,19 +18,22 @@ class StructuredIntent(BaseModel):
     requested_artifacts: List[str] = []
 
 
-_SYSTEM_PROMPT = """You are Vivran's intent-parsing engine for teacher requests (Tier 1, §25).
-Extract structured intent from a natural-language teacher prompt. Respond ONLY with JSON matching:
+_SYSTEM_PROMPT = """You are Vivran's intent-parsing engine for teacher and professor requests (Tier 1, §25).
+Extract structured intent from a natural-language request. Respond ONLY with JSON matching:
 {
   "task_type": "course_plan" | "lesson" | "classroom_pack" | "assessment" | "interactive_course",
-  "grade": string (e.g. "Class 10"),
-  "subject": string,
+  "grade": string — a school grade ("Class 10") OR a college/university year ("College 2nd Year", "Final Year"),
+  "subject": string — a school subject OR a college course/paper name (e.g. "Data Structures & Algorithms", "Organic Chemistry II"),
   "topics": string[],
   "marks": integer or null,
   "difficulty": "easy" | "medium" | "hard",
   "application_weight": number between 0 and 1 (share of application-style vs conceptual questions),
   "requested_artifacts": array from ["course_plan","lesson_plan","slides","worksheet","quiz","assessment","video","interactive_course"]
 }
-Infer grade/subject/topics even if only loosely implied. Default difficulty to "medium" and application_weight to 0.5 if not implied."""
+Infer grade/subject/topics even if only loosely implied — including college-level cues (year of study, degree
+program, course code, "undergrad"/"postgrad") which should NOT be forced into a K-12 "Class N" shape, and should
+produce college-appropriate content depth rather than school-level simplification. Default difficulty to
+"medium" and application_weight to 0.5 if not implied."""
 
 
 def compile_teacher_prompt(raw_prompt: str) -> tuple[StructuredIntent, bool]:
@@ -61,11 +64,23 @@ def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
     if not topics:
         topics = ["General Topic"]
 
-    # Extract grade
+    # Extract grade — school class or college year
     grade = "Class 10"
-    for g in ["class 8", "class 9", "class 10", "class 11", "class 12"]:
-        if g in prompt_lower:
-            grade = g.title()
+    college_years = {
+        "1st year": "College 1st Year", "first year": "College 1st Year",
+        "2nd year": "College 2nd Year", "second year": "College 2nd Year",
+        "3rd year": "College 3rd Year", "third year": "College 3rd Year",
+        "4th year": "College 4th Year", "fourth year": "College 4th Year",
+        "5th year": "College 5th Year", "fifth year": "College 5th Year",
+        "final year": "College Final Year",
+    }
+    matched_college_year = next((v for k, v in college_years.items() if k in prompt_lower), None)
+    if matched_college_year:
+        grade = matched_college_year
+    else:
+        for g in ["class 8", "class 9", "class 10", "class 11", "class 12"]:
+            if g in prompt_lower:
+                grade = g.title()
 
     # Extract subject
     subject = "Science"

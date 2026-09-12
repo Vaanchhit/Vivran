@@ -39,10 +39,18 @@ export interface ParseIntentResponse {
   message: string;
 }
 
+export interface Source {
+  chunk_id: string;
+  source_material?: string | null;
+  page_number?: number | null;
+  excerpt: string;
+}
+
 export interface AssessmentGenerateResponse {
   assessment: Record<string, unknown> | null;
   validation: { valid: boolean; errors: string[] };
   grounded_on?: number;
+  sources?: Source[];
   assessment_id?: string;
   question_ids?: string[];
 }
@@ -104,6 +112,18 @@ async function requestForm<T>(path: string, form: FormData): Promise<T> {
   return res.json();
 }
 
+async function requestBlob(path: string, body: unknown): Promise<Blob> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: "POST",
+    headers: buildHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`API error (${res.status}): ${await parseErrorDetail(res)}`);
+  }
+  return res.blob();
+}
+
 export async function provisionWorkspace(accessToken: string): Promise<ProvisionResponse> {
   const res = await fetch(`${API_BASE_URL}/auth/provision`, {
     method: "POST",
@@ -148,6 +168,18 @@ export async function generateAssessmentPaper(
   });
 }
 
+export async function downloadAssessmentPdf(assessment: Record<string, unknown>, includeAnswerKey: boolean = true) {
+  const blob = await requestBlob("/assessments/export/pdf", { assessment, include_answer_key: includeAnswerKey });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(assessment.title as string) || "assessment"}.pdf`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function regenerateQuestion(questionId: string, option: string) {
   return request<{ status: string; question_id: string; option_applied: string; new_question: unknown }>(
     "POST",
@@ -167,6 +199,7 @@ export interface Material {
   processing_status: "PROCESSING" | "READY" | "FAILED";
   chunk_count?: number;
   created_at?: string;
+  metadata?: { summary?: string | null; chunk_count?: number };
 }
 
 export async function listMaterials(): Promise<Material[]> {
@@ -198,6 +231,7 @@ export interface CoursePlan {
   duration_weeks: number;
   weekly_structure: { week: number; topic: string; lessons: string[]; objectives?: string[] }[];
   grounded_on?: number;
+  sources?: Source[];
   error?: string;
 }
 
@@ -223,6 +257,7 @@ export interface SlidesResult {
   slide_count: number;
   slides: { slide_number: number; title: string; bullet_points: string[]; speaker_notes?: string }[];
   grounded_on?: number;
+  sources?: Source[];
   error?: string;
 }
 
@@ -236,6 +271,7 @@ export interface WorksheetResult {
   question_count: number;
   questions: { question_text: string; answer: string }[];
   grounded_on?: number;
+  sources?: Source[];
   error?: string;
 }
 
@@ -249,6 +285,7 @@ export interface LessonNotesResult {
   real_life_examples: string[];
   recap: string;
   grounded_on?: number;
+  sources?: Source[];
   error?: string;
 }
 
@@ -261,6 +298,7 @@ export interface InteractiveResult {
   duration_minutes: number;
   blocks: { type: string; position: number; content: Record<string, unknown> }[];
   grounded_on?: number;
+  sources?: Source[];
   error?: string;
 }
 
@@ -270,4 +308,8 @@ export async function generateInteractiveCoursework(topic: string, durationMinut
 
 export async function generateNarration(script: string, provider: "elevenlabs" | "cartesia" = "elevenlabs") {
   return request<{ provider: string; status: string; media_url: string }>("POST", "/content/narration", { script, provider });
+}
+
+export async function generateImage(prompt: string, aspectRatio: string = "1:1") {
+  return request<{ provider: string; status: string; media_url: string }>("POST", "/content/image", { prompt, aspect_ratio: aspectRatio });
 }

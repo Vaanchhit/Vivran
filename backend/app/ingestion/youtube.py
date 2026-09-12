@@ -7,7 +7,7 @@ from typing import Any, Dict
 from urllib.parse import parse_qs, urlparse
 
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import TranscriptsDisabled, NoTranscriptFound
+from youtube_transcript_api._errors import NoTranscriptFound, TranscriptsDisabled
 
 
 class YouTubeIngestionError(RuntimeError):
@@ -36,7 +36,7 @@ def _format_timestamp(seconds: float) -> str:
 def parse_youtube(video_url: str) -> Dict[str, Any]:
     video_id = _extract_video_id(video_url)
     try:
-        transcript = YouTubeTranscriptApi.get_transcript(video_id)
+        transcript = YouTubeTranscriptApi().fetch(video_id).to_raw_data()
     except (TranscriptsDisabled, NoTranscriptFound) as e:
         raise YouTubeIngestionError(f"No transcript available for this video: {e}") from e
 

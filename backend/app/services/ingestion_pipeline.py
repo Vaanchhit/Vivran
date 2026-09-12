@@ -10,6 +10,7 @@ from __future__ import annotations
 import uuid
 from typing import Any, Dict, List, Optional
 
+from app.ai.cheap_model import generate_cheap_cloud
 from app.ai.gemini_client import GeminiError
 from app.core.logging import logger
 from app.ingestion.chunking import chunk_units
@@ -69,6 +70,25 @@ def _extract_units(material_type: str, file_bytes: Optional[bytes], external_url
     raise IngestionError(f"Unsupported material type: {material_type}")
 
 
+_SUMMARY_SYSTEM_PROMPT = (
+    "You are Vivran's material indexing engine. Summarize a teaching material in "
+    "2-3 sentences so a teacher can confirm at a glance that it was understood "
+    "correctly. Name the specific topics/chapters covered. Plain text, no markdown."
+)
+
+
+def _generate_summary(units: List[Dict[str, Any]]) -> Optional[str]:
+    """Best-effort summary of the extracted text, capped to keep the prompt cheap."""
+    text = "\n".join(u.get("text", "") for u in units)[:8000]
+    if not text.strip():
+        return None
+    result = generate_cheap_cloud(text, task="material_summary", system_prompt=_SUMMARY_SYSTEM_PROMPT)
+    if not result.get("success"):
+        logger.warning("Material summary generation failed: %s", result.get("error"))
+        return None
+    return result["content"].strip()
+
+
 def ingest_material(
     *,
     workspace_id: str,
@@ -105,6 +125,8 @@ def ingest_material(
 
         for chunk in chunks:
             chunk["embedding"] = generate_embedding(chunk["content"])
+
+        summary = _generate_summary(units)
 
     except (IngestionError, GeminiError) as e:
         logger.warning("Ingestion failed for '%s': %s", title, e)
@@ -164,6 +186,8 @@ def ingest_material(
         return {**material_row, "processing_status": "FAILED", "error": str(e)}
 
     material_row = table_update(
-        "materials", {"id": f"eq.{material_id}"}, {"processing_status": "READY", "metadata": {"chunk_count": len(chunks), "created_by": created_by}}
+        "materials",
+        {"id": f"eq.{material_id}"},
+        {"processing_status": "READY", "metadata": {"chunk_count": len(chunks), "created_by": created_by, "summary": summary}},
     )[0]
     return {**material_row, "chunk_count": len(chunks)}

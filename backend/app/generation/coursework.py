@@ -8,6 +8,7 @@ import json
 from typing import Any, Dict, List, Optional
 
 from app.ai.cheap_model import generate_cheap_cloud
+from app.ai.prompt_snippets import LEVEL_INSTRUCTION
 from app.core.logging import logger
 from app.retrieval.search import search_knowledge_base
 
@@ -20,7 +21,8 @@ Return JSON only: {
 }
 Content shape per type: introduction/explanation/recap -> {"text": string}; activity/scenario -> {"text": string, "instructions": string};
 question -> {"text": string, "answer": string}; quiz -> {"question_count": int, "questions": [{"text": string, "answer": string}]}.
-Sequence blocks so the lesson builds understanding progressively within the given duration."""
+Sequence blocks so the lesson builds understanding progressively within the given duration.
+""" + LEVEL_INSTRUCTION
 
 
 def generate_interactive_coursework(
@@ -52,4 +54,8 @@ def generate_interactive_coursework(
     except ValueError as e:
         return {"title": f"Interactive Lesson — {topic}", "duration_minutes": duration_minutes, "blocks": [], "grounded_on": len(context), "error": f"AI returned invalid JSON: {e}"}
 
-    return {"duration_minutes": duration_minutes, "grounded_on": len(context), **data}
+    sources = [
+        {"chunk_id": c["chunk_id"], "source_material": c.get("source_material"), "page_number": c.get("page_number"), "excerpt": c["content"][:200]}
+        for c in context
+    ]
+    return {"duration_minutes": duration_minutes, "grounded_on": len(context), "sources": sources, **data}

@@ -1,12 +1,13 @@
 """Assessments API (§47) & Questions API for single-item regeneration."""
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Response
 from pydantic import BaseModel
 
 from app.api.deps import require_teacher
 from app.core.auth import CurrentUser
 from app.generation.assessments import generate_assessment, regenerate_single_question
+from app.generation.pdf_export import render_assessment_pdf
 from app.services.provisioning import ensure_teacher_workspace
 from app.services.supabase_service import SupabaseError
 
@@ -42,6 +43,25 @@ def api_generate_assessment(
         created_by=user.user_id,
         workspace_id=workspace_id,
         material_id=payload.material_id,
+    )
+
+
+class AssessmentPdfRequest(BaseModel):
+    assessment: Dict[str, Any]
+    include_answer_key: bool = True
+
+
+@router.post("/assessments/export/pdf")
+def api_export_assessment_pdf(
+    payload: AssessmentPdfRequest,
+    user: CurrentUser = Depends(require_teacher),
+):
+    pdf_bytes = render_assessment_pdf(payload.assessment, include_answer_key=payload.include_answer_key)
+    filename = (payload.assessment.get("title") or "assessment").replace(" ", "_").replace("/", "_")
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}.pdf"'},
     )
 
 

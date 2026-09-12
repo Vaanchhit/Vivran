@@ -88,6 +88,24 @@ def api_generate_interactive(
     return generate_interactive_coursework(payload.topic, payload.duration_minutes, payload.grade, payload.subject, ws)
 
 
+class ImageRequest(BaseModel):
+    prompt: str
+    aspect_ratio: str = "1:1"
+
+
+@router.post("/image")
+def api_generate_image(
+    payload: ImageRequest,
+    user: CurrentUser = Depends(require_teacher),
+):
+    result = ElevenLabsService().generate_image(payload.prompt, aspect_ratio=payload.aspect_ratio)
+    if result["status"] == "not_configured":
+        raise HTTPException(status_code=503, detail=result["error"])
+    if result["status"] == "failed":
+        raise HTTPException(status_code=502, detail=result["error"])
+    return result
+
+
 class NarrationRequest(BaseModel):
     script: str
     provider: str = "elevenlabs"  # elevenlabs | cartesia

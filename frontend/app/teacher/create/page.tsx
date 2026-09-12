@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Loader2, AlertCircle } from "lucide-react";
 import {
+  generateImage,
   generateInteractiveCoursework,
   generateLessonNotes,
   generateNarration,
@@ -13,14 +14,16 @@ import {
   type SlidesResult,
   type WorksheetResult,
 } from "@/services/api";
+import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
 
-type ArtifactKey = "slides" | "worksheet" | "lesson_notes" | "narration" | "interactive";
+type ArtifactKey = "slides" | "worksheet" | "lesson_notes" | "narration" | "image" | "interactive";
 
 const ARTIFACTS: { key: ArtifactKey; title: string; icon: typeof Presentation; color: string; desc: string }[] = [
   { key: "slides", title: "Presentation Slides", icon: Presentation, color: "text-amber-400", desc: "Editable slide deck outline, key hooks, and speaker notes." },
   { key: "worksheet", title: "Worksheets", icon: FileSpreadsheet, color: "text-emerald-400", desc: "Practice questions with an answer key." },
   { key: "lesson_notes", title: "Lesson Notes", icon: BookOpenCheck, color: "text-[#4FC3F7]", desc: "Structured teaching notes with real-life examples & a recap." },
   { key: "narration", title: "Narration Audio", icon: Mic, color: "text-purple-400", desc: "Real narrated audio for a lesson script (ElevenLabs / Cartesia)." },
+  { key: "image", title: "AI Image", icon: ImageIcon, color: "text-orange-400", desc: "Generate a diagram or illustration from a prompt (ElevenLabs Flows — requires Pro plan)." },
   { key: "interactive", title: "Classroom Activities", icon: MessageSquare, color: "text-pink-400", desc: "Interactive lesson blocks: activities, scenarios & quick checks." },
 ];
 
@@ -30,6 +33,7 @@ export default function CreatePage() {
   const [grade, setGrade] = useState("");
   const [subject, setSubject] = useState("");
   const [script, setScript] = useState("");
+  const [imagePrompt, setImagePrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SlidesResult | WorksheetResult | LessonNotesResult | InteractiveResult | { media_url: string } | null>(null);
@@ -44,6 +48,7 @@ export default function CreatePage() {
       else if (active === "lesson_notes") setResult(await generateLessonNotes(topic, grade || undefined, subject || undefined));
       else if (active === "interactive") setResult(await generateInteractiveCoursework(topic, 15, grade || undefined, subject || undefined));
       else if (active === "narration") setResult(await generateNarration(script));
+      else if (active === "image") setResult(await generateImage(imagePrompt));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed.");
     } finally {
@@ -105,18 +110,29 @@ export default function CreatePage() {
               placeholder="Paste the lesson script to narrate…"
               className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
             />
+          ) : active === "image" ? (
+            <textarea
+              value={imagePrompt}
+              onChange={(e) => setImagePrompt(e.target.value)}
+              placeholder="Describe the diagram or illustration you want, e.g. 'A labeled diagram of a plant cell, textbook style'…"
+              className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic (required)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
-              <input value={grade} onChange={(e) => setGrade(e.target.value)} placeholder="Grade (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
+              <input value={grade} onChange={(e) => setGrade(e.target.value)} list="grade-options" placeholder="Grade / Year (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
+              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject / Course (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
+              <datalist id="grade-options">{GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}</datalist>
             </div>
           )}
 
           <button
             type="button"
             onClick={run}
-            disabled={loading || (active === "narration" ? !script.trim() : !topic.trim())}
+            disabled={
+              loading ||
+              (active === "narration" ? !script.trim() : active === "image" ? !imagePrompt.trim() : !topic.trim())
+            }
             className="grad-btn px-5 py-2.5 text-white text-xs font-semibold rounded-xl flex items-center gap-2 disabled:opacity-50"
           >
             {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
@@ -177,6 +193,22 @@ export default function CreatePage() {
 
           {result && active === "narration" && "media_url" in result && (
             <audio controls className="w-full pt-2" src={result.media_url} />
+          )}
+
+          {result && active === "image" && "media_url" in result && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={result.media_url} alt={imagePrompt} className="w-full rounded-xl border border-border pt-2" />
+          )}
+
+          {result && "sources" in result && result.sources && result.sources.length > 0 && (
+            <div className="pt-2 border-t border-border space-y-1.5">
+              <div className="text-[11px] font-semibold text-muted uppercase tracking-wide">Grounded in your materials</div>
+              {result.sources.map((s) => (
+                <div key={s.chunk_id} className="text-[11px] text-muted">
+                  <span className="text-[#4FC3F7] font-medium">{s.source_material}{s.page_number ? ` · p.${s.page_number}` : ""}</span> — {s.excerpt}
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

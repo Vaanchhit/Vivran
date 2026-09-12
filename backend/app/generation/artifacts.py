@@ -3,11 +3,19 @@ import json
 from typing import Any, Dict, List, Optional
 
 from app.ai.cheap_model import generate_cheap_cloud
+from app.ai.prompt_snippets import LEVEL_INSTRUCTION
 from app.core.logging import logger
 from app.retrieval.search import search_knowledge_base
 
 
-def _grounded_prompt(topic: str, grade: Optional[str], subject: Optional[str], workspace_id: Optional[str], extra: str) -> tuple[str, int]:
+def _sources_payload(context: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [
+        {"chunk_id": c["chunk_id"], "source_material": c.get("source_material"), "page_number": c.get("page_number"), "excerpt": c["content"][:200]}
+        for c in context
+    ]
+
+
+def _grounded_prompt(topic: str, grade: Optional[str], subject: Optional[str], workspace_id: Optional[str], extra: str) -> tuple[str, List[Dict[str, Any]]]:
     lines = [f"Topic: {topic}"]
     if grade:
         lines.append(f"Grade: {grade}")
@@ -25,7 +33,7 @@ def _grounded_prompt(topic: str, grade: Optional[str], subject: Optional[str], w
         lines.append("\nGround this in the teacher's uploaded materials:")
         for c in context:
             lines.append(f"- ({c.get('source_material', 'source')}) {c['content'][:500]}")
-    return "\n".join(lines), len(context)
+    return "\n".join(lines), context
 
 
 def _call(prompt: str, system_prompt: str, fallback: Dict[str, Any]) -> Dict[str, Any]:
@@ -39,30 +47,33 @@ def _call(prompt: str, system_prompt: str, fallback: Dict[str, Any]) -> Dict[str
 
 
 _SLIDES_SYSTEM_PROMPT = """You are Vivran's presentation generation engine (§13).
-Return JSON only: {"title": string, "slides": [{"slide_number": int, "title": string, "bullet_points": string[], "speaker_notes": string}]}"""
+Return JSON only: {"title": string, "slides": [{"slide_number": int, "title": string, "bullet_points": string[], "speaker_notes": string}]}
+""" + LEVEL_INSTRUCTION
 
 
 def generate_slides(topic: str, slide_count: int = 12, grade: Optional[str] = None, subject: Optional[str] = None, workspace_id: Optional[str] = None) -> Dict[str, Any]:
-    prompt, grounded_on = _grounded_prompt(topic, grade, subject, workspace_id, f"Generate exactly {slide_count} slides.")
+    prompt, context = _grounded_prompt(topic, grade, subject, workspace_id, f"Generate exactly {slide_count} slides.")
     data = _call(prompt, _SLIDES_SYSTEM_PROMPT, {"title": f"Presentation on {topic}", "slides": []})
-    return {"artifact_type": "slides", "slide_count": slide_count, "grounded_on": grounded_on, **data}
+    return {"artifact_type": "slides", "slide_count": slide_count, "grounded_on": len(context), "sources": _sources_payload(context), **data}
 
 
 _WORKSHEET_SYSTEM_PROMPT = """You are Vivran's worksheet generation engine (§13).
-Return JSON only: {"title": string, "instructions": string, "questions": [{"question_text": string, "answer": string}]}"""
+Return JSON only: {"title": string, "instructions": string, "questions": [{"question_text": string, "answer": string}]}
+""" + LEVEL_INSTRUCTION
 
 
 def generate_worksheet(topic: str, question_count: int = 10, grade: Optional[str] = None, subject: Optional[str] = None, workspace_id: Optional[str] = None) -> Dict[str, Any]:
-    prompt, grounded_on = _grounded_prompt(topic, grade, subject, workspace_id, f"Generate exactly {question_count} practice questions with answer keys.")
+    prompt, context = _grounded_prompt(topic, grade, subject, workspace_id, f"Generate exactly {question_count} practice questions with answer keys.")
     data = _call(prompt, _WORKSHEET_SYSTEM_PROMPT, {"title": f"Worksheet — {topic}", "instructions": "", "questions": []})
-    return {"artifact_type": "worksheet", "question_count": question_count, "grounded_on": grounded_on, **data}
+    return {"artifact_type": "worksheet", "question_count": question_count, "grounded_on": len(context), "sources": _sources_payload(context), **data}
 
 
 _LESSON_NOTES_SYSTEM_PROMPT = """You are Vivran's lesson notes generation engine (§13).
-Return JSON only: {"title": string, "sections": [{"heading": string, "content": string}], "real_life_examples": string[], "recap": string}"""
+Return JSON only: {"title": string, "sections": [{"heading": string, "content": string}], "real_life_examples": string[], "recap": string}
+""" + LEVEL_INSTRUCTION
 
 
 def generate_lesson_notes(topic: str, grade: Optional[str] = None, subject: Optional[str] = None, workspace_id: Optional[str] = None) -> Dict[str, Any]:
-    prompt, grounded_on = _grounded_prompt(topic, grade, subject, workspace_id, "Generate structured teaching notes with clear explanations.")
+    prompt, context = _grounded_prompt(topic, grade, subject, workspace_id, "Generate structured teaching notes with clear explanations.")
     data = _call(prompt, _LESSON_NOTES_SYSTEM_PROMPT, {"title": f"Lesson Notes — {topic}", "sections": [], "real_life_examples": [], "recap": ""})
-    return {"artifact_type": "lesson_notes", "grounded_on": grounded_on, **data}
+    return {"artifact_type": "lesson_notes", "grounded_on": len(context), "sources": _sources_payload(context), **data}

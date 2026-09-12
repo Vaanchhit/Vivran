@@ -5,13 +5,14 @@ from pydantic import ValidationError
 
 from app.ai.cheap_model import generate_cheap_cloud
 from app.ai.premium_model import generate_premium_cloud
+from app.ai.prompt_snippets import LEVEL_INSTRUCTION
 from app.ai.schemas import AssessmentSchema
 from app.ai.validators import validate_assessment
 from app.core.logging import logger
 from app.retrieval.search import search_knowledge_base
 from app.services.supabase_service import SupabaseError, is_configured, table_insert, table_insert_many, table_select
 
-_SYSTEM_PROMPT = """You are Vivran's assessment generation engine for Indian school teachers (§14).
+_SYSTEM_PROMPT = """You are Vivran's assessment generation engine for Indian school teachers and college professors (§14).
 Produce a complete question paper as JSON matching exactly this shape:
 {
   "title": string, "subject": string, "grade": string,
@@ -26,15 +27,18 @@ Produce a complete question paper as JSON matching exactly this shape:
           "question_text": string, "marks": integer,
           "difficulty": "easy" | "medium" | "hard", "bloom_level": string,
           "options": string[] or null (required for mcq, null otherwise),
-          "answer": string, "solution": string
+          "answer": string, "solution": string,
+          "source_ids": string[] (the exact chunk-id values, e.g. "S2", of any source excerpts this question draws on — [] if none apply)
         }
       ]
     }
   ]
 }
 The sum of every question's "marks" across all sections MUST equal the requested total_marks exactly.
-Ground questions in the provided source excerpts when given; otherwise use sound subject-matter knowledge.
-Every question needs a correct, non-empty "answer". Do not repeat a question. Return JSON only."""
+Ground questions in the provided source excerpts when given, and cite them via "source_ids"; otherwise use
+sound subject-matter knowledge and leave "source_ids" empty — never fabricate a citation.
+Every question needs a correct, non-empty "answer". Do not repeat a question. Return JSON only.
+""" + LEVEL_INSTRUCTION
 
 
 def _build_prompt(grade: str, subject: str, topics: List[str], total_marks: int, difficulty: str, context: List[Dict[str, Any]]) -> str:
@@ -46,9 +50,9 @@ def _build_prompt(grade: str, subject: str, topics: List[str], total_marks: int,
         f"Overall difficulty: {difficulty}",
     ]
     if context:
-        lines.append("\nGround the questions in these excerpts from the teacher's own uploaded materials:")
-        for c in context:
-            lines.append(f"- ({c.get('source_material', 'source')}) {c['content'][:600]}")
+        lines.append("\nGround the questions in these excerpts from the teacher's own uploaded materials. Cite by their tag (S1, S2, ...) in \"source_ids\":")
+        for i, c in enumerate(context, start=1):
+            lines.append(f"[S{i}] ({c.get('source_material', 'source')}) {c['content'][:600]}")
     return "\n".join(lines)
 
 
@@ -112,10 +116,26 @@ def generate_assessment(
             "grounded_on": len(context),
         }
 
+    # Resolve the model's "S1"/"S2" citation tags back to real source chunks,
+    # so a teacher can see exactly which uploaded material backs each question.
+    tag_to_chunk = {f"S{i}": c for i, c in enumerate(context, start=1)}
+    for sec in assessment.sections:
+        for q in sec.questions:
+            q.source_ids = [str(tag_to_chunk[tag]["chunk_id"]) for tag in (q.source_ids or []) if tag in tag_to_chunk]
+
     response: Dict[str, Any] = {
         "assessment": assessment.model_dump(),
         "validation": validation.to_dict(),
         "grounded_on": len(context),
+        "sources": [
+            {
+                "chunk_id": c["chunk_id"],
+                "source_material": c.get("source_material"),
+                "page_number": c.get("page_number"),
+                "excerpt": c["content"][:200],
+            }
+            for c in context
+        ],
     }
 
     if workspace_id and is_configured():
@@ -146,6 +166,7 @@ def generate_assessment(
                     "options_json": q.options,
                     "answer": q.answer,
                     "solution": q.solution,
+                    "source_ids": q.source_ids,
                 }
                 for sec in assessment.sections
                 for q in sec.questions
