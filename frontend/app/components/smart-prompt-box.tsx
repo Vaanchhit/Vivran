@@ -87,13 +87,17 @@ export function SmartPromptBox() {
   };
 
   const shortcutChips = [
+    { label: "Case Study Test", sample: "Create a difficult 40-mark College 2nd Year Business Studies paper on Porter's Five Forces with case-study application questions." },
+    { label: "Economics Quiz", sample: "Give me a 10-question exit quiz on demand and supply for College 1st Year Economics." },
+    { label: "Finance Worksheet", sample: "Create a worksheet for College 3rd Year Accounting & Finance on reading balance sheets and financial statements." },
+    { label: "Lesson Plan", sample: "Plan four lessons on the marketing mix (4Ps) for College 2nd Year Marketing next week." },
+    { label: "Slides", sample: "Create a 12-slide presentation on Porter's Five Forces for College 2nd Year Business Studies using real company examples." },
+    { label: "Explainer Video", sample: "Create a video explaining Porter's Five Forces for college commerce students." },
+    { label: "Course Plan", sample: "Plan 3 weeks of College 1st Year Economics covering Demand, Supply, and Market Equilibrium." },
     { label: "Test Paper", sample: "Create a difficult 80-mark Class 12 Economics paper for Chapters 1-5 with 50% application questions." },
     { label: "Quiz", sample: "Give me a 10-question exit quiz on photosynthesis for Class 8." },
     { label: "Worksheet", sample: "Create a worksheet for Class 10 Biology on plant tissues with diagrams." },
-    { label: "Lesson Plan", sample: "Plan four lessons on tissues for Class 10 Biology next week." },
-    { label: "Slides", sample: "Create a 12-slide presentation on Newton's Laws for Class 9 using simple examples." },
     { label: "Interactive Course", sample: "Create a 15-minute interactive lesson on Newton's Laws for Class 9." },
-    { label: "Course Plan", sample: "Plan 3 weeks of Class 9 Biology covering Tissues and Food Resources." },
   ];
 
   const handleRunSmartPrompt = async (textToSubmit?: string) => {
@@ -203,7 +207,7 @@ export function SmartPromptBox() {
           <textarea
             value={promptText}
             onChange={(e) => setPromptText(e.target.value)}
-            placeholder="Tell Vivran what you need... e.g. 'Teach Class 10 Economics — Money and Credit tomorrow. Make a 45-minute lesson, 8 slides, a worksheet, and a 5-question exit quiz.'"
+            placeholder="Tell Vivran what you need... e.g. 'Teach College 2nd Year Business Studies — Porter's Five Forces tomorrow. Make a 45-minute lesson, 8 slides, a worksheet, and a 5-question exit quiz.'"
             className="w-full h-32 p-4 bg-card border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-all resize-none leading-relaxed"
           />
           <button

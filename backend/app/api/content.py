@@ -8,6 +8,7 @@ from app.api.deps import require_teacher
 from app.core.auth import CurrentUser
 from app.generation.artifacts import generate_lesson_notes, generate_slides, generate_worksheet
 from app.generation.coursework import generate_interactive_coursework
+from app.generation.prompt_enhancement import enhance_creative_prompt
 from app.media.cartesia import CartesiaService
 from app.media.elevenlabs import ElevenLabsService
 from app.services.provisioning import ensure_teacher_workspace
@@ -86,6 +87,21 @@ def api_generate_interactive(
 ):
     ws = _validated_workspace(workspace_id, user)
     return generate_interactive_coursework(payload.topic, payload.duration_minutes, payload.grade, payload.subject, ws)
+
+
+class EnhancePromptRequest(BaseModel):
+    prompt: str
+    artifact_type: str  # "video" | "image" | "slides" | "worksheet" | ...
+
+
+@router.post("/enhance-prompt")
+def api_enhance_prompt(
+    payload: EnhancePromptRequest,
+    workspace_id: Optional[str] = Header(None, alias="Workspace-Id"),
+    user: CurrentUser = Depends(require_teacher),
+):
+    ws = _validated_workspace(workspace_id, user)
+    return enhance_creative_prompt(payload.prompt, payload.artifact_type, ws)
 
 
 class ImageRequest(BaseModel):

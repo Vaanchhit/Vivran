@@ -61,6 +61,16 @@ def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
         topics.append("Improvement in Food Resources")
     if "electricity" in prompt_lower:
         topics.append("Electricity")
+    if "porter" in prompt_lower or "five forces" in prompt_lower:
+        topics.append("Porter's Five Forces")
+    if "demand" in prompt_lower or "supply" in prompt_lower:
+        topics.append("Demand and Supply")
+    if "balance sheet" in prompt_lower or "financial statement" in prompt_lower:
+        topics.append("Financial Statements")
+    if "marketing mix" in prompt_lower or "4ps" in prompt_lower:
+        topics.append("Marketing Mix")
+    if "gdp" in prompt_lower or "national income" in prompt_lower:
+        topics.append("National Income Accounting")
     if not topics:
         topics = ["General Topic"]
 
@@ -90,6 +100,12 @@ def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
         subject = "Physics"
     elif "economics" in prompt_lower:
         subject = "Economics"
+    elif "marketing" in prompt_lower:
+        subject = "Marketing"
+    elif "finance" in prompt_lower or "accounting" in prompt_lower or "accountancy" in prompt_lower:
+        subject = "Accounting & Finance"
+    elif "business" in prompt_lower or "management" in prompt_lower or "strategy" in prompt_lower:
+        subject = "Business Studies"
 
     # Extract marks
     marks = None

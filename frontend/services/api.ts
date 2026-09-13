@@ -325,6 +325,18 @@ export async function transcribeAudio(audio: Blob): Promise<string> {
   return text;
 }
 
+export interface EnhancedPrompt {
+  enhanced_prompt: string;
+  illustration_suggestions: string[];
+  animation_suggestions: string[];
+  reasoning?: string;
+  error?: string;
+}
+
+export async function enhancePrompt(prompt: string, artifactType: string): Promise<EnhancedPrompt> {
+  return request<EnhancedPrompt>("POST", "/content/enhance-prompt", { prompt, artifact_type: artifactType });
+}
+
 export async function generateImage(prompt: string, aspectRatio: string = "1:1") {
   return request<{ provider: string; status: string; media_url: string }>("POST", "/content/image", { prompt, aspect_ratio: aspectRatio });
 }

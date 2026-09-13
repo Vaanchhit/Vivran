@@ -30,9 +30,9 @@ interface UIQuestion {
 const REGEN_OPTIONS = ["harder", "easier", "application", "conceptual", "case"];
 
 export default function AssessPage() {
-  const [grade, setGrade] = useState("Class 10");
-  const [subject, setSubject] = useState("Biology");
-  const [topics, setTopics] = useState("Tissues");
+  const [grade, setGrade] = useState("College 2nd Year");
+  const [subject, setSubject] = useState("Business Studies");
+  const [topics, setTopics] = useState("Porter's Five Forces");
   const [totalMarks, setTotalMarks] = useState(40);
   const [difficulty, setDifficulty] = useState("medium");
   const [materialId, setMaterialId] = useState<string>("");

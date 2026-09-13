@@ -33,13 +33,13 @@ export default function TeacherDashboard() {
 
   const recentProjects = [
     {
-      title: "Class 10 Biology — Tissues",
+      title: "College 2nd Year Business Studies — Porter's Five Forces",
       updated: "2 hours ago",
-      artifacts: ["Course Plan", "5 Lessons", "12 Slides", "Worksheet", "20-Mark Quiz"],
+      artifacts: ["Course Plan", "5 Lessons", "12 Slides", "Worksheet", "40-Mark Case Study Test"],
       type: "Course Pack",
     },
     {
-      title: "Class 12 Economics — Money & Credit",
+      title: "College 1st Year Economics — Demand & Supply",
       updated: "Yesterday",
       artifacts: ["Lesson Plan", "Slides", "Video Script", "80-Mark Test Paper"],
       type: "Assessment Pack",

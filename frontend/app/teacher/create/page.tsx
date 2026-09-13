@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Video as VideoIcon, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Video as VideoIcon, Loader2, AlertCircle, Wand2 } from "lucide-react";
 import {
+  enhancePrompt,
   generateImage,
   generateInteractiveCoursework,
   generateLessonNotes,
@@ -10,12 +11,27 @@ import {
   generateSlides,
   generateVideo,
   generateWorksheet,
+  type EnhancedPrompt,
   type InteractiveResult,
   type LessonNotesResult,
   type SlidesResult,
   type WorksheetResult,
 } from "@/services/api";
 import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
+
+const VIDEO_THEMES = [
+  { label: "Whiteboard Explainer", modifier: "as a hand-drawn whiteboard-style explainer animation" },
+  { label: "Case Study Narrative", modifier: "as a short narrative case-study video with on-screen text callouts" },
+  { label: "Animated Infographic", modifier: "as a clean animated infographic with icons, charts, and motion graphics" },
+  { label: "Slide Read-Along", modifier: "as a slide-deck-style video with bullet points appearing in sync with narration" },
+];
+
+const IMAGE_THEMES = [
+  { label: "Labeled Diagram", modifier: "as a clean, textbook-style labeled diagram with clear annotations" },
+  { label: "Infographic", modifier: "as a colorful infographic with icons and short text callouts" },
+  { label: "Illustration", modifier: "as a simple, flat-style educational illustration" },
+  { label: "Photo-realistic", modifier: "as a photo-realistic real-world scene" },
+];
 
 type ArtifactKey = "slides" | "worksheet" | "lesson_notes" | "narration" | "image" | "video" | "interactive";
 
@@ -41,6 +57,36 @@ export default function CreatePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SlidesResult | WorksheetResult | LessonNotesResult | InteractiveResult | { media_url: string } | null>(null);
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhancement, setEnhancement] = useState<EnhancedPrompt | null>(null);
+
+  const applyTheme = (modifier: string) => {
+    const setter = active === "video" ? setVideoPrompt : setImagePrompt;
+    setter((prev) => (prev.trim() ? `${prev.trim()}, ${modifier}` : modifier.replace(/^as /, "")));
+  };
+
+  const runEnhance = async () => {
+    const currentPrompt = active === "video" ? videoPrompt : imagePrompt;
+    if (!currentPrompt.trim() || !active) return;
+    setEnhancing(true);
+    setError(null);
+    setEnhancement(null);
+    try {
+      const result = await enhancePrompt(currentPrompt, active);
+      setEnhancement(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Prompt enhancement failed.");
+    } finally {
+      setEnhancing(false);
+    }
+  };
+
+  const useEnhancedPrompt = () => {
+    if (!enhancement) return;
+    if (active === "video") setVideoPrompt(enhancement.enhanced_prompt);
+    else setImagePrompt(enhancement.enhanced_prompt);
+    setEnhancement(null);
+  };
 
   const run = async () => {
     setLoading(true);
@@ -86,6 +132,7 @@ export default function CreatePage() {
                 setActive(art.key);
                 setResult(null);
                 setError(null);
+                setEnhancement(null);
               }}
               className={`text-left p-5 rounded-2xl bg-surface border space-y-3 transition-all cursor-pointer group ${
                 isActive ? "border-[#7C6EFA]" : "border-border hover:border-[#7C6EFA]/40"
@@ -115,30 +162,97 @@ export default function CreatePage() {
               placeholder="Paste the lesson script to narrate…"
               className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
             />
-          ) : active === "image" ? (
-            <textarea
-              value={imagePrompt}
-              onChange={(e) => setImagePrompt(e.target.value)}
-              placeholder="Describe the diagram or illustration you want, e.g. 'A labeled diagram of a plant cell, textbook style'…"
-              className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
-            />
-          ) : active === "video" ? (
+          ) : active === "image" || active === "video" ? (
             <div className="space-y-3">
+              <div className="flex flex-wrap gap-1.5">
+                {(active === "image" ? IMAGE_THEMES : VIDEO_THEMES).map((t) => (
+                  <button
+                    key={t.label}
+                    type="button"
+                    onClick={() => applyTheme(t.modifier)}
+                    className="px-2.5 py-1 rounded-lg border border-border bg-card text-[11px] font-medium text-muted hover:text-foreground hover:border-[#7C6EFA]/40 hover:bg-[#7C6EFA]/10 transition-all"
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
               <textarea
-                value={videoPrompt}
-                onChange={(e) => setVideoPrompt(e.target.value)}
-                placeholder="Describe the video clip you want, e.g. 'A simple animation of water evaporating from a leaf, educational style'…"
+                value={active === "image" ? imagePrompt : videoPrompt}
+                onChange={(e) => (active === "image" ? setImagePrompt(e.target.value) : setVideoPrompt(e.target.value))}
+                placeholder={
+                  active === "image"
+                    ? "Describe the diagram or illustration you want, e.g. 'A labeled diagram of Porter's Five Forces'… (pick a style above, or write your own)"
+                    : "Describe the video clip you want, e.g. 'A video on Porter's Five Forces'… (pick a style above, or write your own)"
+                }
                 className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
               />
-              <select
-                value={videoDuration}
-                onChange={(e) => setVideoDuration(Number(e.target.value) as 4 | 6 | 8)}
-                className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground"
+
+              <button
+                type="button"
+                onClick={runEnhance}
+                disabled={enhancing || !(active === "image" ? imagePrompt : videoPrompt).trim()}
+                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-[#7C6EFA]/40 bg-[#7C6EFA]/10 text-[#7C6EFA] hover:bg-[#7C6EFA]/20 disabled:opacity-50"
               >
-                <option value={4}>4 seconds</option>
-                <option value={6}>6 seconds</option>
-                <option value={8}>8 seconds</option>
-              </select>
+                {enhancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                {enhancing ? "Enhancing…" : "Enhance with AI"}
+              </button>
+
+              {enhancement && (
+                <div className="p-3.5 rounded-xl bg-card border border-[#7C6EFA]/30 space-y-2.5 text-xs">
+                  {enhancement.error ? (
+                    <div className="text-red-400">{enhancement.error}</div>
+                  ) : (
+                    <>
+                      <div className="text-foreground leading-relaxed">{enhancement.enhanced_prompt}</div>
+                      {enhancement.illustration_suggestions.length > 0 && (
+                        <div>
+                          <div className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">Illustration ideas</div>
+                          <ul className="list-disc list-inside text-muted space-y-0.5">
+                            {enhancement.illustration_suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      {enhancement.animation_suggestions.length > 0 && (
+                        <div>
+                          <div className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">Animation ideas</div>
+                          <ul className="list-disc list-inside text-muted space-y-0.5">
+                            {enhancement.animation_suggestions.map((s, i) => <li key={i}>{s}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={useEnhancedPrompt}
+                          className="px-3 py-1.5 bg-[#7C6EFA] hover:bg-[#684af3] text-white text-[11px] font-semibold rounded-lg"
+                        >
+                          Use This Prompt
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEnhancement(null)}
+                          className="px-3 py-1.5 text-muted hover:text-foreground text-[11px] font-medium"
+                        >
+                          Keep My Version
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {active === "video" && (
+                <select
+                  value={videoDuration}
+                  onChange={(e) => setVideoDuration(Number(e.target.value) as 4 | 6 | 8)}
+                  className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground"
+                >
+                  <option value={4}>4 seconds</option>
+                  <option value={6}>6 seconds</option>
+                  <option value={8}>8 seconds</option>
+                </select>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

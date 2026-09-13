@@ -6,9 +6,9 @@ import { generateCoursePlan, type CoursePlan } from "@/services/api";
 import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
 
 export default function PlanPage() {
-  const [grade, setGrade] = useState("Class 9");
-  const [subject, setSubject] = useState("Biology");
-  const [topics, setTopics] = useState("Tissues, Food Resources");
+  const [grade, setGrade] = useState("College 1st Year");
+  const [subject, setSubject] = useState("Economics");
+  const [topics, setTopics] = useState("Demand and Supply, Market Equilibrium");
   const [durationWeeks, setDurationWeeks] = useState(3);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
