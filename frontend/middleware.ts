@@ -1,62 +1,50 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
 /**
- * Session refresh + route guards.
+ * Route guards only — a lightweight redirect UX, not a security boundary.
  *
- * Note: @supabase/ssr 0.5.x does not ship `createMiddlewareClient`; the
- * createServerClient pattern below handles cookie refresh in Middleware.
+ * This deliberately does NOT construct a `@supabase/supabase-js` client here.
+ * `createServerClient`/`createClient` unconditionally builds the full client
+ * (including its WebSocket-based Realtime module), which pulls in Node-only
+ * code incompatible with the Edge Runtime middleware always runs under —
+ * verified live: it throws `ReferenceError: __dirname is not defined` in
+ * Vercel's production Edge sandbox (does not reproduce in `next dev`/`next
+ * start` locally, which use a more permissive Edge shim).
+ *
+ * Instead we just check for the presence of Supabase's session cookie
+ * (`sb-<project-ref>-auth-token`, chunked as `...-auth-token.0`/`.1` when
+ * large). This is intentionally not cryptographic verification — a forged
+ * cookie only gets past this redirect, not past real auth: every actual
+ * Supabase query is still gated by RLS, and every backend API call is still
+ * gated by real JWT verification (see backend/app/core/auth.py). Token
+ * refresh happens client-side via the browser's supabase-js client
+ * (autoRefreshToken, on by default), so nothing is lost by not refreshing
+ * here.
  */
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+function hasSupabaseSession(request: NextRequest): boolean {
+  return request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+}
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+export default function middleware(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
+  const authenticated = hasSupabaseSession(request);
 
   // Authenticated users skip the auth screens.
-  if (user && (pathname === "/login" || pathname === "/")) {
+  if (authenticated && (pathname === "/login" || pathname === "/")) {
     const url = request.nextUrl.clone();
     url.pathname = "/teacher";
     return NextResponse.redirect(url);
   }
 
   // Teacher workspace is private.
-  if (!user && pathname.startsWith("/teacher")) {
+  if (!authenticated && pathname.startsWith("/teacher")) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
-}
-
-export default async function middleware(
-  request: NextRequest,
-): Promise<NextResponse> {
-  return updateSession(request);
+  return NextResponse.next();
 }
 
 export const config = {
