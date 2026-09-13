@@ -314,7 +314,7 @@ export async function generateInteractiveCoursework(topic: string, durationMinut
   return request("POST", "/content/interactive", { topic, duration_minutes: durationMinutes, grade, subject });
 }
 
-export async function generateNarration(script: string, provider: "elevenlabs" | "cartesia" = "elevenlabs") {
+export async function generateNarration(script: string, provider: "elevenlabs" | "cartesia" = "cartesia") {
   return request<{ provider: string; status: string; media_url: string }>("POST", "/content/narration", { script, provider });
 }
 

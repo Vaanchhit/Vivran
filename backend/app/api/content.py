@@ -141,7 +141,7 @@ async def api_transcribe_audio(
 
 class NarrationRequest(BaseModel):
     script: str
-    provider: str = "elevenlabs"  # elevenlabs | cartesia
+    provider: str = "cartesia"  # cartesia | elevenlabs (elevenlabs needs Text-to-Speech key permission)
 
 
 @router.post("/narration")
