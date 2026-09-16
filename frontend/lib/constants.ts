@@ -12,3 +12,49 @@ export const GRADE_LEVEL_OPTIONS = [
   "College 4th Year",
   "College 5th Year",
 ];
+
+// Commerce/college subjects listed first — primary beta audience is commerce
+// college professors — school subjects kept alongside, not removed.
+export const SUBJECT_OPTIONS = [
+  "Business Studies",
+  "Economics",
+  "Accountancy",
+  "Accounting & Finance",
+  "Marketing",
+  "Business Law",
+  "Statistics",
+  "Entrepreneurship",
+  "Organisational Behaviour",
+  "Income Tax Law",
+  "Auditing",
+  "Mathematics",
+  "Physics",
+  "Chemistry",
+  "Biology",
+  "Science",
+  "English",
+  "History",
+  "Geography",
+  "Computer Science",
+];
+
+export const DIFFICULTY_OPTIONS: { value: string; label: string }[] = [
+  { value: "easy", label: "Easy" },
+  { value: "medium", label: "Medium" },
+  { value: "hard", label: "Hard" },
+];
+
+export const ARTIFACT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: "course_plan", label: "Course Plan" },
+  { value: "slides", label: "Slides" },
+  { value: "worksheet", label: "Worksheet" },
+  { value: "lesson_notes", label: "Lesson Notes" },
+  { value: "assessment", label: "Test / Quiz Paper" },
+  { value: "interactive", label: "Interactive Coursework" },
+];
+
+export const DURATION_WEEKS_OPTIONS = [1, 2, 3, 4, 6, 8];
+export const DURATION_MINUTES_OPTIONS = [15, 20, 30, 45, 60, 90];
+export const SLIDE_COUNT_OPTIONS = [6, 8, 10, 12, 16, 20];
+export const WORKSHEET_QUESTION_COUNT_OPTIONS = [5, 10, 15, 20];
+export const TOTAL_MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 60, 80, 100];

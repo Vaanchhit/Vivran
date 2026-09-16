@@ -11,7 +11,7 @@ import {
   type Material,
   type Source,
 } from "@/services/api";
-import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
+import { GRADE_LEVEL_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants";
 
 interface UIQuestion {
   question_number: number;
@@ -186,7 +186,8 @@ export default function AssessPage() {
       {/* Generation form */}
       <div className="p-5 rounded-2xl bg-surface border border-border grid grid-cols-2 md:grid-cols-6 gap-3 text-xs">
         <input value={grade} onChange={(e) => setGrade(e.target.value)} list="grade-options" placeholder="Grade / Year" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject / Course" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
+        <input value={subject} onChange={(e) => setSubject(e.target.value)} list="subject-options" placeholder="Subject / Course" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
+        <datalist id="subject-options">{SUBJECT_OPTIONS.map((s) => <option key={s} value={s} />)}</datalist>
         <datalist id="grade-options">{GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}</datalist>
         <input value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="Topics (comma-separated)" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground md:col-span-2" />
         <input type="number" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} placeholder="Total marks" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />

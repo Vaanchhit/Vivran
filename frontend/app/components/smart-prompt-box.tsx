@@ -2,8 +2,30 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, Loader2 } from "lucide-react";
-import { generateAssessmentPaper, generateCoursePlan, parseTeacherIntent, transcribeAudio } from "@/services/api";
+import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, Loader2, X, Plus } from "lucide-react";
+import {
+  parseTeacherIntent,
+  transcribeAudio,
+  generateAssessmentPaper,
+  generateCoursePlan,
+  generateSlides,
+  generateWorksheet,
+  generateLessonNotes,
+  generateInteractiveCoursework,
+  listMaterials,
+  type Material,
+} from "@/services/api";
+import {
+  GRADE_LEVEL_OPTIONS,
+  SUBJECT_OPTIONS,
+  DIFFICULTY_OPTIONS,
+  ARTIFACT_TYPE_OPTIONS,
+  DURATION_WEEKS_OPTIONS,
+  DURATION_MINUTES_OPTIONS,
+  SLIDE_COUNT_OPTIONS,
+  WORKSHEET_QUESTION_COUNT_OPTIONS,
+  TOTAL_MARKS_OPTIONS,
+} from "@/lib/constants";
 
 function micApiAvailable(): boolean {
   return (
@@ -14,22 +36,42 @@ function micApiAvailable(): boolean {
   );
 }
 
-interface IntentInterpretation {
+/** Maps the AI's guessed requested_artifacts (free-form strings) onto our
+ * closed set of generatable types. Falls back to "course_plan" only when
+ * nothing recognizable was requested — always shown, always editable, never
+ * silently substituted for a wrong content guess. */
+function inferArtifactType(requested: string[]): string {
+  const known = new Set(ARTIFACT_TYPE_OPTIONS.map((o) => o.value));
+  const alias: Record<string, string> = { quiz: "assessment", test: "assessment", lesson: "lesson_notes" };
+  for (const r of requested) {
+    if (known.has(r)) return r;
+    if (alias[r]) return alias[r];
+  }
+  return "course_plan";
+}
+
+interface Interpretation {
   raw_prompt: string;
   grade: string;
   subject: string;
   topics: string[];
-  marks: number | null;
   difficulty: string;
   application_weight: number;
-  requested_artifacts: string[];
+  artifactType: string;
 }
 
 export function SmartPromptBox() {
   const [promptText, setPromptText] = useState("");
   const [loading, setLoading] = useState(false);
-  const [interpretation, setInterpretation] = useState<IntentInterpretation | null>(null);
-  const [missingInfoMsg, setMissingInfoMsg] = useState<string | null>(null);
+  const [interpretation, setInterpretation] = useState<Interpretation | null>(null);
+  const [topicDraft, setTopicDraft] = useState("");
+  const [marks, setMarks] = useState(40);
+  const [durationWeeks, setDurationWeeks] = useState(3);
+  const [durationMinutes, setDurationMinutes] = useState(15);
+  const [slideCount, setSlideCount] = useState(12);
+  const [questionCount, setQuestionCount] = useState(10);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [materialId, setMaterialId] = useState("");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [degraded, setDegraded] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -42,6 +84,7 @@ export function SmartPromptBox() {
 
   useEffect(() => {
     setMicSupported(micApiAvailable());
+    listMaterials().then(setMaterials).catch(() => setMaterials([]));
   }, []);
 
   const toggleMic = async () => {
@@ -100,40 +143,43 @@ export function SmartPromptBox() {
     { label: "Interactive Course", sample: "Create a 15-minute interactive lesson on Newton's Laws for Class 9." },
   ];
 
+  const resetControls = () => {
+    setMarks(40);
+    setDurationWeeks(3);
+    setDurationMinutes(15);
+    setSlideCount(12);
+    setQuestionCount(10);
+    setMaterialId("");
+  };
+
   const handleRunSmartPrompt = async (textToSubmit?: string) => {
     const text = textToSubmit || promptText;
     if (!text.trim()) return;
 
     setLoading(true);
-    setMissingInfoMsg(null);
     setErrorMsg(null);
     setInterpretation(null);
+    setGenerateResult(null);
+    resetControls();
 
     try {
       const data = await parseTeacherIntent(text);
-
       const parsed = data.intent;
-      const promptLower = text.toLowerCase();
-
       setDegraded(data.degraded);
 
-      // Simple clarification check per Spec §5
-      if (!promptLower.includes("class") && !promptLower.includes("grade") && !parsed.grade) {
-        setMissingInfoMsg("What class/grade is this requirement for?");
-      }
-
+      // Never assume grade/subject/topics the AI didn't actually extract —
+      // leave blank so the dropdowns below make the gap visible and force an
+      // explicit pick, instead of silently defaulting to an unrelated example.
       setInterpretation({
         raw_prompt: text,
-        grade: parsed.grade || "Class 10",
-        subject: parsed.subject || "Biology",
-        topics: parsed.topics?.length ? parsed.topics : ["Tissues", "Cell Structure"],
-        marks: parsed.marks ?? (promptLower.includes("80") ? 80 : promptLower.includes("40") ? 40 : 20),
-        difficulty: parsed.difficulty
-          ? parsed.difficulty.charAt(0).toUpperCase() + parsed.difficulty.slice(1)
-          : "Medium",
+        grade: parsed.grade || "",
+        subject: parsed.subject || "",
+        topics: parsed.topics?.length ? parsed.topics : [],
+        difficulty: parsed.difficulty || "medium",
         application_weight: parsed.application_weight,
-        requested_artifacts: parsed.requested_artifacts || [],
+        artifactType: inferArtifactType(parsed.requested_artifacts || []),
       });
+      if (parsed.marks) setMarks(parsed.marks);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Could not reach the Vivran backend. Please try again.");
     } finally {
@@ -141,38 +187,82 @@ export function SmartPromptBox() {
     }
   };
 
-  const handleConfirmAndGenerate = async () => {
+  const addTopic = () => {
+    const t = topicDraft.trim();
+    if (!t || !interpretation) return;
+    if (!interpretation.topics.includes(t)) {
+      setInterpretation({ ...interpretation, topics: [...interpretation.topics, t] });
+    }
+    setTopicDraft("");
+  };
+
+  const removeTopic = (topic: string) => {
     if (!interpretation) return;
+    setInterpretation({ ...interpretation, topics: interpretation.topics.filter((t) => t !== topic) });
+  };
+
+  const readyToGenerate = !!interpretation && !!interpretation.grade.trim() && !!interpretation.subject.trim();
+
+  const handleConfirmAndGenerate = async () => {
+    if (!interpretation || !readyToGenerate) return;
     setGenerating(true);
     setGenerateResult(null);
 
-    const wantsAssessment = interpretation.requested_artifacts.some((a) => ["assessment", "quiz"].includes(a));
+    const { grade, subject, artifactType, difficulty, raw_prompt } = interpretation;
+    const topicStr = interpretation.topics.length ? interpretation.topics.join(", ") : raw_prompt;
 
     try {
-      if (wantsAssessment) {
-        const { assessment, validation } = await generateAssessmentPaper(
-          interpretation.grade,
-          interpretation.subject,
-          interpretation.topics,
-          interpretation.marks ?? 40,
-          interpretation.difficulty.toLowerCase(),
-        );
-        if (!assessment) {
-          setGenerateResult({ ok: false, message: `Generation failed: ${validation.errors.join("; ")}` });
-        } else {
-          setGenerateResult({ ok: true, message: `Assessment "${(assessment as { title: string }).title}" generated.`, href: "/teacher/assess" });
+      switch (artifactType) {
+        case "assessment": {
+          const { assessment, validation } = await generateAssessmentPaper(
+            grade,
+            subject,
+            interpretation.topics.length ? interpretation.topics : [raw_prompt],
+            marks,
+            difficulty,
+            materialId || undefined,
+          );
+          if (!assessment) {
+            setGenerateResult({ ok: false, message: `Generation failed: ${validation.errors.join("; ")}` });
+          } else {
+            setGenerateResult({ ok: true, message: `Assessment "${(assessment as { title: string }).title}" generated.`, href: "/teacher/assess" });
+          }
+          break;
         }
-      } else {
-        const { course_plan } = await generateCoursePlan({
-          title: `${interpretation.grade} ${interpretation.subject} — ${interpretation.topics.join(", ")}`,
-          grade: interpretation.grade,
-          subject: interpretation.subject,
-          topics: interpretation.topics,
-        });
-        if (course_plan.error) {
-          setGenerateResult({ ok: false, message: `Generation failed: ${course_plan.error}` });
-        } else {
-          setGenerateResult({ ok: true, message: `Course plan "${course_plan.title}" generated.`, href: "/teacher/plan" });
+        case "slides": {
+          const result = await generateSlides(topicStr, slideCount, grade, subject);
+          if (result.error) setGenerateResult({ ok: false, message: `Generation failed: ${result.error}` });
+          else setGenerateResult({ ok: true, message: `Slide deck "${result.title}" (${result.slide_count} slides) generated.`, href: "/teacher/create" });
+          break;
+        }
+        case "worksheet": {
+          const result = await generateWorksheet(topicStr, questionCount, grade, subject);
+          if (result.error) setGenerateResult({ ok: false, message: `Generation failed: ${result.error}` });
+          else setGenerateResult({ ok: true, message: `Worksheet "${result.title}" (${result.question_count} questions) generated.`, href: "/teacher/create" });
+          break;
+        }
+        case "lesson_notes": {
+          const result = await generateLessonNotes(topicStr, grade, subject);
+          if (result.error) setGenerateResult({ ok: false, message: `Generation failed: ${result.error}` });
+          else setGenerateResult({ ok: true, message: `Lesson notes "${result.title}" generated.`, href: "/teacher/create" });
+          break;
+        }
+        case "interactive": {
+          const result = await generateInteractiveCoursework(topicStr, durationMinutes, grade, subject);
+          if (result.error) setGenerateResult({ ok: false, message: `Generation failed: ${result.error}` });
+          else setGenerateResult({ ok: true, message: `Interactive coursework "${result.title}" generated.`, href: "/teacher/create" });
+          break;
+        }
+        default: {
+          const { course_plan } = await generateCoursePlan({
+            title: `${grade} ${subject} — ${topicStr}`,
+            grade,
+            subject,
+            topics: interpretation.topics.length ? interpretation.topics : [raw_prompt],
+            durationWeeks,
+          });
+          if (course_plan.error) setGenerateResult({ ok: false, message: `Generation failed: ${course_plan.error}` });
+          else setGenerateResult({ ok: true, message: `Course plan "${course_plan.title}" generated.`, href: "/teacher/plan" });
         }
       }
     } catch (err) {
@@ -271,16 +361,16 @@ export function SmartPromptBox() {
         </div>
       )}
 
-      {/* "I understood" Requirements Block (Spec §5) */}
+      {/* "I understood" Requirements Block — every field below is editable */}
       {interpretation && (
         <div className="bg-surface/90 border border-[#7C6EFA]/30 rounded-2xl p-6 shadow-xl space-y-4 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div className="flex items-center gap-2 text-foreground font-display text-sm font-semibold">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              Vivran Understood Your Requirements:
+              Vivran Understood — Review &amp; Adjust:
             </div>
             <span className="text-xs text-[#7C6EFA] font-medium bg-[#7C6EFA]/10 px-2.5 py-1 rounded-full border border-[#7C6EFA]/20">
-              Ready for Generation
+              {focusLabel}
             </span>
           </div>
 
@@ -291,80 +381,216 @@ export function SmartPromptBox() {
             </div>
           )}
 
-          {/* Extracted requirement chips */}
-          <div className="flex flex-wrap gap-2">
-            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
-              Grade: <strong className="text-[#4FC3F7]">{interpretation.grade}</strong>
-            </span>
-            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
-              Subject: <strong className="text-[#4FC3F7]">{interpretation.subject}</strong>
-            </span>
-            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
-              Marks: <strong className="text-[#4FC3F7]">{interpretation.marks || 40}</strong>
-            </span>
-            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
-              Difficulty: <strong className="text-[#4FC3F7]">{interpretation.difficulty}</strong>
-            </span>
-            <span className="px-3 py-1.5 bg-card border border-border rounded-lg text-xs text-foreground font-medium">
-              Focus: <strong className="text-[#4FC3F7]">{focusLabel}</strong>
-            </span>
+          {/* Core fields: real, editable dropdowns — nothing here is assumed silently */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            <div>
+              <div className="text-[10px] text-muted mb-1">Create</div>
+              <select
+                value={interpretation.artifactType}
+                onChange={(e) => setInterpretation({ ...interpretation, artifactType: e.target.value })}
+                className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+              >
+                {ARTIFACT_TYPE_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <div className="text-[10px] text-muted mb-1">Grade / Year</div>
+              <input
+                value={interpretation.grade}
+                onChange={(e) => setInterpretation({ ...interpretation, grade: e.target.value })}
+                list="smart-prompt-grade-options"
+                placeholder="Pick or type…"
+                className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+              />
+              <datalist id="smart-prompt-grade-options">
+                {GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}
+              </datalist>
+            </div>
+
+            <div>
+              <div className="text-[10px] text-muted mb-1">Subject</div>
+              <input
+                value={interpretation.subject}
+                onChange={(e) => setInterpretation({ ...interpretation, subject: e.target.value })}
+                list="smart-prompt-subject-options"
+                placeholder="Pick or type…"
+                className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+              />
+              <datalist id="smart-prompt-subject-options">
+                {SUBJECT_OPTIONS.map((s) => <option key={s} value={s} />)}
+              </datalist>
+            </div>
+
+            {interpretation.artifactType === "assessment" && (
+              <div>
+                <div className="text-[10px] text-muted mb-1">Difficulty</div>
+                <select
+                  value={interpretation.difficulty}
+                  onChange={(e) => setInterpretation({ ...interpretation, difficulty: e.target.value })}
+                  className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                >
+                  {DIFFICULTY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
-          {/* Extracted topics + artifacts */}
-          {interpretation.topics.length > 0 && (
-            <div className="flex flex-wrap gap-2">
+          {(!interpretation.grade.trim() || !interpretation.subject.trim()) && (
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-xs text-amber-300">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+              Pick a grade/year and subject above — Vivran won&rsquo;t guess these for you.
+            </div>
+          )}
+
+          {/* Editable topic chips */}
+          <div>
+            <div className="text-[10px] text-muted mb-1.5">Topics</div>
+            <div className="flex flex-wrap gap-2 items-center">
               {interpretation.topics.map((topic) => (
                 <span
                   key={topic}
-                  className="px-2.5 py-1 rounded-lg bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 text-xs text-[#4FC3F7] font-medium"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 text-xs text-[#4FC3F7] font-medium"
                 >
                   {topic}
+                  <button type="button" onClick={() => removeTopic(topic)} aria-label={`Remove ${topic}`}>
+                    <X className="w-3 h-3 hover:text-red-400" />
+                  </button>
                 </span>
               ))}
-              {interpretation.requested_artifacts.map((artifact) => (
-                <span
-                  key={artifact}
-                  className="px-2.5 py-1 rounded-lg bg-white/5 border border-border text-xs text-muted"
-                >
-                  {artifact.replace(/_/g, " ")}
-                </span>
-              ))}
+              <div className="flex items-center gap-1">
+                <input
+                  value={topicDraft}
+                  onChange={(e) => setTopicDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTopic();
+                    }
+                  }}
+                  placeholder="Add a topic…"
+                  className="px-2.5 py-1 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA] w-32"
+                />
+                <button type="button" onClick={addTopic} className="p-1 rounded-lg border border-border text-muted hover:text-foreground hover:border-white/20">
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-          )}
+          </div>
 
-          {/* Missing info prompt if needed */}
-          {missingInfoMsg && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center gap-2 text-xs text-amber-300">
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-              {missingInfoMsg}
-            </div>
-          )}
-
-          {/* Additional Editable Controls */}
+          {/* Secondary controls — scoped to what's actually being created */}
           <div className="pt-2 border-t border-border">
             <div className="text-xs text-muted font-medium mb-3 flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-[#7C6EFA]" /> Additional Controls & Scoping:
+              <Sliders className="w-3.5 h-3.5 text-[#7C6EFA]" /> Additional Controls:
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
-                <div className="text-[10px] text-foreground/50">Question Mix</div>
-                <div className="font-semibold text-foreground mt-0.5">MCQ + Short + Numericals</div>
-              </button>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {interpretation.artifactType === "assessment" && (
+                <>
+                  <div>
+                    <div className="text-[10px] text-muted mb-1">Total Marks</div>
+                    <input
+                      type="number"
+                      min={5}
+                      value={marks}
+                      onChange={(e) => setMarks(Number(e.target.value) || 0)}
+                      list="smart-prompt-marks-options"
+                      className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                    />
+                    <datalist id="smart-prompt-marks-options">
+                      {TOTAL_MARKS_OPTIONS.map((m) => <option key={m} value={m} />)}
+                    </datalist>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <div className="text-[10px] text-muted mb-1">Source Material (optional)</div>
+                    <select
+                      value={materialId}
+                      onChange={(e) => setMaterialId(e.target.value)}
+                      className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                    >
+                      <option value="">None — not grounded in an uploaded material</option>
+                      {materials.map((m) => (
+                        <option key={m.id} value={m.id}>{m.title}{m.processing_status !== "READY" ? ` (${m.processing_status.toLowerCase()})` : ""}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
 
-              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
-                <div className="text-[10px] text-foreground/50">Duration</div>
-                <div className="font-semibold text-foreground mt-0.5">45 Mins</div>
-              </button>
+              {interpretation.artifactType === "course_plan" && (
+                <div>
+                  <div className="text-[10px] text-muted mb-1">Duration (weeks)</div>
+                  <input
+                    type="number"
+                    min={1}
+                    value={durationWeeks}
+                    onChange={(e) => setDurationWeeks(Number(e.target.value) || 1)}
+                    list="smart-prompt-weeks-options"
+                    className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                  />
+                  <datalist id="smart-prompt-weeks-options">
+                    {DURATION_WEEKS_OPTIONS.map((w) => <option key={w} value={w} />)}
+                  </datalist>
+                </div>
+              )}
 
-              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
-                <div className="text-[10px] text-foreground/50">Bloom's Taxonomy</div>
-                <div className="font-semibold text-foreground mt-0.5">Apply & Analyze</div>
-              </button>
+              {interpretation.artifactType === "slides" && (
+                <div>
+                  <div className="text-[10px] text-muted mb-1">Slide Count</div>
+                  <input
+                    type="number"
+                    min={3}
+                    value={slideCount}
+                    onChange={(e) => setSlideCount(Number(e.target.value) || 1)}
+                    list="smart-prompt-slides-options"
+                    className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                  />
+                  <datalist id="smart-prompt-slides-options">
+                    {SLIDE_COUNT_OPTIONS.map((s) => <option key={s} value={s} />)}
+                  </datalist>
+                </div>
+              )}
 
-              <button className="px-3 py-2 bg-card border border-border rounded-xl text-left text-xs text-muted hover:text-foreground hover:border-white/20 transition-all">
-                <div className="text-[10px] text-foreground/50">Source Material</div>
-                <div className="font-semibold text-[#4FC3F7] mt-0.5 truncate">Uploaded Textbook PDF</div>
-              </button>
+              {interpretation.artifactType === "worksheet" && (
+                <div>
+                  <div className="text-[10px] text-muted mb-1">Question Count</div>
+                  <input
+                    type="number"
+                    min={1}
+                    value={questionCount}
+                    onChange={(e) => setQuestionCount(Number(e.target.value) || 1)}
+                    list="smart-prompt-worksheet-options"
+                    className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                  />
+                  <datalist id="smart-prompt-worksheet-options">
+                    {WORKSHEET_QUESTION_COUNT_OPTIONS.map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
+              )}
+
+              {interpretation.artifactType === "interactive" && (
+                <div>
+                  <div className="text-[10px] text-muted mb-1">Duration (minutes)</div>
+                  <input
+                    type="number"
+                    min={5}
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(Number(e.target.value) || 5)}
+                    list="smart-prompt-minutes-options"
+                    className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                  />
+                  <datalist id="smart-prompt-minutes-options">
+                    {DURATION_MINUTES_OPTIONS.map((m) => <option key={m} value={m} />)}
+                  </datalist>
+                </div>
+              )}
+
+              {interpretation.artifactType === "lesson_notes" && (
+                <div className="text-xs text-muted italic self-center">No extra settings — lesson notes follow the topics above.</div>
+              )}
             </div>
           </div>
 
@@ -390,7 +616,8 @@ export function SmartPromptBox() {
             <button
               type="button"
               onClick={handleConfirmAndGenerate}
-              disabled={generating}
+              disabled={generating || !readyToGenerate}
+              title={!readyToGenerate ? "Pick a grade/year and subject first" : undefined}
               className="grad-btn px-6 py-2.5 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
             >
               {generating ? "Generating..." : "Confirm & Generate Outputs"} <Sparkles className="w-3.5 h-3.5" />

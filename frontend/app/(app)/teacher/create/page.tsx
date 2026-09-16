@@ -17,7 +17,7 @@ import {
   type SlidesResult,
   type WorksheetResult,
 } from "@/services/api";
-import { GRADE_LEVEL_OPTIONS } from "@/lib/constants";
+import { GRADE_LEVEL_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants";
 
 const VIDEO_THEMES = [
   { label: "Whiteboard Explainer", modifier: "as a hand-drawn whiteboard-style explainer animation" },
@@ -258,7 +258,8 @@ export default function CreatePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic (required)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
               <input value={grade} onChange={(e) => setGrade(e.target.value)} list="grade-options" placeholder="Grade / Year (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject / Course (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
+              <input value={subject} onChange={(e) => setSubject(e.target.value)} list="subject-options" placeholder="Subject / Course (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
+              <datalist id="subject-options">{SUBJECT_OPTIONS.map((s) => <option key={s} value={s} />)}</datalist>
               <datalist id="grade-options">{GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}</datalist>
             </div>
           )}
