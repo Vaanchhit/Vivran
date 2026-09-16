@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from "next/link";
 import {
   Sparkles,
   BookOpenCheck,
@@ -7,32 +7,34 @@ import {
   Layers,
   ArrowRight,
   Database,
-} from 'lucide-react';
+  Quote,
+} from "lucide-react";
+import { StakeholderScroller } from "./stakeholder-scroller";
 
 const pillars = [
   {
-    title: 'Coursework Planning',
-    desc: 'Sequenced course plans, lesson plans, unit structures and weekly roadmaps built from your syllabus.',
+    title: "Coursework Planning",
+    desc: "Sequenced course plans, lesson plans, unit structures and weekly roadmaps built from your syllabus.",
     icon: BookOpenCheck,
-    href: '/teacher/plan',
+    href: "/teacher/plan",
   },
   {
-    title: 'Classroom Content',
-    desc: 'Slides, worksheets, lesson notes and video scripts — coherent, editable, and aligned to your course.',
+    title: "Classroom Content",
+    desc: "Slides, worksheets, lesson notes and video scripts — coherent, editable, and aligned to your course.",
     icon: Layers,
-    href: '/teacher/create',
+    href: "/teacher/create",
   },
   {
-    title: 'Assessment Creation',
-    desc: 'Structured test papers, quizzes and question banks with marks validation and rubrics.',
+    title: "Assessment Creation",
+    desc: "Structured test papers, quizzes and question banks with marks validation and rubrics.",
     icon: FileCheck2,
-    href: '/teacher/assess',
+    href: "/teacher/assess",
   },
   {
-    title: 'Interactive Coursework',
-    desc: 'Block-based interactive lessons that blend explanation, activity and assessment into one flow.',
+    title: "Interactive Coursework",
+    desc: "Block-based interactive lessons that blend explanation, activity and assessment into one flow.",
     icon: GraduationCap,
-    href: '/teacher/create',
+    href: "/teacher/create",
   },
 ];
 
@@ -41,8 +43,8 @@ export default function LandingPage() {
     <div className="relative overflow-hidden">
       {/* Hero radial glows */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 left-1/4 w-[540px] h-[540px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,110,250,0.12) 0%, transparent 70%)' }} />
-        <div className="absolute -top-10 right-0 w-[420px] h-[420px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(79,195,247,0.07) 0%, transparent 70%)' }} />
+        <div className="absolute -top-24 left-1/4 w-[540px] h-[540px] rounded-full" style={{ background: "radial-gradient(circle, rgba(124,110,250,0.12) 0%, transparent 70%)" }} />
+        <div className="absolute -top-10 right-0 w-[420px] h-[420px] rounded-full" style={{ background: "radial-gradient(circle, rgba(79,195,247,0.07) 0%, transparent 70%)" }} />
       </div>
 
       {/* Hero */}
@@ -51,9 +53,10 @@ export default function LandingPage() {
           <Sparkles className="w-3.5 h-3.5" /> AI Teacher Workflow Platform
         </span>
 
-        <h1 className="text-5xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-[1.08]">
-          Teacher intent, <br className="hidden sm:block" />
-          <span className="grad-text">turned into teaching.</span>
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-[1.1]">
+          Changing how teaching happens —
+          <br className="hidden sm:block" />
+          <span className="grad-text">because what&rsquo;s being taught is changing rapidly.</span>
         </h1>
 
         <p className="mt-6 max-w-2xl mx-auto text-lg text-muted leading-relaxed">
@@ -75,7 +78,33 @@ export default function LandingPage() {
         <div className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-4 text-sm text-muted">
           <span className="flex items-center gap-2"><Database className="w-4 h-4 text-[#4FC3F7]" /> Grounded in your materials</span>
           <span className="flex items-center gap-2"><FileCheck2 className="w-4 h-4 text-[#7C6EFA]" /> Marks &amp; rubric validation</span>
-          <span className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-emerald-400" /> Built for classrooms</span>
+          <span className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-emerald-400" /> Built for classrooms &amp; college courses</span>
+        </div>
+      </section>
+
+      {/* Three stakeholders — dynamic scroll-linked section */}
+      <section className="relative border-t border-border">
+        <div className="max-w-6xl mx-auto px-6 pt-16 pb-6 text-center">
+          <span className="text-xs font-semibold uppercase tracking-[0.1em] text-[#7C6EFA]">Three People Make A Classroom Work</span>
+          <h2 className="mt-2 text-3xl sm:text-4xl font-extrabold tracking-tight">Built for teachers, students, and institutions</h2>
+          <p className="mt-3 text-muted max-w-xl mx-auto text-sm">Scroll — this section changes as you go.</p>
+        </div>
+        <StakeholderScroller />
+      </section>
+
+      {/* Feynman Technique callout */}
+      <section className="relative max-w-4xl mx-auto px-6 py-20 border-t border-border">
+        <div className="p-10 rounded-3xl bg-surface border border-border backdrop-blur-xl relative overflow-hidden">
+          <Quote className="w-10 h-10 text-[#7C6EFA]/40 mb-4" />
+          <p className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground leading-snug">
+            &ldquo;If you can&rsquo;t explain it simply, you don&rsquo;t understand it well enough.&rdquo;
+          </p>
+          <p className="mt-3 text-sm text-muted">— words often attributed to Richard Feynman, and the whole premise behind what's now taught as the <strong className="text-foreground">Feynman Technique</strong>: you don&rsquo;t truly know a topic until you can teach it in plain language.</p>
+          <p className="mt-6 text-base text-muted leading-relaxed max-w-2xl">
+            Vivran is built on that same discipline. Every plan, slide and worksheet it generates is grounded in
+            your own material and written the way real understanding sounds — simple, concrete, and built up from
+            first principles, not jargon dressed up as depth.
+          </p>
         </div>
       </section>
 
@@ -114,12 +143,12 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="relative max-w-4xl mx-auto px-6 py-20 text-center">
         <div className="p-10 rounded-3xl bg-surface border border-border backdrop-blur-xl relative overflow-hidden">
-          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,110,250,0.12) 0%, transparent 70%)' }} />
+          <div className="absolute -top-20 -right-20 w-64 h-64 rounded-full" style={{ background: "radial-gradient(circle, rgba(124,110,250,0.12) 0%, transparent 70%)" }} />
           <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight relative">
             Ready to plan tomorrow&rsquo;s <span className="grad-text">lesson?</span>
           </h2>
           <p className="mt-3 text-muted relative">
-            Built as a small MVP for the first 5&ndash;100 teachers.
+            Built as a small MVP, now onboarding teachers &amp; commerce college professors for beta testing.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 relative">
             <Link href="/login" className="grad-btn px-7 py-3.5 rounded-2xl text-white font-semibold">
