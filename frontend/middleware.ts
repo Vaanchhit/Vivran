@@ -48,6 +48,12 @@ export default function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
+  // Node.js runtime instead of the (now-deprecated, stricter-sandboxed) Edge
+  // runtime — see https://vercel.com/docs/routing-middleware#runtime-options.
+  // Edge's sandbox was throwing `__dirname is not defined` in Vercel
+  // production even after removing every Supabase/Node-only import from this
+  // file; running on Node.js removes that whole class of failure outright.
+  runtime: "nodejs",
   matcher: [
     /*
      * Run on everything except static assets, favicon, and Supabase/OAuth
