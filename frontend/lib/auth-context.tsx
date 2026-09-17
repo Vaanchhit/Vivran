@@ -79,8 +79,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     if (!supabase) return false;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return !error;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.session) return false;
+    // Wait for the full session sync (incl. the workspace-provisioning call)
+    // before resolving. The caller navigates to /teacher immediately after
+    // this returns true — without awaiting here, that navigation could win
+    // the race against onAuthStateChange's async syncSession, so
+    // TeacherLayout's guard would still see `user === null` for a moment
+    // and bounce straight back to /login even though sign-in succeeded.
+    await syncSession(data.session);
+    return true;
   };
 
   const loginWithGoogle = async () => {
