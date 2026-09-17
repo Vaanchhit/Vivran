@@ -48,12 +48,21 @@ export default function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Node.js runtime instead of the (now-deprecated, stricter-sandboxed) Edge
-  // runtime — see https://vercel.com/docs/routing-middleware#runtime-options.
-  // Edge's sandbox was throwing `__dirname is not defined` in Vercel
-  // production even after removing every Supabase/Node-only import from this
-  // file; running on Node.js removes that whole class of failure outright.
-  runtime: "nodejs",
+  // Back on the default Edge runtime. `runtime: "nodejs"` was tried here to
+  // work around an Edge-sandbox `__dirname` crash, but that traded it for a
+  // worse, confirmed-via-runtime-logs failure: Next.js 14.2.x's middleware
+  // compiler emits `/var/task/middleware.js` with raw ESM `import` syntax,
+  // which Vercel's Node.js middleware runtime loads as CommonJS — an
+  // immediate `SyntaxError: Cannot use import statement outside a module`
+  // before this file's own code ever runs. That's a Next.js/Vercel
+  // bundling-target mismatch, not something fixable from application code.
+  // Reverting to Edge (the actually-supported path for this Next.js
+  // version) now that Next.js has been patched 14.2.15 -> 14.2.35 for the
+  // React2Shell security advisories — worth re-testing since the original
+  // __dirname crash was never explained and may have been fixed along with
+  // it. If it recurs, the fix has to be either dropping this file's already
+  // minimal Node-API-free logic further, or waiting on a Next.js patch that
+  // properly supports the newer runtime option.
   matcher: [
     /*
      * Run on everything except static assets, favicon, and Supabase/OAuth
