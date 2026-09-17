@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, Suspense } from "react";
+import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import type { Role } from "@/types";
@@ -23,7 +23,7 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login, loginWithGoogle } = useAuth();
+  const { user, login, loginWithGoogle } = useAuth();
   const [selectedRole, setSelectedRole] = useState<Role>("teacher");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,6 +32,17 @@ function LoginForm() {
 
   const authError = searchParams.get("error");
   const next = searchParams.get("next") || "/teacher";
+
+  // Bounce an already-signed-in visitor straight to their workspace — this
+  // used to be a server-side redirect in middleware.ts. It's client-side now
+  // (see middleware.ts's removal for why); TeacherLayout independently
+  // guards /teacher regardless, so nothing is lost security-wise, just the
+  // redirect happens one render tick later.
+  useEffect(() => {
+    if (user?.authenticated) {
+      router.replace(next);
+    }
+  }, [user, next, router]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
