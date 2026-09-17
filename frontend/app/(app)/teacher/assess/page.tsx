@@ -1,17 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { BookMarked, Download, ExternalLink, FileCheck2, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import {
   downloadAssessmentPdf,
   exportAssessmentToTally,
-  generateAssessmentPaper,
-  listMaterials,
   regenerateQuestion,
-  type Material,
   type Source,
 } from "@/services/api";
-import { GRADE_LEVEL_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants";
+import { SmartCreationBox } from "@/app/components/smart-creation-box";
 
 interface UIQuestion {
   question_number: number;
@@ -30,15 +27,10 @@ interface UIQuestion {
 const REGEN_OPTIONS = ["harder", "easier", "application", "conceptual", "case"];
 
 export default function AssessPage() {
-  const [grade, setGrade] = useState("College 2nd Year");
-  const [subject, setSubject] = useState("Business Studies");
-  const [topics, setTopics] = useState("Porter's Five Forces");
+  const [grade, setGrade] = useState("");
+  const [subject, setSubject] = useState("");
   const [totalMarks, setTotalMarks] = useState(40);
-  const [difficulty, setDifficulty] = useState("medium");
-  const [materialId, setMaterialId] = useState<string>("");
-  const [materials, setMaterials] = useState<Material[]>([]);
 
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [title, setTitle] = useState<string | null>(null);
@@ -53,47 +45,6 @@ export default function AssessPage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [regenOption, setRegenOption] = useState("harder");
   const [regenerating, setRegenerating] = useState(false);
-
-  useEffect(() => {
-    listMaterials().then(setMaterials).catch(() => setMaterials([]));
-  }, []);
-
-  const generate = async () => {
-    setLoading(true);
-    setError(null);
-    setValidationErrors([]);
-    try {
-      const { assessment, validation, grounded_on, question_ids, sources: srcs } = await generateAssessmentPaper(
-        grade,
-        subject,
-        topics.split(",").map((t) => t.trim()).filter(Boolean),
-        totalMarks,
-        difficulty,
-        materialId || undefined,
-      );
-      setGroundedOn((grounded_on as number) ?? 0);
-      setSources(srcs ?? []);
-      if (!assessment) {
-        setValidationErrors(validation.errors);
-        setQuestions([]);
-        setTitle(null);
-        return;
-      }
-      const a = assessment as { title: string; duration_minutes: number; sections: { name: string; questions: UIQuestion[] }[] };
-      setTitle(a.title);
-      setDurationMinutes(a.duration_minutes);
-      const flatQuestions = a.sections.flatMap((s) => s.questions);
-      setQuestions(flatQuestions);
-      setValidationErrors(validation.errors);
-      // question_ids (if persisted) line up 1:1 with the flattened question order.
-      setQuestionIds(question_ids ?? []);
-      setSelected(flatQuestions.length ? 0 : null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const runRegenerate = async () => {
     if (selected === null) return;
@@ -183,35 +134,47 @@ export default function AssessPage() {
         </p>
       </div>
 
-      {/* Generation form */}
-      <div className="p-5 rounded-2xl bg-surface border border-border grid grid-cols-2 md:grid-cols-6 gap-3 text-xs">
-        <input value={grade} onChange={(e) => setGrade(e.target.value)} list="grade-options" placeholder="Grade / Year" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} list="subject-options" placeholder="Subject / Course" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <datalist id="subject-options">{SUBJECT_OPTIONS.map((s) => <option key={s} value={s} />)}</datalist>
-        <datalist id="grade-options">{GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}</datalist>
-        <input value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="Topics (comma-separated)" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground md:col-span-2" />
-        <input type="number" value={totalMarks} onChange={(e) => setTotalMarks(Number(e.target.value))} placeholder="Total marks" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="px-3 py-2 bg-card border border-border rounded-lg text-foreground">
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-        <select value={materialId} onChange={(e) => setMaterialId(e.target.value)} className="px-3 py-2 bg-card border border-border rounded-lg text-foreground md:col-span-3">
-          <option value="">Ground in: none (general knowledge)</option>
-          {materials.map((m) => (
-            <option key={m.id} value={m.id}>Ground in: {m.title}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={generate}
-          disabled={loading}
-          className="grad-btn px-4 py-2 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 md:col-span-3"
-        >
-          {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-          {loading ? "Generating…" : "Generate Assessment"}
-        </button>
-      </div>
+      {/* Smart Prompt Box, locked to assessment — same free-text + mic +
+          Interpret Intent + editable grade/subject/topics/marks/difficulty
+          pattern as the dashboard, feeding this page's own paper preview,
+          export, and per-question regeneration UI below. */}
+      <SmartCreationBox
+        lockedArtifactType="assessment"
+        showInlineResult={false}
+        showShortcuts={false}
+        heading="What test or quiz would you like to create?"
+        promptPlaceholder="Tell Vivran what you want to test... e.g. 'Create a difficult 40-mark College 2nd Year Business Studies paper on Porter's Five Forces with case-study application questions.'"
+        onGenerated={(result) => {
+          if (result.artifactType !== "assessment") return;
+          setError(null);
+          setValidationErrors([]);
+          if (!result.ok) {
+            setError(result.error);
+            return;
+          }
+          setGrade(result.params.grade);
+          setSubject(result.params.subject);
+          setTotalMarks(result.params.marks);
+          const { assessment, validation, grounded_on, question_ids, sources: srcs } = result.data;
+          setGroundedOn((grounded_on as number) ?? 0);
+          setSources(srcs ?? []);
+          if (!assessment) {
+            setValidationErrors(validation.errors);
+            setQuestions([]);
+            setTitle(null);
+            return;
+          }
+          const a = assessment as { title: string; duration_minutes: number; sections: { name: string; questions: UIQuestion[] }[] };
+          setTitle(a.title);
+          setDurationMinutes(a.duration_minutes);
+          const flatQuestions = a.sections.flatMap((s) => s.questions);
+          setQuestions(flatQuestions);
+          setValidationErrors(validation.errors);
+          // question_ids (if persisted) line up 1:1 with the flattened question order.
+          setQuestionIds(question_ids ?? []);
+          setSelected(flatQuestions.length ? 0 : null);
+        }}
+      />
 
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-300">

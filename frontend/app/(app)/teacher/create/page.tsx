@@ -5,19 +5,14 @@ import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSqu
 import {
   enhancePrompt,
   generateImage,
-  generateInteractiveCoursework,
-  generateLessonNotes,
-  generateNarration,
-  generateSlides,
   generateVideo,
-  generateWorksheet,
   type EnhancedPrompt,
   type InteractiveResult,
   type LessonNotesResult,
   type SlidesResult,
   type WorksheetResult,
 } from "@/services/api";
-import { GRADE_LEVEL_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants";
+import { SmartCreationBox, type SmartCreationArtifactType } from "@/app/components/smart-creation-box";
 
 const VIDEO_THEMES = [
   { label: "Whiteboard Explainer", modifier: "as a hand-drawn whiteboard-style explainer animation" },
@@ -45,12 +40,14 @@ const ARTIFACTS: { key: ArtifactKey; title: string; icon: typeof Presentation; c
   { key: "interactive", title: "Classroom Activities", icon: MessageSquare, color: "text-pink-400", desc: "Interactive lesson blocks: activities, scenarios & quick checks." },
 ];
 
+// The 5 content types below are unified onto the shared SmartCreationBox
+// (free text + mic + Interpret Intent + editable grade/subject/topics).
+// Image and video keep their own separate, previously-approved
+// enhance-prompt + theme-preset flow — untouched.
+const SMART_CREATION_TYPES = new Set<ArtifactKey>(["slides", "worksheet", "lesson_notes", "narration", "interactive"]);
+
 export default function CreatePage() {
   const [active, setActive] = useState<ArtifactKey | null>(null);
-  const [topic, setTopic] = useState("");
-  const [grade, setGrade] = useState("");
-  const [subject, setSubject] = useState("");
-  const [script, setScript] = useState("");
   const [imagePrompt, setImagePrompt] = useState("");
   const [videoPrompt, setVideoPrompt] = useState("");
   const [videoDuration, setVideoDuration] = useState<4 | 6 | 8>(8);
@@ -88,17 +85,14 @@ export default function CreatePage() {
     setEnhancement(null);
   };
 
+  // Only image/video still run through this direct call — the other 5 types
+  // generate via the embedded SmartCreationBox's own Confirm & Generate.
   const run = async () => {
     setLoading(true);
     setError(null);
     setResult(null);
     try {
-      if (active === "slides") setResult(await generateSlides(topic, 12, grade || undefined, subject || undefined));
-      else if (active === "worksheet") setResult(await generateWorksheet(topic, 10, grade || undefined, subject || undefined));
-      else if (active === "lesson_notes") setResult(await generateLessonNotes(topic, grade || undefined, subject || undefined));
-      else if (active === "interactive") setResult(await generateInteractiveCoursework(topic, 15, grade || undefined, subject || undefined));
-      else if (active === "narration") setResult(await generateNarration(script));
-      else if (active === "image") setResult(await generateImage(imagePrompt));
+      if (active === "image") setResult(await generateImage(imagePrompt));
       else if (active === "video") setResult(await generateVideo(videoPrompt, "16:9", videoDuration));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Generation failed.");
@@ -152,17 +146,18 @@ export default function CreatePage() {
       </div>
 
       {active && (
-        <div className="p-6 rounded-2xl bg-surface border border-[#7C6EFA]/30 space-y-4">
-          <div className="font-bold text-base text-foreground font-display">{activeMeta?.title}</div>
+        <div
+          className={
+            SMART_CREATION_TYPES.has(active)
+              ? "space-y-4"
+              : "p-6 rounded-2xl bg-surface border border-[#7C6EFA]/30 space-y-4"
+          }
+        >
+          {!SMART_CREATION_TYPES.has(active) && (
+            <div className="font-bold text-base text-foreground font-display">{activeMeta?.title}</div>
+          )}
 
-          {active === "narration" ? (
-            <textarea
-              value={script}
-              onChange={(e) => setScript(e.target.value)}
-              placeholder="Paste the lesson script to narrate…"
-              className="w-full h-28 p-3 bg-card border border-border rounded-xl text-foreground text-xs resize-none focus:outline-none focus:border-[#7C6EFA]"
-            />
-          ) : active === "image" || active === "video" ? (
+          {active === "image" || active === "video" ? (
             <div className="space-y-3">
               <div className="flex flex-wrap gap-1.5">
                 {(active === "image" ? IMAGE_THEMES : VIDEO_THEMES).map((t) => (
@@ -254,34 +249,49 @@ export default function CreatePage() {
                 </select>
               )}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <input value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Topic (required)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
-              <input value={grade} onChange={(e) => setGrade(e.target.value)} list="grade-options" placeholder="Grade / Year (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
-              <input value={subject} onChange={(e) => setSubject(e.target.value)} list="subject-options" placeholder="Subject / Course (optional)" className="px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground" />
-              <datalist id="subject-options">{SUBJECT_OPTIONS.map((s) => <option key={s} value={s} />)}</datalist>
-              <datalist id="grade-options">{GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}</datalist>
-            </div>
-          )}
+          ) : active && SMART_CREATION_TYPES.has(active) ? (
+            // Shared free text + mic + Interpret Intent + editable
+            // grade/subject/topics pattern, locked to whichever card was
+            // clicked. `key` forces a fresh box (and clears its state) when
+            // switching cards. Results feed the per-type displays below via
+            // onGenerated instead of this component rendering its own.
+            <SmartCreationBox
+              key={active}
+              lockedArtifactType={active as SmartCreationArtifactType}
+              showInlineResult={false}
+              showShortcuts={false}
+              heading={`Describe the ${activeMeta?.title.toLowerCase()} you want`}
+              onGenerated={(r) => {
+                setError(null);
+                if (!r.ok) {
+                  setError(r.error);
+                  setResult(null);
+                  return;
+                }
+                switch (r.artifactType) {
+                  case "slides":
+                  case "worksheet":
+                  case "lesson_notes":
+                  case "interactive":
+                  case "narration":
+                    setResult(r.data);
+                    break;
+                }
+              }}
+            />
+          ) : null}
 
-          <button
-            type="button"
-            onClick={run}
-            disabled={
-              loading ||
-              (active === "narration"
-                ? !script.trim()
-                : active === "image"
-                  ? !imagePrompt.trim()
-                  : active === "video"
-                    ? !videoPrompt.trim()
-                    : !topic.trim())
-            }
-            className="grad-btn px-5 py-2.5 text-white text-xs font-semibold rounded-xl flex items-center gap-2 disabled:opacity-50"
-          >
-            {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            {loading ? (active === "video" ? "Generating video (1-3 min)…" : "Generating…") : "Generate"}
-          </button>
+          {(active === "image" || active === "video") && (
+            <button
+              type="button"
+              onClick={run}
+              disabled={loading || !(active === "image" ? imagePrompt : videoPrompt).trim()}
+              className="grad-btn px-5 py-2.5 text-white text-xs font-semibold rounded-xl flex items-center gap-2 disabled:opacity-50"
+            >
+              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {loading ? (active === "video" ? "Generating video (1-3 min)…" : "Generating…") : "Generate"}
+            </button>
+          )}
 
           {error && (
             <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-300">

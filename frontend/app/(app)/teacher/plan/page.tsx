@@ -1,40 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { CalendarRange, BookOpen, Clock, Target, Loader2, AlertCircle } from "lucide-react";
-import { generateCoursePlan, type CoursePlan } from "@/services/api";
-import { GRADE_LEVEL_OPTIONS, SUBJECT_OPTIONS } from "@/lib/constants";
+import { CalendarRange, BookOpen, Clock, Target, AlertCircle } from "lucide-react";
+import { type CoursePlan } from "@/services/api";
+import { SmartCreationBox } from "@/app/components/smart-creation-box";
 
 export default function PlanPage() {
-  const [grade, setGrade] = useState("College 1st Year");
-  const [subject, setSubject] = useState("Economics");
-  const [topics, setTopics] = useState("Demand and Supply, Market Equilibrium");
-  const [durationWeeks, setDurationWeeks] = useState(3);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<CoursePlan | null>(null);
-
-  const generate = async () => {
-    setLoading(true);
-    setError(null);
-    setPlan(null);
-    try {
-      const topicList = topics.split(",").map((t) => t.trim()).filter(Boolean);
-      const { course_plan } = await generateCoursePlan({
-        title: `${grade} ${subject} — ${topicList.join(", ")}`,
-        grade,
-        subject,
-        topics: topicList,
-        durationWeeks,
-      });
-      if (course_plan.error) setError(course_plan.error);
-      setPlan(course_plan);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -82,24 +55,27 @@ export default function PlanPage() {
         </div>
       </div>
 
-      {/* Generation form */}
-      <div className="p-5 rounded-2xl bg-surface border border-border grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-        <input value={grade} onChange={(e) => setGrade(e.target.value)} list="grade-options" placeholder="Grade / Year" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} list="subject-options" placeholder="Subject / Course" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <datalist id="subject-options">{SUBJECT_OPTIONS.map((s) => <option key={s} value={s} />)}</datalist>
-        <datalist id="grade-options">{GRADE_LEVEL_OPTIONS.map((g) => <option key={g} value={g} />)}</datalist>
-        <input value={topics} onChange={(e) => setTopics(e.target.value)} placeholder="Topics (comma-separated)" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground md:col-span-2" />
-        <input type="number" value={durationWeeks} onChange={(e) => setDurationWeeks(Number(e.target.value))} placeholder="Weeks" className="px-3 py-2 bg-card border border-border rounded-lg text-foreground" />
-        <button
-          type="button"
-          onClick={generate}
-          disabled={loading}
-          className="grad-btn px-4 py-2 text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 md:col-span-5"
-        >
-          {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-          {loading ? "Generating…" : "Generate Course Plan"}
-        </button>
-      </div>
+      {/* Smart Prompt Box, locked to course_plan — same free-text + mic +
+          Interpret Intent + editable grade/subject/topics pattern as the
+          dashboard, feeding this page's own weekly-plan display below. */}
+      <SmartCreationBox
+        lockedArtifactType="course_plan"
+        showInlineResult={false}
+        showShortcuts={false}
+        heading="What course would you like to plan?"
+        promptPlaceholder="Tell Vivran what you want to plan... e.g. 'Plan 3 weeks of College 1st Year Economics covering Demand, Supply, and Market Equilibrium.'"
+        onGenerated={(result) => {
+          if (result.artifactType !== "course_plan") return;
+          setError(null);
+          if (!result.ok) {
+            setError(result.error);
+            setPlan(null);
+            return;
+          }
+          if (result.data.error) setError(result.data.error);
+          setPlan(result.data);
+        }}
+      />
 
       {error && (
         <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-300">
