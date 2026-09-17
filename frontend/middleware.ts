@@ -3,26 +3,40 @@ import { type NextRequest, NextResponse } from "next/server";
 /**
  * Route guards only — a lightweight redirect UX, not a security boundary.
  *
- * This deliberately does NOT construct a `@supabase/supabase-js` client here.
- * `createServerClient`/`createClient` unconditionally builds the full client
- * (including its WebSocket-based Realtime module), which pulls in Node-only
- * code incompatible with the Edge Runtime middleware always runs under —
- * verified live: it throws `ReferenceError: __dirname is not defined` in
- * Vercel's production Edge sandbox (does not reproduce in `next dev`/`next
- * start` locally, which use a more permissive Edge shim).
+ * Root cause of the long-running `ReferenceError: __dirname is not defined`
+ * crash, finally found by grepping the actual compiled
+ * `.next/server/middleware.js` for `__dirname`: it was never our code, and
+ * never Supabase specifically. `NextRequest.cookies` (i.e. `request.cookies`)
+ * is backed by Next.js's internal, ncc-bundled copy of the `cookie` npm
+ * package, whose module wrapper unconditionally evaluates
+ * `__nccwpck_require__.ab = __dirname + "/"` as boilerplate the moment that
+ * module is required — which happens the instant any code touches
+ * `request.cookies`, regardless of what the surrounding code does. `__dirname`
+ * doesn't exist in Vercel's Edge sandbox, so simply calling
+ * `request.cookies.getAll()` here was enough to crash the function on its
+ * own, independent of the Supabase client we removed from this file earlier.
  *
- * Instead we just check for the presence of Supabase's session cookie
- * (`sb-<project-ref>-auth-token`, chunked as `...-auth-token.0`/`.1` when
- * large). This is intentionally not cryptographic verification — a forged
- * cookie only gets past this redirect, not past real auth: every actual
- * Supabase query is still gated by RLS, and every backend API call is still
- * gated by real JWT verification (see backend/app/core/auth.py). Token
- * refresh happens client-side via the browser's supabase-js client
+ * Fix: read the raw `Cookie` request header ourselves instead of going
+ * through `NextRequest.cookies`, which sidesteps that internal dependency
+ * entirely. Verified: `.next/server/middleware.js` no longer contains the
+ * bundled `cookie` package or any `__dirname` reference after this change.
+ *
+ * This is intentionally not cryptographic verification — a forged cookie
+ * only gets past this redirect, not past real auth: every actual Supabase
+ * query is still gated by RLS, and every backend API call is still gated by
+ * real JWT verification (see backend/app/core/auth.py). Token refresh
+ * happens client-side via the browser's supabase-js client
  * (autoRefreshToken, on by default), so nothing is lost by not refreshing
  * here.
  */
 function hasSupabaseSession(request: NextRequest): boolean {
-  return request.cookies.getAll().some((c) => c.name.startsWith("sb-") && c.name.includes("-auth-token"));
+  const cookieHeader = request.headers.get("cookie") ?? "";
+  return cookieHeader
+    .split(";")
+    .some((pair) => {
+      const name = pair.trim().split("=", 1)[0];
+      return name.startsWith("sb-") && name.includes("-auth-token");
+    });
 }
 
 export default function middleware(request: NextRequest): NextResponse {
@@ -48,21 +62,12 @@ export default function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  // Back on the default Edge runtime. `runtime: "nodejs"` was tried here to
-  // work around an Edge-sandbox `__dirname` crash, but that traded it for a
-  // worse, confirmed-via-runtime-logs failure: Next.js 14.2.x's middleware
-  // compiler emits `/var/task/middleware.js` with raw ESM `import` syntax,
-  // which Vercel's Node.js middleware runtime loads as CommonJS — an
-  // immediate `SyntaxError: Cannot use import statement outside a module`
-  // before this file's own code ever runs. That's a Next.js/Vercel
-  // bundling-target mismatch, not something fixable from application code.
-  // Reverting to Edge (the actually-supported path for this Next.js
-  // version) now that Next.js has been patched 14.2.15 -> 14.2.35 for the
-  // React2Shell security advisories — worth re-testing since the original
-  // __dirname crash was never explained and may have been fixed along with
-  // it. If it recurs, the fix has to be either dropping this file's already
-  // minimal Node-API-free logic further, or waiting on a Next.js patch that
-  // properly supports the newer runtime option.
+  // Default Edge runtime. `runtime: "nodejs"` was tried at one point and
+  // reverted — it hit a separate, real Next.js 14.2.x bug (the compiled
+  // middleware.js uses ESM `import` syntax that Vercel's Node.js middleware
+  // runtime can't load via its CommonJS loader). Edge is the correctly
+  // supported runtime for this Next.js version, and the actual crash on
+  // Edge (see hasSupabaseSession's comment above) is now fixed at the root.
   matcher: [
     /*
      * Run on everything except static assets, favicon, and Supabase/OAuth
