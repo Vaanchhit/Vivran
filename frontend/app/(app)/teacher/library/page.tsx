@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Library } from "lucide-react";
+import { EmptyState } from "@/app/components/empty-state";
 
 export default function LibraryPage() {
   return (
@@ -14,7 +15,12 @@ export default function LibraryPage() {
           Browse saved course templates, standardized syllabus structures, and shared educational material.
         </p>
       </div>
+
+      <EmptyState
+        icon={Library}
+        title="Your library is empty for now"
+        description="Saved course templates and shared curriculum material will show up here once you've built a few. Uploaded materials already live under Materials — this is for reusable templates across courses, coming soon."
+      />
     </div>
   );
 }
-

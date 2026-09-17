@@ -111,6 +111,7 @@ export function TeacherSidebar() {
           <button
             onClick={handleLogout}
             title="Logout"
+            aria-label="Logout"
             className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-white/5 transition-colors"
           >
             <LogOut className="w-4 h-4" />
