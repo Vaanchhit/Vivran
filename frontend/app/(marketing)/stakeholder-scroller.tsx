@@ -72,10 +72,15 @@ export function StakeholderScroller() {
       style={{ height: `${STAKEHOLDERS.length * 100}vh` }}
       aria-label="Who Vivran is built for"
     >
-      <div className="sticky top-0 h-screen flex items-center overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6 w-full grid md:grid-cols-[280px_1fr] gap-12 items-center">
+      {/* top offset accounts for the sticky GlobalHeader (measured ~69px) so
+          this panel's content isn't clipped underneath it. Content is
+          top-aligned rather than centered: the copy block can be taller than
+          some viewports, and top-aligned overflow spills harmlessly toward
+          the bottom of the panel instead of clipping under the header. */}
+      <div className="sticky top-[72px] h-[calc(100vh-72px)] flex items-start overflow-hidden">
+        <div className="max-w-6xl mx-auto px-6 w-full grid md:grid-cols-[280px_1fr] gap-12 items-start pt-10 sm:pt-14">
           {/* Dynamic indicator — the visual that changes as you scroll */}
-          <div className="hidden md:flex flex-col items-start gap-8">
+          <div className="hidden md:flex flex-col items-start gap-6">
             <AnimatePresence mode="wait">
               <motion.div
                 key={current.key}
@@ -83,13 +88,13 @@ export function StakeholderScroller() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -16 }}
                 transition={{ duration: 0.35, ease: "easeOut" }}
-                className="w-28 h-28 rounded-3xl flex items-center justify-center border"
+                className="w-20 h-20 rounded-3xl flex items-center justify-center border"
                 style={{
                   background: `radial-gradient(circle, ${current.color}22 0%, transparent 70%)`,
                   borderColor: `${current.color}40`,
                 }}
               >
-                <Icon className="w-12 h-12" style={{ color: current.color }} />
+                <Icon className="w-9 h-9" style={{ color: current.color }} />
               </motion.div>
             </AnimatePresence>
 
@@ -125,16 +130,16 @@ export function StakeholderScroller() {
                 transition={{ duration: 0.4, ease: "easeOut" }}
               >
                 <span
-                  className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-[0.1em] mb-4 border"
+                  className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-[0.1em] mb-3 border"
                   style={{ color: current.color, borderColor: `${current.color}40`, background: `${current.color}14` }}
                 >
                   {current.eyebrow} · {current.label}
                 </span>
-                <h3 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-tight">
+                <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground leading-tight">
                   {current.headline}
                 </h3>
-                <p className="mt-5 text-base text-muted leading-relaxed max-w-xl">{current.body}</p>
-                <p className="mt-6 text-sm italic text-foreground/70 max-w-xl border-l-2 pl-4" style={{ borderColor: `${current.color}60` }}>
+                <p className="mt-4 text-sm sm:text-base text-muted leading-relaxed max-w-xl">{current.body}</p>
+                <p className="mt-4 text-sm italic text-foreground/70 max-w-xl border-l-2 pl-4" style={{ borderColor: `${current.color}60` }}>
                   {current.footnote}
                 </p>
               </motion.div>

@@ -40,15 +40,22 @@ const pillars = [
 
 export default function LandingPage() {
   return (
-    <div className="relative overflow-hidden">
-      {/* Hero radial glows */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-24 left-1/4 w-[540px] h-[540px] rounded-full" style={{ background: "radial-gradient(circle, rgba(124,110,250,0.12) 0%, transparent 70%)" }} />
-        <div className="absolute -top-10 right-0 w-[420px] h-[420px] rounded-full" style={{ background: "radial-gradient(circle, rgba(79,195,247,0.07) 0%, transparent 70%)" }} />
-      </div>
+    <div className="relative">
+      {/* overflow-hidden is scoped to just this wrapper (not the whole page)
+          because it clips the decorative glow circles below — an
+          overflow-hidden ancestor anywhere above the stakeholder scroller
+          breaks its position:sticky panel (sticky resolves against the
+          nearest ancestor with non-visible overflow, and this div never
+          itself scrolls, so a sticky descendant would just scroll away). */}
+      <div className="relative overflow-hidden">
+        {/* Hero radial glows */}
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -top-24 left-1/4 w-[540px] h-[540px] rounded-full" style={{ background: "radial-gradient(circle, rgba(124,110,250,0.12) 0%, transparent 70%)" }} />
+          <div className="absolute -top-10 right-0 w-[420px] h-[420px] rounded-full" style={{ background: "radial-gradient(circle, rgba(79,195,247,0.07) 0%, transparent 70%)" }} />
+        </div>
 
-      {/* Hero */}
-      <section className="relative max-w-6xl mx-auto px-6 pt-24 pb-16 text-center">
+        {/* Hero */}
+        <section className="relative max-w-6xl mx-auto px-6 pt-24 pb-16 text-center">
         <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold uppercase tracking-[0.1em] text-[#7C6EFA] bg-[#7C6EFA]/8 border border-[#7C6EFA]/20 mb-6">
           <Sparkles className="w-3.5 h-3.5" /> AI Teacher Workflow Platform
         </span>
@@ -80,7 +87,8 @@ export default function LandingPage() {
           <span className="flex items-center gap-2"><FileCheck2 className="w-4 h-4 text-[#7C6EFA]" /> Marks &amp; rubric validation</span>
           <span className="flex items-center gap-2"><GraduationCap className="w-4 h-4 text-emerald-400" /> Built for classrooms &amp; college courses</span>
         </div>
-      </section>
+        </section>
+      </div>
 
       {/* Three stakeholders — dynamic scroll-linked section */}
       <section className="relative border-t border-border">
