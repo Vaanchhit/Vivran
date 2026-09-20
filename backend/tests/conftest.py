@@ -3,6 +3,13 @@
 Sets a fixed SUPABASE_JWT_SECRET so test tokens can be minted locally without a
 live Supabase project. Supabase REST calls are never made: provisioning falls
 back to deterministic local workspace ids (see app/services/provisioning.py).
+
+backend/.env now holds this project's real, live Supabase credentials (same
+project used in local dev and production — see its own comments), so we
+force-blank SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY here rather than rely on
+the .env file being absent. Without this, pydantic-settings would load the
+real credentials from .env and every "offline" test below would silently
+issue live REST/Admin-API calls against the production Supabase project.
 """
 import datetime
 import os
@@ -10,8 +17,14 @@ import uuid
 
 import pytest
 
-# Must be set before importing the app so Settings picks it up.
-os.environ.setdefault("SUPABASE_JWT_SECRET", "test-supabase-jwt-secret")
+# Must be set before importing the app so Settings picks it up. Plain
+# assignment (not setdefault) so these always win over whatever is in the
+# real .env file — pydantic-settings prefers actual process env vars over
+# env_file values.
+os.environ["SUPABASE_JWT_SECRET"] = "test-supabase-jwt-secret"
+os.environ["SUPABASE_URL"] = ""
+os.environ["SUPABASE_SERVICE_ROLE_KEY"] = ""
+os.environ["SUPABASE_ANON_KEY"] = ""
 os.environ.setdefault("APP_ENV", "test")
 
 import jwt  # noqa: E402

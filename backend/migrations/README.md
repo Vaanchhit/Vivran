@@ -7,6 +7,11 @@ Apply to a Supabase/Postgres database in order. Two options:
 1. Open your Supabase project → **SQL Editor** → **New query**.
 2. Paste `0001_core_tables.sql` → Run.
 3. Paste `0002_auth_rls.sql` → Run.
+4. Paste `0003_vector_search.sql` → Run.
+5. Paste `0004_onboarding_preferences.sql` → Run (adds `onboarding_completed`,
+   `preferred_language`, `preferred_difficulty` to `teacher_profiles` for the
+   first-time onboarding wizard; safe to re-run, backfills existing rows so
+   they're never forced through onboarding).
 
 ## Option B — psql / Supabase CLI
 
