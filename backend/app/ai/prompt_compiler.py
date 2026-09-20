@@ -71,11 +71,18 @@ def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
         topics.append("Marketing Mix")
     if "gdp" in prompt_lower or "national income" in prompt_lower:
         topics.append("National Income Accounting")
-    if not topics:
-        topics = ["General Topic"]
+    # Leave blank rather than fabricate a topic — the frontend already
+    # treats an empty topics list as "nothing confidently extracted" and
+    # lets the teacher add their own (see smart-creation-box.tsx).
 
-    # Extract grade — school class or college year
-    grade = "Class 10"
+    # Extract grade — school class or college year. Left blank ("") rather
+    # than defaulted to an unrelated grade when nothing matches: the
+    # frontend treats "" the same as a missing value and prompts the
+    # teacher to pick one explicitly instead of silently running with a
+    # guess (the same "don't assume anything" rule the smart-creation-box
+    # UI already enforces for the real Gemini parsing path — this heuristic
+    # fallback was the one place still violating it).
+    grade = ""
     college_years = {
         "1st year": "College 1st Year", "first year": "College 1st Year",
         "2nd year": "College 2nd Year", "second year": "College 2nd Year",
@@ -92,8 +99,8 @@ def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
             if g in prompt_lower:
                 grade = g.title()
 
-    # Extract subject
-    subject = "Science"
+    # Extract subject — same "leave blank, don't guess" rule as grade above.
+    subject = ""
     if "biology" in prompt_lower:
         subject = "Biology"
     elif "physics" in prompt_lower:

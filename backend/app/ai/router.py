@@ -40,8 +40,11 @@ class ModelRouter:
             "model_name": model_name,
             "task_type": task,
             "intent": request.prompt,
-            "subject": request.subject or "General",
-            "grade": request.grade or "Class 10",
+            # Diagnostic routing metadata, not shown to teachers (the actual
+            # content intent is StructuredIntent from prompt_compiler.py) —
+            # but no reason to fabricate a value here either.
+            "subject": request.subject,
+            "grade": request.grade,
             "status": "routed",
         }
 
