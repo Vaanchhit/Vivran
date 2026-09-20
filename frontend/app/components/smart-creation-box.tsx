@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, Loader2, X, Plus } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import {
   parseTeacherIntent,
   transcribeAudio,
@@ -88,6 +89,11 @@ interface Interpretation {
   difficulty: string;
   application_weight: number;
   artifactType: string;
+  /** True when grade/subject were filled from the teacher's saved onboarding
+   * preferences rather than something the AI actually extracted from the
+   * prompt — shown as a small hint, still fully editable either way. */
+  gradeFromPreference?: boolean;
+  subjectFromPreference?: boolean;
 }
 
 /** Result reported back to the host page after Confirm & Generate. `params`
@@ -136,6 +142,7 @@ export function SmartCreationBox({
   heading = "What would you like to create?",
   promptPlaceholder,
 }: SmartCreationBoxProps) {
+  const { user } = useAuth();
   const [promptText, setPromptText] = useState("");
   const [loading, setLoading] = useState(false);
   const [interpretation, setInterpretation] = useState<Interpretation | null>(null);
@@ -245,16 +252,24 @@ export function SmartCreationBox({
       setDegraded(data.degraded);
 
       // Never assume grade/subject/topics the AI didn't actually extract —
-      // leave blank so the dropdowns below make the gap visible and force an
-      // explicit pick, instead of silently defaulting to an unrelated example.
+      // that stays blank so the dropdowns below make the gap visible and
+      // force an explicit pick. The one exception: the teacher's own
+      // explicitly-saved onboarding preferences (their default grade/
+      // subject/difficulty) are a real signal, not an unrelated guess, so
+      // those fill the gap instead of leaving it blank — still fully
+      // editable either way, never locking out a different pick.
+      const defaultGrade = user?.preferredGrades?.[0] || "";
+      const defaultSubject = user?.preferredSubjects?.[0] || "";
       setInterpretation({
         raw_prompt: text,
-        grade: parsed.grade || "",
-        subject: parsed.subject || "",
+        grade: parsed.grade || defaultGrade,
+        subject: parsed.subject || defaultSubject,
         topics: parsed.topics?.length ? parsed.topics : [],
-        difficulty: parsed.difficulty || "medium",
+        difficulty: parsed.difficulty || user?.preferredDifficulty || "medium",
         application_weight: parsed.application_weight,
         artifactType: lockedArtifactType || inferArtifactType(parsed.requested_artifacts || []),
+        gradeFromPreference: !parsed.grade && !!defaultGrade,
+        subjectFromPreference: !parsed.subject && !!defaultSubject,
       });
       if (parsed.marks) setMarks(parsed.marks);
     } catch (err) {
@@ -501,10 +516,15 @@ export function SmartCreationBox({
             {requiresGradeSubject && (
               <>
                 <div>
-                  <div className="text-[10px] text-muted mb-1">Grade / Year</div>
+                  <div className="text-[10px] text-muted mb-1 flex items-center gap-1">
+                    Grade / Year
+                    {interpretation.gradeFromPreference && (
+                      <span className="text-[9px] text-[#7C6EFA] font-normal normal-case">· from your profile</span>
+                    )}
+                  </div>
                   <input
                     value={interpretation.grade}
-                    onChange={(e) => setInterpretation({ ...interpretation, grade: e.target.value })}
+                    onChange={(e) => setInterpretation({ ...interpretation, grade: e.target.value, gradeFromPreference: false })}
                     list="smart-creation-grade-options"
                     placeholder="Pick or type…"
                     className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
@@ -515,10 +535,15 @@ export function SmartCreationBox({
                 </div>
 
                 <div>
-                  <div className="text-[10px] text-muted mb-1">Subject</div>
+                  <div className="text-[10px] text-muted mb-1 flex items-center gap-1">
+                    Subject
+                    {interpretation.subjectFromPreference && (
+                      <span className="text-[9px] text-[#7C6EFA] font-normal normal-case">· from your profile</span>
+                    )}
+                  </div>
                   <input
                     value={interpretation.subject}
-                    onChange={(e) => setInterpretation({ ...interpretation, subject: e.target.value })}
+                    onChange={(e) => setInterpretation({ ...interpretation, subject: e.target.value, subjectFromPreference: false })}
                     list="smart-creation-subject-options"
                     placeholder="Pick or type…"
                     className="w-full px-2.5 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"

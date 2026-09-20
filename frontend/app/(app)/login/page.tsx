@@ -4,7 +4,9 @@ import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import type { Role } from "@/types";
-import { Shield, BookOpen, GraduationCap, Building2, ArrowRight } from "lucide-react";
+import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2 } from "lucide-react";
+
+const WAITLIST_EMAIL = "info@vivran.co.in";
 
 export default function LoginPage() {
   return (
@@ -20,15 +22,19 @@ export default function LoginPage() {
   );
 }
 
+type Mode = "signin" | "signup";
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, login, loginWithGoogle } = useAuth();
+  const { user, login, loginWithGoogle, signUp } = useAuth();
+  const [mode, setMode] = useState<Mode>("signin");
   const [selectedRole, setSelectedRole] = useState<Role>("teacher");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [signupSuccessMessage, setSignupSuccessMessage] = useState("");
 
   const authError = searchParams.get("error");
   const next = searchParams.get("next") || "/teacher";
@@ -44,26 +50,49 @@ function LoginForm() {
     }
   }, [user, next, router]);
 
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    setError("");
+    setSignupSuccessMessage("");
+  };
+
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSignupSuccessMessage("");
     setSubmitting(true);
 
     if (selectedRole !== "teacher") {
-      setError("This role space is coming soon.");
+      setError(`${selectedRole === "student" ? "Student" : "Institution"} access isn't open yet — email ${WAITLIST_EMAIL} to join the waitlist or ask questions.`);
       setSubmitting(false);
       return;
     }
 
     try {
-      const ok = await login(email.trim(), password);
-      if (ok) {
-        router.push(next);
+      if (mode === "signup") {
+        const result = await signUp(email.trim(), password);
+        if (!result.ok) {
+          setError(result.error || "Could not create your account. Please try again.");
+        } else if (result.needsEmailConfirmation) {
+          setSignupSuccessMessage("Account created! Check your email to confirm it, then sign in below.");
+          setMode("signin");
+          setPassword("");
+        } else {
+          // Session was issued immediately (no email confirmation required
+          // on this project) — TeacherLayout will show the onboarding
+          // wizard automatically for this brand-new account.
+          router.push(next);
+        }
       } else {
-        setError("Invalid email or password. Please try again.");
+        const ok = await login(email.trim(), password);
+        if (ok) {
+          router.push(next);
+        } else {
+          setError("Invalid email or password. Please try again.");
+        }
       }
     } catch {
-      setError("Could not sign in. Check your connection and try again.");
+      setError(mode === "signup" ? "Could not create your account. Check your connection and try again." : "Could not sign in. Check your connection and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -92,7 +121,7 @@ function LoginForm() {
         </div>
 
         <h2 className="text-center text-3xl font-extrabold font-display tracking-tight text-foreground">
-          Enter Your Workspace
+          {mode === "signup" ? "Create Your Workspace" : "Enter Your Workspace"}
         </h2>
         <p className="mt-2 text-center text-sm text-muted">
           AI-powered teacher workflow & content creation platform
@@ -101,7 +130,7 @@ function LoginForm() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-lg z-10">
         <div className="bg-surface border border-border backdrop-blur-xl py-8 px-6 shadow-2xl rounded-2xl sm:px-10">
-          
+
           {/* Header pill */}
           <div className="flex justify-between items-center mb-6">
             <span className="text-xs uppercase tracking-wider font-semibold text-muted">
@@ -113,10 +142,10 @@ function LoginForm() {
           </div>
 
           {/* Role selector cards (3 spaces) */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-3 gap-3 mb-4">
             <button
               type="button"
-              onClick={() => setSelectedRole("teacher")}
+              onClick={() => { setSelectedRole("teacher"); setError(""); }}
               className={`p-3 rounded-xl border text-left transition-all ${
                 selectedRole === "teacher"
                   ? "bg-[#7C6EFA]/15 border-[#7C6EFA] text-white shadow-md shadow-[#7C6EFA]/10"
@@ -132,7 +161,10 @@ function LoginForm() {
 
             <button
               type="button"
-              onClick={() => setSelectedRole("student")}
+              onClick={() => {
+                setSelectedRole("student");
+                setError(`Student access isn't open yet — email ${WAITLIST_EMAIL} to join the waitlist or ask questions.`);
+              }}
               className={`p-3 rounded-xl border text-left transition-all opacity-60 ${
                 selectedRole === "student"
                   ? "bg-[#7C6EFA]/15 border-[#7C6EFA] text-white"
@@ -148,7 +180,10 @@ function LoginForm() {
 
             <button
               type="button"
-              onClick={() => setSelectedRole("institution")}
+              onClick={() => {
+                setSelectedRole("institution");
+                setError(`Institution access isn't open yet — email ${WAITLIST_EMAIL} to join the waitlist or ask questions.`);
+              }}
               className={`p-3 rounded-xl border text-left transition-all opacity-60 ${
                 selectedRole === "institution"
                   ? "bg-[#7C6EFA]/15 border-[#7C6EFA] text-white"
@@ -162,6 +197,27 @@ function LoginForm() {
               <div className="text-[10px] text-muted font-medium mt-0.5">Coming Soon</div>
             </button>
           </div>
+
+          {selectedRole !== "teacher" && (
+            <div className="mb-6 p-3.5 rounded-xl bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 text-[#4FC3F7] text-xs leading-relaxed flex items-start gap-2">
+              <Mail className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>
+                <strong>{selectedRole === "student" ? "Student" : "Institution"} access is coming soon.</strong>{" "}
+                Email{" "}
+                <a href={`mailto:${WAITLIST_EMAIL}`} className="underline font-semibold">
+                  {WAITLIST_EMAIL}
+                </a>{" "}
+                to join the waitlist or ask any questions.
+              </span>
+            </div>
+          )}
+
+          {signupSuccessMessage && (
+            <div className="mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-start gap-2">
+              <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+              {signupSuccessMessage}
+            </div>
+          )}
 
           {/* Form */}
           <form className="space-y-4" onSubmit={handleLoginSubmit}>
@@ -189,9 +245,10 @@ function LoginForm() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                placeholder={mode === "signup" ? "Create a password (min. 6 characters)" : "Enter your password"}
                 disabled={selectedRole !== "teacher"}
-                autoComplete="current-password"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                minLength={mode === "signup" ? 6 : undefined}
                 required
                 className="w-full h-11 px-3.5 bg-white/5 border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-colors disabled:opacity-50"
               />
@@ -214,10 +271,30 @@ function LoginForm() {
               disabled={selectedRole !== "teacher" || submitting}
               className="w-full h-11 bg-gradient-to-r from-[#7C6EFA] to-[#4FC3F7] text-white font-medium text-sm rounded-xl shadow-lg shadow-[#7C6EFA]/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? "Signing in..." : "Enter Teacher Terminal"}{" "}
+              {submitting
+                ? mode === "signup" ? "Creating account..." : "Signing in..."
+                : mode === "signup" ? "Create Account" : "Enter Teacher Terminal"}{" "}
               {!submitting && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>
+
+          <div className="mt-4 text-center text-xs text-muted">
+            {mode === "signup" ? (
+              <>
+                Already have an account?{" "}
+                <button type="button" onClick={() => switchMode("signin")} className="text-[#4FC3F7] font-medium hover:underline">
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <>
+                New to Vivran?{" "}
+                <button type="button" onClick={() => switchMode("signup")} className="text-[#4FC3F7] font-medium hover:underline">
+                  Create an account
+                </button>
+              </>
+            )}
+          </div>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
@@ -252,4 +329,3 @@ function LoginForm() {
     </div>
   );
 }
-

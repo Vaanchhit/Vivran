@@ -10,6 +10,15 @@ export interface UserSession {
   avatar_url?: string;
   workspace_id?: string;
   authenticated: boolean;
+  /** Whether the first-time subject/grade/language onboarding wizard has
+   * been completed. Defaults to `true` (fail-open) whenever it can't be
+   * determined, so a backend hiccup never traps someone behind a wizard
+   * they can't get past — see auth-context.tsx's toUserSession(). */
+  onboardingCompleted: boolean;
+  preferredSubjects?: string[];
+  preferredGrades?: string[];
+  preferredLanguage?: string;
+  preferredDifficulty?: string;
 }
 
 export interface IntentRequirement {

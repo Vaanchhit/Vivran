@@ -61,6 +61,27 @@ export interface ProvisionResponse {
   email: string;
   full_name: string;
   workspace_id: string;
+  onboarding_completed: boolean;
+  subjects: string[];
+  grades: string[];
+  preferred_language: string | null;
+  preferred_difficulty: string | null;
+}
+
+export interface PreferencesPayload {
+  subjects: string[];
+  grades: string[];
+  preferred_language?: string;
+  preferred_difficulty?: string;
+}
+
+export interface PreferencesResponse {
+  status: string;
+  onboarding_completed: boolean;
+  subjects: string[];
+  grades: string[];
+  preferred_language: string | null;
+  preferred_difficulty: string | null;
 }
 
 function buildHeaders(): Record<string, string> {
@@ -86,7 +107,7 @@ async function parseErrorDetail(res: Response): Promise<string> {
 }
 
 async function request<T>(
-  method: "GET" | "POST",
+  method: "GET" | "POST" | "PUT" | "DELETE",
   path: string,
   body?: unknown,
   headers: Record<string, string> = {},
@@ -136,6 +157,14 @@ export async function provisionWorkspace(accessToken: string): Promise<Provision
     throw new Error(`Provisioning failed (${res.status})`);
   }
   return res.json();
+}
+
+export async function updatePreferences(payload: PreferencesPayload): Promise<PreferencesResponse> {
+  return request<PreferencesResponse>("PUT", "/auth/preferences", payload);
+}
+
+export async function deleteAccount(): Promise<{ status: string }> {
+  return request<{ status: string }>("DELETE", "/auth/account");
 }
 
 export async function parseTeacherIntent(

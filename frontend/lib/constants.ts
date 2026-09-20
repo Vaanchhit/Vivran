@@ -38,6 +38,25 @@ export const SUBJECT_OPTIONS = [
   "Computer Science",
 ];
 
+// Starter list for the onboarding wizard's language preference — major
+// Indian languages given the target audience (commerce college teachers in
+// India), plus "Other" which reveals a free-text field. Not a closed list:
+// same "preset + custom option live" principle used everywhere else.
+export const LANGUAGE_OPTIONS = [
+  "English",
+  "Hindi",
+  "Bengali",
+  "Tamil",
+  "Telugu",
+  "Marathi",
+  "Gujarati",
+  "Kannada",
+  "Malayalam",
+  "Punjabi",
+  "Urdu",
+  "Other",
+];
+
 export const DIFFICULTY_OPTIONS: { value: string; label: string }[] = [
   { value: "easy", label: "Easy" },
   { value: "medium", label: "Medium" },
