@@ -1,7 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { GlobalHeader } from "@/app/components/global-header";
 
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  // The root landing page ships its own complete nav + footer (ported from
+  // the original static design) — stacking this layout's generic header/
+  // footer on top of it would duplicate navigation. /student and
+  // /institution still use the shared marketing chrome.
+  const isRoot = pathname === "/";
+
+  if (isRoot) return <>{children}</>;
+
   return (
     <>
       <GlobalHeader />
