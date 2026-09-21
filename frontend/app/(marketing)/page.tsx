@@ -797,7 +797,7 @@ export default function LandingPage() {
           <div className="team-header">
             <span className="section-eyebrow reveal">Who&rsquo;s Building This</span>
             <h2 className="reveal reveal-d1">Built by someone who<br />lived the problem.</h2>
-            <p className="reveal reveal-d2" style={{ marginTop: 16 }}>From SRCC. Frustrated with the same static lectures, the same guessing games, the same unreachable professors.</p>
+            <p className="reveal reveal-d2" style={{ marginTop: 16 }}>From SRCC. Built out of frustration with static lectures that leave students guessing and professors with no real signal on what&rsquo;s landing.</p>
           </div>
           <div className="team-grid team-grid-single">
             <div className="team-card reveal reveal-d1">
