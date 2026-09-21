@@ -3,10 +3,22 @@
 import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { verifyReferralCode } from "@/services/api";
 import type { Role } from "@/types";
-import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2 } from "lucide-react";
+import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound } from "lucide-react";
 
 const WAITLIST_EMAIL = "info@vivran.co.in";
+
+const REQUEST_ACCESS_MAILTO = `mailto:${WAITLIST_EMAIL}?${new URLSearchParams({
+  subject: "Vivran Beta Access Request",
+  body:
+    "Hi Vivran team,\n\n" +
+    "I'd like to request access to the Vivran teacher beta — I don't have a referral code yet.\n\n" +
+    "Name: \n" +
+    "College / Institution: \n" +
+    "Subject(s) you teach: \n\n" +
+    "Thanks!",
+}).toString().replace(/\+/g, "%20")}`;
 
 export default function LoginPage() {
   return (
@@ -32,6 +44,7 @@ function LoginForm() {
   const [selectedRole, setSelectedRole] = useState<Role>("teacher");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [signupSuccessMessage, setSignupSuccessMessage] = useState("");
@@ -54,6 +67,7 @@ function LoginForm() {
     setMode(next);
     setError("");
     setSignupSuccessMessage("");
+    setReferralCode("");
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -70,6 +84,16 @@ function LoginForm() {
 
     try {
       if (mode === "signup") {
+        // Beta gate: verified server-side (see services/api.ts's comment on
+        // why) BEFORE we ever call supabase.auth.signUp() — a wrong or
+        // missing code never reaches Supabase at all.
+        const codeOk = await verifyReferralCode(referralCode.trim());
+        if (!codeOk) {
+          setError("That referral code isn't valid. Vivran is invite-only during beta — request access below and we'll get you one.");
+          setSubmitting(false);
+          return;
+        }
+
         const result = await signUp(email.trim(), password);
         if (!result.ok) {
           setError(result.error || "Could not create your account. Please try again.");
@@ -254,9 +278,37 @@ function LoginForm() {
               />
             </div>
 
+            {mode === "signup" && selectedRole === "teacher" && (
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1.5 flex items-center gap-1.5">
+                  <KeyRound className="w-3 h-3" /> Referral Code
+                </label>
+                <input
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => setReferralCode(e.target.value)}
+                  placeholder="Enter the code we sent you"
+                  autoComplete="off"
+                  required
+                  className="w-full h-11 px-3.5 bg-white/5 border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-colors"
+                />
+                <p className="mt-1.5 text-[11px] text-muted">
+                  Vivran is invite-only during beta.{" "}
+                  <a href={REQUEST_ACCESS_MAILTO} className="text-[#4FC3F7] font-medium hover:underline">
+                    Don&rsquo;t have a code? Request access
+                  </a>
+                </p>
+              </div>
+            )}
+
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs">
-                {error}
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs space-y-2">
+                <div>{error}</div>
+                {mode === "signup" && (
+                  <a href={REQUEST_ACCESS_MAILTO} className="inline-flex items-center gap-1.5 text-[#4FC3F7] font-semibold hover:underline">
+                    <Mail className="w-3.5 h-3.5" /> Request access via email
+                  </a>
+                )}
               </div>
             )}
 

@@ -167,6 +167,13 @@ export async function deleteAccount(): Promise<{ status: string }> {
   return request<{ status: string }>("DELETE", "/auth/account");
 }
 
+/** Checked before supabase.auth.signUp() during beta — no session exists
+ * yet at this point, so this call is unauthenticated by design. */
+export async function verifyReferralCode(code: string): Promise<boolean> {
+  const { valid } = await request<{ valid: boolean }>("POST", "/auth/verify-referral", { code });
+  return valid;
+}
+
 export async function parseTeacherIntent(
   prompt: string,
   subject?: string,

@@ -18,6 +18,23 @@ from app.services.provisioning import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+class ReferralCodeCheck(BaseModel):
+    code: str
+
+
+@router.post("/verify-referral")
+def verify_referral(payload: ReferralCodeCheck) -> dict:
+    """Checks a beta-access referral code — no auth required (there is no
+    session yet at signup time). The frontend calls this BEFORE attempting
+    supabase.auth.signUp(), so account creation itself stays gated behind a
+    correct code while the product is invite-only. Deliberately checked
+    server-side rather than as a literal string in frontend code, which
+    would ship the real code in plain text in the JS bundle.
+    """
+    valid = payload.code.strip() == settings.referral_code
+    return {"valid": valid}
+
+
 @router.post("/provision")
 def provision_workspace(user: CurrentUser = Depends(require_teacher)) -> dict:
     """Upsert teacher_profile + default workspace on first login.

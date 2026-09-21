@@ -48,6 +48,14 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
 
+    # Beta-access gate: a shared code required to create a new teacher
+    # account while the product is invite-only. Deliberately NOT enforced
+    # client-side (see app/api/auth.py's /auth/verify-referral) — a
+    # frontend-only check would ship this value in plain text in the JS
+    # bundle, readable via view-source. Overridable via REFERRAL_CODE env
+    # var so it can be rotated without a code change/redeploy.
+    referral_code: str = "632006"
+
     class Config:
         env_file = ".env"
         case_sensitive = False
