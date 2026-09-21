@@ -796,28 +796,15 @@ export default function LandingPage() {
         <div className="container">
           <div className="team-header">
             <span className="section-eyebrow reveal">Who&rsquo;s Building This</span>
-            <h2 className="reveal reveal-d1">Built by people who<br />lived the problem.</h2>
-            <p className="reveal reveal-d2" style={{ marginTop: 16 }}>Both from SRCC. Both frustrated with the same static lectures, the same guessing games, the same unreachable professors.</p>
+            <h2 className="reveal reveal-d1">Built by someone who<br />lived the problem.</h2>
+            <p className="reveal reveal-d2" style={{ marginTop: 16 }}>From SRCC. Frustrated with the same static lectures, the same guessing games, the same unreachable professors.</p>
           </div>
-          <div className="team-grid">
+          <div className="team-grid team-grid-single">
             <div className="team-card reveal reveal-d1">
-              <div className="team-avatar" style={{ background: "linear-gradient(135deg,#6366F1,#8B5CF6)" }}>RJ</div>
-              <div className="team-info">
-                <h3><a href="https://www.linkedin.com/in/rachitjain28/" target="_blank" rel="noreferrer" style={{ color: "var(--text-1)", textDecoration: "underline", textDecorationColor: "var(--accent-1)" }}>Rachit Jain</a></h3>
-                <div className="team-role">Co-founder</div>
-                <div style={{ fontSize: "0.8rem", marginBottom: 10 }}><a href="mailto:jainrachit4042@gmail.com" style={{ color: "var(--text-2)", textDecoration: "none" }}>jainrachit4042@gmail.com</a></div>
-                <p>20 years old. SRCC Commerce. Spent 2 years trying to understand macroeconomics from 1-hour lectures with no way to ask a follow-up question at 2am. Now building the answer.</p>
-                <div className="team-tag">
-                  <svg width="10" height="10" fill="none" viewBox="0 0 10 10"><path d="M5 1l1.18 2.39L9 3.82 7 5.77l.47 2.74L5 7.19l-2.47 1.32L3 5.77 1 3.82l2.82-.43z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" /></svg>
-                  SRCC · Delhi University
-                </div>
-              </div>
-            </div>
-            <div className="team-card reveal reveal-d2">
               <div className="team-avatar" style={{ background: "linear-gradient(135deg,#0EA5E9,#4FC3F7)" }}>VA</div>
               <div className="team-info">
                 <h3><a href="https://www.linkedin.com/in/vaanchhit-agarwal-549036296/" target="_blank" rel="noreferrer" style={{ color: "var(--text-1)", textDecoration: "underline", textDecorationColor: "var(--accent-2)" }}>Vaanchhit Agarwal</a></h3>
-                <div className="team-role">Co-founder</div>
+                <div className="team-role">Founder</div>
                 <div style={{ fontSize: "0.8rem", marginBottom: 10 }}><a href="mailto:vaanchhit06@gmail.com" style={{ color: "var(--text-2)", textDecoration: "none" }}>vaanchhit06@gmail.com</a></div>
                 <p>20 years old. SRCC Commerce. Obsessed with the infrastructure problem — how do you make a professor&rsquo;s knowledge available at 3am for every student, simultaneously, without lying?</p>
                 <div className="team-tag">
