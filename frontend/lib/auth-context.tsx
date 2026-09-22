@@ -27,7 +27,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   loginWithGoogle: () => Promise<void>;
-  signUp: (email: string, password: string) => Promise<SignUpResult>;
+  signUp: (email: string, password: string, fullName: string) => Promise<SignUpResult>;
   logout: () => Promise<void>;
   /** Saves the onboarding wizard's answers and flips onboardingCompleted to
    * true on the local user object immediately, so TeacherLayout stops
@@ -134,9 +134,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const signUp = async (email: string, password: string): Promise<SignUpResult> => {
+  const signUp = async (email: string, password: string, fullName: string): Promise<SignUpResult> => {
     if (!supabase) return { ok: false, error: "Not available" };
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
     if (error) return { ok: false, error: error.message };
     if (!data.session) {
       // Project requires email confirmation before a session is issued —

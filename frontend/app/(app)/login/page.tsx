@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { verifyReferralCode } from "@/services/api";
 import type { Role } from "@/types";
-import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound } from "lucide-react";
+import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound, User } from "lucide-react";
 
 const WAITLIST_EMAIL = "info@vivran.co.in";
 
@@ -42,6 +42,7 @@ function LoginForm() {
   const { user, login, loginWithGoogle, signUp } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
   const [selectedRole, setSelectedRole] = useState<Role>("teacher");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [referralCode, setReferralCode] = useState("");
@@ -68,6 +69,7 @@ function LoginForm() {
     setError("");
     setSignupSuccessMessage("");
     setReferralCode("");
+    setFullName("");
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -94,7 +96,7 @@ function LoginForm() {
           return;
         }
 
-        const result = await signUp(email.trim(), password);
+        const result = await signUp(email.trim(), password, fullName.trim());
         if (!result.ok) {
           setError(result.error || "Could not create your account. Please try again.");
         } else if (result.needsEmailConfirmation) {
@@ -245,6 +247,23 @@ function LoginForm() {
 
           {/* Form */}
           <form className="space-y-4" onSubmit={handleLoginSubmit}>
+            {mode === "signup" && selectedRole === "teacher" && (
+              <div>
+                <label className="block text-xs font-medium text-muted mb-1.5 flex items-center gap-1.5">
+                  <User className="w-3 h-3" /> Full Name
+                </label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  autoComplete="name"
+                  required
+                  className="w-full h-11 px-3.5 bg-white/5 border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-colors"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-medium text-muted mb-1.5">
                 Email
