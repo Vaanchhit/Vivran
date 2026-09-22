@@ -30,6 +30,7 @@ _local_profiles: Dict[str, Dict[str, Any]] = {}
 def _default_local_profile() -> Dict[str, Any]:
     return {
         "onboarding_completed": False,
+        "referral_verified": False,
         "subjects": [],
         "grades": [],
         "preferred_language": None,
@@ -131,6 +132,11 @@ def _profile_state(row: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         # Once the migration runs, the key is always present and real values
         # (backfilled `true` for old rows, `false` for new ones) take over.
         "onboarding_completed": bool(row["onboarding_completed"]) if "onboarding_completed" in row else True,
+        # Same fail-open reasoning as onboarding_completed above: if
+        # migration 0005 hasn't been run yet on this Supabase project, treat
+        # everyone as already verified rather than lock every teacher out of
+        # a product they may have already been using.
+        "referral_verified": bool(row["referral_verified"]) if "referral_verified" in row else True,
         "subjects": row.get("subjects") or [],
         "grades": row.get("grades") or [],
         "preferred_language": row.get("preferred_language"),
@@ -249,6 +255,38 @@ def _save_preferences_local(
         }
     )
     return dict(profile)
+
+
+def verify_and_mark_referral(user: CurrentUser, code: str) -> bool:
+    """Authenticated counterpart to the pre-signup /auth/verify-referral check.
+
+    This is the ONE gate TeacherLayout actually trusts (see referral-gate.tsx)
+    — it persists the result against the authenticated user's own id, so it
+    covers every sign-in path, including "Continue with Google" where
+    Supabase creates the auth.users row automatically on the OAuth callback,
+    well before the app has any chance to ask for a code up front.
+    """
+    if code.strip() != settings.referral_code:
+        return False
+
+    if settings.supabase_url and settings.supabase_service_role_key:
+        base = settings.supabase_url.rstrip("/")
+        with httpx.Client(timeout=10.0) as client:
+            client.post(
+                f"{base}/rest/v1/teacher_profiles",
+                json={
+                    "user_id": user.user_id,
+                    "name": user.full_name or user.username or user.email or "Teacher",
+                    "referral_verified": True,
+                },
+                headers={**_default_headers(), "Prefer": "resolution=merge-duplicates,return=minimal"},
+                params={"on_conflict": "user_id"},
+            )
+    else:
+        profile = _local_profiles.setdefault(user.user_id, _default_local_profile())
+        profile["referral_verified"] = True
+
+    return True
 
 
 def delete_teacher_account(user: CurrentUser) -> None:

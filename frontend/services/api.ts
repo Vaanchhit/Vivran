@@ -62,6 +62,7 @@ export interface ProvisionResponse {
   full_name: string;
   workspace_id: string;
   onboarding_completed: boolean;
+  referral_verified: boolean;
   subjects: string[];
   grades: string[];
   preferred_language: string | null;
@@ -168,9 +169,20 @@ export async function deleteAccount(): Promise<{ status: string }> {
 }
 
 /** Checked before supabase.auth.signUp() during beta — no session exists
- * yet at this point, so this call is unauthenticated by design. */
+ * yet at this point, so this call is unauthenticated by design. Fast-fail
+ * UX only for the email/password form; NOT the authoritative gate — see
+ * verifyReferralForAccount() below. */
 export async function verifyReferralCode(code: string): Promise<boolean> {
   const { valid } = await request<{ valid: boolean }>("POST", "/auth/verify-referral", { code });
+  return valid;
+}
+
+/** The authoritative referral gate — called on an already-signed-in user
+ * (any sign-in method, including Google OAuth) and persisted server-side
+ * against their account. TeacherLayout blocks the product until this
+ * returns true; see referral-gate.tsx. */
+export async function verifyReferralForAccount(code: string): Promise<boolean> {
+  const { valid } = await request<{ valid: boolean }>("POST", "/auth/verify-referral-account", { code });
   return valid;
 }
 

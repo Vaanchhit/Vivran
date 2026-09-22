@@ -13,6 +13,7 @@ from app.services.provisioning import (
     delete_teacher_account,
     provision_teacher_full,
     save_teacher_preferences,
+    verify_and_mark_referral,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -35,6 +36,23 @@ def verify_referral(payload: ReferralCodeCheck) -> dict:
     return {"valid": valid}
 
 
+@router.post("/verify-referral-account")
+def verify_referral_account(payload: ReferralCodeCheck, user: CurrentUser = Depends(require_teacher)) -> dict:
+    """The authoritative referral gate — checked AFTER authentication, on an
+    already-signed-in user. Persists the result against user.user_id so it
+    sticks across future logins. TeacherLayout blocks access to the product
+    (via referral-gate.tsx) until this returns valid=true.
+
+    Unlike /verify-referral above (which only gates supabase.auth.signUp()
+    for the email/password form), this also covers "Continue with Google" —
+    Supabase creates the account automatically on the OAuth callback, so
+    there's no "before signup" moment to intercept for that flow. This is
+    the one gate that can't be bypassed by switching sign-in methods.
+    """
+    valid = verify_and_mark_referral(user, payload.code)
+    return {"valid": valid}
+
+
 @router.post("/provision")
 def provision_workspace(user: CurrentUser = Depends(require_teacher)) -> dict:
     """Upsert teacher_profile + default workspace on first login.
@@ -54,6 +72,7 @@ def provision_workspace(user: CurrentUser = Depends(require_teacher)) -> dict:
         "full_name": user.full_name,
         "workspace_id": data["workspace_id"],
         "onboarding_completed": data["onboarding_completed"],
+        "referral_verified": data["referral_verified"],
         "subjects": data["subjects"],
         "grades": data["grades"],
         "preferred_language": data["preferred_language"],

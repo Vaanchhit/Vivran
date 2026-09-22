@@ -12,6 +12,10 @@ Apply to a Supabase/Postgres database in order. Two options:
    `preferred_language`, `preferred_difficulty` to `teacher_profiles` for the
    first-time onboarding wizard; safe to re-run, backfills existing rows so
    they're never forced through onboarding).
+6. Paste `0005_referral_verified.sql` → Run (adds `referral_verified` to
+   `teacher_profiles` so the beta referral-code gate is enforced after
+   authentication too — covers Google sign-in, not just email/password;
+   safe to re-run, backfills existing rows to `true`).
 
 ## Option B — psql / Supabase CLI
 

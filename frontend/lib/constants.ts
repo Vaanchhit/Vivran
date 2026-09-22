@@ -1,3 +1,16 @@
+export const WAITLIST_EMAIL = "info@vivran.co.in";
+
+export const REQUEST_ACCESS_MAILTO = `mailto:${WAITLIST_EMAIL}?${new URLSearchParams({
+  subject: "Vivran Beta Access Request",
+  body:
+    "Hi Vivran team,\n\n" +
+    "I'd like to request access to the Vivran teacher beta — I don't have a referral code yet.\n\n" +
+    "Name: \n" +
+    "College / Institution: \n" +
+    "Subject(s) you teach: \n\n" +
+    "Thanks!",
+}).toString().replace(/\+/g, "%20")}`;
+
 export const GRADE_LEVEL_OPTIONS = [
   "Class 6",
   "Class 7",

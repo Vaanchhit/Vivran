@@ -8,6 +8,7 @@ import {
   provisionWorkspace,
   updatePreferences as apiUpdatePreferences,
   deleteAccount as apiDeleteAccount,
+  verifyReferralForAccount,
   type ProvisionResponse,
   type PreferencesPayload,
 } from "@/services/api";
@@ -33,6 +34,12 @@ interface AuthContextType {
    * true on the local user object immediately, so TeacherLayout stops
    * showing the wizard without needing a full session resync. */
   completeOnboarding: (prefs: PreferencesPayload) => Promise<boolean>;
+  /** The authoritative referral-code check — called post-auth (any sign-in
+   * method) by referral-gate.tsx. On success, flips referralVerified to true
+   * on the local user object immediately, same pattern as
+   * completeOnboarding, so TeacherLayout stops showing the gate without a
+   * full session resync. */
+  verifyReferral: (code: string) => Promise<boolean>;
   /** Permanently deletes the signed-in teacher's account (backend + Supabase
    * Auth user). Does NOT sign the user out locally — callers should call
    * logout() themselves right after a successful delete. */
@@ -61,6 +68,7 @@ function toUserSession(
     // unreachable) — never trap someone behind a wizard they can't
     // complete because the network call that would tell us otherwise failed.
     onboardingCompleted: provision?.onboarding_completed ?? true,
+    referralVerified: provision?.referral_verified ?? true,
     preferredSubjects: provision?.subjects,
     preferredGrades: provision?.grades,
     preferredLanguage: provision?.preferred_language ?? undefined,
@@ -182,6 +190,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const verifyReferral = async (code: string): Promise<boolean> => {
+    try {
+      const ok = await verifyReferralForAccount(code);
+      if (ok) {
+        setUser((prev) => (prev ? { ...prev, referralVerified: true } : prev));
+      }
+      return ok;
+    } catch {
+      return false;
+    }
+  };
+
   const deleteAccount = async (): Promise<boolean> => {
     try {
       await apiDeleteAccount();
@@ -201,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, loginWithGoogle, signUp, logout, completeOnboarding, deleteAccount }}
+      value={{ user, loading, login, loginWithGoogle, signUp, logout, completeOnboarding, verifyReferral, deleteAccount }}
     >
       {children}
     </AuthContext.Provider>

@@ -15,6 +15,11 @@ export interface UserSession {
    * determined, so a backend hiccup never traps someone behind a wizard
    * they can't get past — see auth-context.tsx's toUserSession(). */
   onboardingCompleted: boolean;
+  /** Whether the beta referral-code gate has been passed. Persisted
+   * server-side per account so it covers every sign-in method, including
+   * Google OAuth. Defaults to `true` (fail-open) whenever it can't be
+   * determined — see auth-context.tsx's toUserSession(). */
+  referralVerified: boolean;
   preferredSubjects?: string[];
   preferredGrades?: string[];
   preferredLanguage?: string;

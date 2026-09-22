@@ -4,21 +4,9 @@ import React, { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { verifyReferralCode } from "@/services/api";
+import { WAITLIST_EMAIL, REQUEST_ACCESS_MAILTO } from "@/lib/constants";
 import type { Role } from "@/types";
 import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound, User } from "lucide-react";
-
-const WAITLIST_EMAIL = "info@vivran.co.in";
-
-const REQUEST_ACCESS_MAILTO = `mailto:${WAITLIST_EMAIL}?${new URLSearchParams({
-  subject: "Vivran Beta Access Request",
-  body:
-    "Hi Vivran team,\n\n" +
-    "I'd like to request access to the Vivran teacher beta — I don't have a referral code yet.\n\n" +
-    "Name: \n" +
-    "College / Institution: \n" +
-    "Subject(s) you teach: \n\n" +
-    "Thanks!",
-}).toString().replace(/\+/g, "%20")}`;
 
 export default function LoginPage() {
   return (
@@ -39,7 +27,7 @@ type Mode = "signin" | "signup";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user, login, loginWithGoogle, signUp } = useAuth();
+  const { user, login, loginWithGoogle, signUp, verifyReferral } = useAuth();
   const [mode, setMode] = useState<Mode>("signin");
   const [selectedRole, setSelectedRole] = useState<Role>("teacher");
   const [fullName, setFullName] = useState("");
@@ -105,8 +93,15 @@ function LoginForm() {
           setPassword("");
         } else {
           // Session was issued immediately (no email confirmation required
-          // on this project) — TeacherLayout will show the onboarding
-          // wizard automatically for this brand-new account.
+          // on this project). Persist the referral pass against this
+          // account right away via the authenticated endpoint (the pre-signUp
+          // check above was stateless) — otherwise ReferralGate would ask
+          // this teacher to re-enter the same code they just typed. Best
+          // effort: even if this call fails, ReferralGate catches it as a
+          // fallback and they can retry from there.
+          await verifyReferral(referralCode.trim());
+          // TeacherLayout will show the onboarding wizard automatically for
+          // this brand-new account.
           router.push(next);
         }
       } else {
