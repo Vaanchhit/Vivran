@@ -11,3 +11,7 @@ backend/jobs.sqlite
 .env.local
 .env*.local
 landing-preview/
+
+# slidekit dev-harness run output (decks.json, report.md, audit artifacts)
+frontend/test/out/
+slidekit/test/out/
