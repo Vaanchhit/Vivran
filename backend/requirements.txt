@@ -10,6 +10,11 @@ python-multipart==0.0.9
 pyjwt==2.9.0
 cryptography==43.0.1
 
+# Per-IP throttling for the referral-code oracle and the paid generation
+# endpoints (app/core/rate_limit.py). Imported optionally there, so a deploy
+# that somehow lacks it still boots — just without limits.
+slowapi==0.1.10
+
 # Document ingestion
 pypdf==5.0.1
 reportlab==4.2.5

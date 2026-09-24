@@ -1,5 +1,13 @@
 from pydantic_settings import BaseSettings
 
+# The beta code as originally committed. It is PUBLIC — it has been in this
+# repo's git history since the gate shipped, so anyone with repo access (or a
+# copy of an old checkout) knows it. It stays as the default purely so the
+# live gate keeps working until REFERRAL_CODE is set on the host; rotating it
+# there retires this value without a redeploy. app/main.py logs a warning at
+# startup whenever production is still running on it.
+LEGACY_COMMITTED_REFERRAL_CODE = "632006"
+
 
 class Settings(BaseSettings):
     app_env: str = "development"
@@ -54,7 +62,33 @@ class Settings(BaseSettings):
     # frontend-only check would ship this value in plain text in the JS
     # bundle, readable via view-source. Overridable via REFERRAL_CODE env
     # var so it can be rotated without a code change/redeploy.
-    referral_code: str = "632006"
+    #
+    # The default is the already-public committed code (see above). It is
+    # NOT blanked out here on purpose: an empty default would take the live
+    # gate down the moment this deploys, before REFERRAL_CODE exists on the
+    # host. Set REFERRAL_CODE, then this literal is dead weight.
+    referral_code: str = LEGACY_COMMITTED_REFERRAL_CODE
+
+    # --- Background generation jobs (app/services/jobs.py) ------------------
+    # How many generations may run off-request at once. Deliberately small:
+    # Render's cheap single-instance tier has little memory, every one of these
+    # threads is holding an httpx connection to Gemini and burning metered
+    # quota, and there are single-digit users. Raising this buys throughput
+    # nobody is asking for and makes an OOM restart (which orphans jobs) more
+    # likely.
+    job_max_workers: int = 2
+    # Hard cap on jobs accepted but not yet finished in this process. Past this
+    # the API says so (429) instead of queueing work it will probably lose on
+    # the next restart.
+    job_queue_cap: int = 24
+    # A job still 'queued'/'processing' this long after it was created is
+    # assumed dead — the process that owned it is gone (deploy, free-tier spin
+    # down, OOM). Generously above the ~40s worst case of a real generation so
+    # a slow-but-live job is never reaped out from under a teacher.
+    job_stale_after_seconds: int = 900
+    # How far back GET /api/jobs looks for already-finished jobs, so a teacher
+    # who wandered off and came back still sees the result rather than nothing.
+    job_recent_window_minutes: int = 60
 
     class Config:
         env_file = ".env"

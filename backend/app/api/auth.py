@@ -1,14 +1,18 @@
 """Auth API — session provisioning, preferences, and account lifecycle for teachers."""
-from __future__ import annotations
-
+# NOTE: deliberately no `from __future__ import annotations` here. slowapi's
+# @limit() wraps the route with functools.wraps, which does not carry over
+# __globals__ — so with PEP 563 string annotations FastAPI resolves the
+# handler's type hints against slowapi's module namespace and blows up with
+# "PydanticUndefinedAnnotation: ReferralCodeCheck" at import time.
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.api.deps import get_current_user, require_teacher
 from app.core.auth import CurrentUser
 from app.core.config import settings
+from app.core.rate_limit import limit
 from app.services.provisioning import (
     delete_teacher_account,
     provision_teacher_full,
@@ -24,20 +28,31 @@ class ReferralCodeCheck(BaseModel):
 
 
 @router.post("/verify-referral")
-def verify_referral(payload: ReferralCodeCheck) -> dict:
+@limit("8/minute;40/hour")
+def verify_referral(request: Request, payload: ReferralCodeCheck) -> dict:
     """Checks a beta-access referral code — no auth required (there is no
     session yet at signup time). The frontend calls this BEFORE attempting
     supabase.auth.signUp(), so account creation itself stays gated behind a
     correct code while the product is invite-only. Deliberately checked
     server-side rather than as a literal string in frontend code, which
     would ship the real code in plain text in the JS bundle.
+
+    Throttled because it is an unauthenticated valid/invalid oracle over a
+    short code: without a limit the entire keyspace is enumerable from one
+    machine in minutes. The budget is generous enough that a teacher
+    fat-fingering the code they were emailed never notices.
     """
-    valid = payload.code.strip() == settings.referral_code
-    return {"valid": valid}
+    # An empty submitted code can never pass — see verify_and_mark_referral()
+    # for why (a cleared REFERRAL_CODE must close the gate, not open it).
+    code = payload.code.strip()
+    return {"valid": bool(code) and code == settings.referral_code}
 
 
 @router.post("/verify-referral-account")
-def verify_referral_account(payload: ReferralCodeCheck, user: CurrentUser = Depends(require_teacher)) -> dict:
+@limit("8/minute;40/hour")
+def verify_referral_account(
+    request: Request, payload: ReferralCodeCheck, user: CurrentUser = Depends(require_teacher)
+) -> dict:
     """The authoritative referral gate — checked AFTER authentication, on an
     already-signed-in user. Persists the result against user.user_id so it
     sticks across future logins. TeacherLayout blocks access to the product
@@ -49,7 +64,13 @@ def verify_referral_account(payload: ReferralCodeCheck, user: CurrentUser = Depe
     there's no "before signup" moment to intercept for that flow. This is
     the one gate that can't be bypassed by switching sign-in methods.
     """
-    valid = verify_and_mark_referral(user, payload.code)
+    try:
+        valid = verify_and_mark_referral(user, payload.code)
+    except RuntimeError as exc:
+        # The code was right but we could not persist that. Reporting valid=true
+        # here would let the teacher in for one session and re-gate them on the
+        # next login, forever, with no signal that anything went wrong.
+        raise HTTPException(status_code=502, detail=f"Could not record referral verification: {exc}") from exc
     return {"valid": valid}
 
 

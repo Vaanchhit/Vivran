@@ -64,10 +64,32 @@ def make_token(
 
 
 @pytest.fixture
-def auth_headers() -> dict:
-    """Bearer header for a freshly minted token."""
-    token = make_token()
-    return {"Authorization": f"Bearer {token}"}
+def unverified_auth_headers() -> dict:
+    """Bearer header for a teacher who has NOT passed the beta referral gate.
+
+    Every sign-in path produces exactly this state before a code is entered —
+    including "Continue with Google", where Supabase mints the JWT on the
+    OAuth callback. Used to assert the gate is enforced at the API layer, not
+    just by TeacherLayout choosing to render <ReferralGate/>.
+    """
+    return {"Authorization": f"Bearer {make_token()}"}
+
+
+@pytest.fixture
+def auth_headers(client: TestClient, unverified_auth_headers: dict) -> dict:
+    """Bearer header for a freshly minted, referral-verified token.
+
+    Passes the real gate (POST /auth/verify-referral-account) rather than
+    poking the profile store directly, so these tests exercise the same path
+    a teacher takes — and would catch the gate silently refusing a valid code.
+    """
+    resp = client.post(
+        "/api/auth/verify-referral-account",
+        json={"code": settings.referral_code},
+        headers=unverified_auth_headers,
+    )
+    assert resp.status_code == 200 and resp.json()["valid"] is True, resp.text
+    return unverified_auth_headers
 
 
 @pytest.fixture

@@ -16,6 +16,11 @@ Apply to a Supabase/Postgres database in order. Two options:
    `teacher_profiles` so the beta referral-code gate is enforced after
    authentication too — covers Google sign-in, not just email/password;
    safe to re-run, backfills existing rows to `true`).
+7. Paste `0006_generation_jobs_indexes.sql` → Run. **Optional** — indexes only,
+   no columns and no data change. The background-job system
+   (`app/services/jobs.py`, `GET /api/jobs`) is correct without it; this just
+   makes the per-workspace job lookups that the UI polls index-served instead
+   of sequential scans. Safe to re-run.
 
 ## Option B — psql / Supabase CLI
 
@@ -46,3 +51,7 @@ done
 - RLS is enabled for `teacher_profiles` and `workspaces` (self-scoped).
 - Multi-tenant child tables (`projects`, `materials`, …) are scoped through
   the workspace; the policy template is in `0002_auth_rls.sql`.
+- The backend talks to PostgREST with the **service-role key**, which bypasses
+  RLS entirely. RLS is defence in depth for direct client access; tenancy for
+  anything the API reads or writes is enforced in application code by filtering
+  on `workspace_id` (see `app/services/jobs.py`'s `_row_params`).

@@ -1,9 +1,10 @@
 """End-to-end material ingestion (§19): parse -> chunk -> embed -> persist.
 
-Runs synchronously inside the request. Fine for the file sizes a teacher
-demo uploads; a real multi-teacher rollout should move this to a background
-worker (see app/services/job_worker.py) so large PDFs don't hold a request
-open.
+Fully synchronous and CPU/network-bound (``generate_embedding`` runs once per
+chunk, sequentially), so it must NEVER be called from the event loop. Its two
+supported call sites both keep it off: POST /api/materials runs it via
+``run_in_threadpool``, and ``?async_job=true`` hands it to the bounded job
+pool in app/services/jobs.py so a big PDF survives the teacher navigating away.
 """
 from __future__ import annotations
 

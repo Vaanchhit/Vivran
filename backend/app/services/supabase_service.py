@@ -60,6 +60,29 @@ def table_insert_many(table: str, rows: List[Dict[str, Any]]) -> List[Dict[str, 
     return r.json()
 
 
+def table_upsert(table: str, row: Dict[str, Any], on_conflict: str) -> List[Dict[str, Any]]:
+    """Insert-or-merge a single row on ``on_conflict``, returning what landed.
+
+    PostgREST is allowed to answer an upsert that resolved to a conflict with
+    an empty body on some configurations, so an empty list here means "the
+    write succeeded but told us nothing" — never "the write failed". Failures
+    always raise.
+    """
+    with httpx.Client(timeout=20.0) as client:
+        r = client.post(
+            f"{_base()}/rest/v1/{table}",
+            json=row,
+            params={"on_conflict": on_conflict},
+            headers=_headers("resolution=merge-duplicates,return=representation"),
+        )
+    if r.status_code not in (200, 201, 204):
+        raise SupabaseError(f"Upsert into {table} failed ({r.status_code}): {r.text[:300]}")
+    if not r.content:
+        return []
+    data = r.json()
+    return data if isinstance(data, list) else [data]
+
+
 def table_select(table: str, params: Dict[str, str]) -> List[Dict[str, Any]]:
     with httpx.Client(timeout=20.0) as client:
         r = client.get(f"{_base()}/rest/v1/{table}", params=params, headers=_headers())
@@ -76,6 +99,13 @@ def table_update(table: str, params: Dict[str, str], patch: Dict[str, Any]) -> L
     return r.json() if r.content else []
 
 
+def table_delete(table: str, params: Dict[str, str]) -> None:
+    with httpx.Client(timeout=20.0) as client:
+        r = client.delete(f"{_base()}/rest/v1/{table}", params=params, headers=_headers())
+    if r.status_code not in (200, 204):
+        raise SupabaseError(f"Delete from {table} failed ({r.status_code}): {r.text[:300]}")
+
+
 def rpc(function_name: str, args: Dict[str, Any]) -> Any:
     with httpx.Client(timeout=30.0) as client:
         r = client.post(f"{_base()}/rest/v1/rpc/{function_name}", json=args, headers=_headers())
@@ -85,11 +115,23 @@ def rpc(function_name: str, args: Dict[str, Any]) -> Any:
 
 
 def ensure_bucket(bucket: str) -> None:
-    """Idempotently creates a public storage bucket if it doesn't already exist."""
+    """Idempotently creates a PRIVATE storage bucket if it doesn't already exist.
+
+    Was `"public": True`, which made every uploaded PDF/DOCX/PPTX — real course
+    material, sometimes unreleased papers — fetchable forever by anyone holding
+    the URL, with no auth.
+
+    This only governs buckets this call CREATES. Supabase answers an existing
+    bucket with 400 "already exists" and changes nothing, so flipping this
+    literal does not retroactively close the live `materials` bucket — that is
+    a one-line manual step in the Supabase dashboard (Storage → materials →
+    make private). Deliberately so: doing it here would have this deploy
+    silently change the visibility of production data.
+    """
     with httpx.Client(timeout=15.0) as client:
         r = client.post(
             f"{_base()}/storage/v1/bucket",
-            json={"id": bucket, "name": bucket, "public": True},
+            json={"id": bucket, "name": bucket, "public": False},
             headers=_headers(),
         )
     if r.status_code in (200, 201):
@@ -100,7 +142,15 @@ def ensure_bucket(bucket: str) -> None:
 
 
 def upload_file(bucket: str, path: str, content: bytes, content_type: str = "application/octet-stream") -> str:
-    """Uploads a file to Supabase Storage and returns its public URL."""
+    """Uploads a file to Supabase Storage and returns its bucket-relative key.
+
+    Returns the key, not a `/object/public/...` URL. The old return value was
+    an anonymous-readable link that got persisted into materials.storage_path,
+    so the database itself was a list of permanent public download URLs for
+    teachers' uploads. Nothing in the app reads storage_path today, so storing
+    the key costs nothing now and is what a signed-URL download route would
+    need once one exists.
+    """
     with httpx.Client(timeout=60.0) as client:
         r = client.post(
             f"{_base()}/storage/v1/object/{bucket}/{path}",
@@ -114,4 +164,4 @@ def upload_file(bucket: str, path: str, content: bytes, content_type: str = "app
         )
     if r.status_code not in (200, 201):
         raise SupabaseError(f"Storage upload failed ({r.status_code}): {r.text[:300]}")
-    return f"{_base()}/storage/v1/object/public/{bucket}/{path}"
+    return f"{bucket}/{path}"

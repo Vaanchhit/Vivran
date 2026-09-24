@@ -19,10 +19,15 @@ def generate_cheap_cloud(
         }
     except GeminiError as e:
         return {
+            # "error" stays the raw upstream string: it is what gets LOGGED.
+            # "failure" is the classified form the API layer uses to pick the
+            # user-facing message (app/core/errors.py) — callers must never put
+            # "error" in front of a teacher.
             "success": False,
             "model_tier": "cheap_cloud",
             "model_name": settings.cheap_model,
             "task": task,
             "content": "",
             "error": str(e),
+            "failure": e.failure,
         }

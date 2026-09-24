@@ -14,6 +14,8 @@ from typing import Any, Dict, List
 import httpx
 
 from app.core.config import settings
+from app.core.errors import FailureClass, classify_upstream_status
+from app.core.logging import logger
 
 TALLY_VERSION = "2025-02-01"
 
@@ -31,9 +33,20 @@ class TallyService:
     def create_mcq_form(self, title: str, questions: List[Dict[str, Any]]) -> Dict[str, Any]:
         """`questions`: list of {"question_text": str, "options": List[str]}."""
         if not self.is_configured():
-            return {"provider": "tally", "status": "not_configured", "error": "TALLY_API_KEY is not set"}
+            return {
+                "provider": "tally", "status": "not_configured",
+                "error": "TALLY_API_KEY is not set", "failure": FailureClass.NOT_CONFIGURED,
+            }
         if not questions:
-            return {"provider": "tally", "status": "failed", "error": "No multiple-choice questions to export"}
+            # A genuine, teacher-actionable input error ("your paper has no
+            # MCQs"), not an upstream failure. `user_facing` tells the API layer
+            # to pass this message through the mapper untouched — masking it
+            # would leave the teacher with no idea why the export did nothing.
+            return {
+                "provider": "tally", "status": "failed",
+                "error": "This paper has no multiple-choice questions to export to Tally.",
+                "user_facing": True,
+            }
 
         title_uuid = str(uuid.uuid4())
         blocks: List[Dict[str, Any]] = [
@@ -59,10 +72,16 @@ class TallyService:
             with httpx.Client(timeout=30.0) as client:
                 r = client.post("https://api.tally.so/forms", headers=self._headers(), json={"status": "PUBLISHED", "blocks": blocks})
         except httpx.HTTPError as e:
-            return {"provider": "tally", "status": "failed", "error": str(e)}
+            return self._failed(None, str(e))
 
         if r.status_code != 201:
-            return {"provider": "tally", "status": "failed", "error": f"{r.status_code}: {r.text[:400]}"}
+            return self._failed(r.status_code, r.text)
 
         form_id = r.json()["id"]
         return {"provider": "tally", "status": "ready", "form_url": f"https://tally.so/r/{form_id}", "form_id": form_id}
+
+    @staticmethod
+    def _failed(status_code, body: str) -> Dict[str, Any]:
+        failure = classify_upstream_status(status_code, body)
+        logger.warning("Tally export failed (status=%s, class=%s): %s", status_code, failure.value, body[:400])
+        return {"provider": "tally", "status": "failed", "error": body[:400], "failure": failure}

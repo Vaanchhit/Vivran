@@ -8,6 +8,7 @@ from app.ai.premium_model import generate_premium_cloud
 from app.ai.prompt_snippets import LEVEL_INSTRUCTION
 from app.ai.schemas import AssessmentSchema
 from app.ai.validators import validate_assessment
+from app.core.errors import FailureClass, mask
 from app.core.logging import logger
 from app.retrieval.search import search_knowledge_base
 from app.services.supabase_service import SupabaseError, is_configured, table_insert, table_insert_many, table_select
@@ -79,6 +80,12 @@ def generate_assessment(
     assessment: Optional[AssessmentSchema] = None
     validation = None
     last_error = None
+    # Set only when the *upstream call itself* failed, as opposed to the model
+    # returning content that failed validation. The two need opposite handling:
+    # validation errors are useful feedback for the teacher and are shown
+    # verbatim, while an upstream error is translated (app/core/errors.py) so
+    # raw provider text never reaches the UI.
+    last_upstream_failure: Optional[FailureClass] = None
 
     for _attempt in range(2):
         feedback = f"\n\nYour previous attempt was invalid: {last_error}. Fix it." if last_error else ""
@@ -92,7 +99,9 @@ def generate_assessment(
             result = generate_cheap_cloud(prompt + feedback, task="assessment_creation", system_prompt=_SYSTEM_PROMPT, json_mode=True)
         if not result.get("success"):
             last_error = result.get("error")
+            last_upstream_failure = result.get("failure") or FailureClass.UPSTREAM_ERROR
             continue
+        last_upstream_failure = None
         try:
             import json
 
@@ -110,9 +119,16 @@ def generate_assessment(
         last_error = "; ".join(validation.errors)
 
     if assessment is None:
+        if last_upstream_failure is not None:
+            message = mask(last_upstream_failure, context="assessment generation", detail=str(last_error or ""))
+        else:
+            # Schema/validation failure — the model produced something, it was
+            # just wrong. That detail is genuinely useful to the teacher ("the
+            # marks don't add to 40"), so it is NOT masked.
+            message = last_error or "AI generation failed"
         return {
             "assessment": None,
-            "validation": {"valid": False, "errors": [last_error or "AI generation failed"]},
+            "validation": {"valid": False, "errors": [message]},
             "grounded_on": len(context),
         }
 
@@ -189,13 +205,32 @@ Preserve the original marks and question_type unless the variation explicitly im
 def regenerate_single_question(
     question_id: str,
     option: str,  # harder, easier, application, conceptual, case
+    workspace_id: str,
     created_by: str = "system",
 ) -> Dict[str, Any]:
     if not is_configured():
         raise SupabaseError("Supabase is not configured; cannot look up the original question")
 
-    rows = table_select("questions", {"id": f"eq.{question_id}", "limit": "1"})
+    # `questions` has no workspace_id of its own (see migrations/0001) — it is
+    # owned transitively via questions.assessment_id -> assessments.workspace_id.
+    # This runs on the service-role key, which bypasses RLS, so the tenancy
+    # check has to happen HERE: an unfiltered lookup by id would hand any
+    # authenticated teacher another teacher's question text and answer key,
+    # and let them append a question_versions row to it.
+    # `assessments!inner` makes the embed an INNER JOIN so a non-matching
+    # workspace yields no row at all rather than a row with a null embed.
+    rows = table_select(
+        "questions",
+        {
+            "id": f"eq.{question_id}",
+            "select": "*,assessments!inner(workspace_id)",
+            "assessments.workspace_id": f"eq.{workspace_id}",
+            "limit": "1",
+        },
+    )
     if not rows:
+        # Deliberately the same message whether the question doesn't exist or
+        # belongs to someone else — don't turn this into an id-existence oracle.
         raise SupabaseError(f"Question {question_id} not found")
     original = rows[0]
 
@@ -206,7 +241,15 @@ def regenerate_single_question(
     )
     result = generate_cheap_cloud(prompt, task="question_regen", system_prompt=_REGEN_SYSTEM_PROMPT, json_mode=True)
     if not result.get("success"):
-        raise RuntimeError(result.get("error", "Regeneration failed"))
+        # The API layer turns this into a 502 with the message verbatim, so it
+        # must already be the translated one (app/core/errors.py).
+        raise RuntimeError(
+            mask(
+                result.get("failure") or FailureClass.UPSTREAM_ERROR,
+                context="question regeneration",
+                detail=str(result.get("error", "")),
+            )
+        )
 
     import json
 

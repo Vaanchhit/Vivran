@@ -129,3 +129,34 @@ def test_delete_account_requires_supabase_config(client, auth_headers):
 
 def test_delete_account_rejects_no_token(client):
     assert client.delete("/api/auth/account").status_code == 401
+
+
+def test_jwks_outage_returns_503_not_500(client, monkeypatch):
+    """A transient Supabase JWKS blip must not 500 every authenticated request.
+
+    503 rather than 401 on purpose: the token is probably fine, so the client
+    should retry — a 401 would make the frontend sign the teacher out.
+    """
+    from app.core import auth as core_auth
+
+    def boom(kid):
+        raise core_auth.SigningKeyUnavailable("Could not fetch Supabase signing keys: timeout")
+
+    monkeypatch.setattr(core_auth, "_get_signing_key", boom)
+    # Force the asymmetric branch of decode_access_token, which is what a real
+    # Supabase project uses (ES256 via JWKS); HS256 tokens never touch JWKS.
+    monkeypatch.setattr(core_auth.jwt, "get_unverified_header", lambda token: {"alg": "ES256", "kid": "k1"})
+
+    resp = client.get("/api/auth/me", headers={"Authorization": "Bearer anything"})
+    assert resp.status_code == 503
+    assert "signing keys" in resp.json()["detail"]
+
+
+def test_verify_referral_rejects_empty_code(client):
+    """An empty code can never pass — otherwise clearing REFERRAL_CODE on the
+    host would turn the gate into a no-op that still reports valid."""
+    assert client.post("/api/auth/verify-referral", json={"code": "   "}).json()["valid"] is False
+
+
+def test_verify_referral_accepts_the_configured_code(client):
+    assert client.post("/api/auth/verify-referral", json={"code": settings.referral_code}).json()["valid"] is True

@@ -24,3 +24,17 @@ services:
         sync: false
       - key: CORS_ORIGINS
         sync: false
+      # Declared (not valued) so the Blueprint is an accurate inventory of what
+      # this service actually reads — these were previously set only in the
+      # dashboard and invisible from the repo. `sync: false` tells Render to
+      # keep whatever is already configured there; it does not blank them.
+      # REFERRAL_CODE in particular MUST be set: without it the beta gate falls
+      # back to the code committed in app/core/config.py, which is public.
+      - key: REFERRAL_CODE
+        sync: false
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: CARTESIA_API_KEY
+        sync: false
+      - key: TALLY_API_KEY
+        sync: false

@@ -37,4 +37,4 @@ def generate_open_local(prompt: str, system_prompt: str = "") -> Dict[str, Any]:
         return {"success": True, "provider": "gemini", "response": text}
     except GeminiError as e:
         logger.warning("Tier 1 Gemini fallback failed: %s", e)
-        return {"success": False, "provider": "none", "response": "", "error": str(e)}
+        return {"success": False, "provider": "none", "response": "", "error": str(e), "failure": e.failure}

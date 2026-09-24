@@ -30,6 +30,16 @@ _JWKS_TTL_SECONDS = 300
 _jwks_cache: Dict[str, Any] = {"keys": {}, "fetched_at": 0.0}
 
 
+class SigningKeyUnavailable(RuntimeError):
+    """Supabase's JWKS endpoint could not be reached and no usable key is cached.
+
+    Distinct from ``jwt.InvalidTokenError``: the token may well be perfectly
+    valid, we just can't verify it right now. Callers must map this to a 503
+    (retryable) rather than a 401 (which would make clients log the user out)
+    or a 500.
+    """
+
+
 def _get_signing_key(kid: str | None) -> Any:
     """Fetches (and caches) Supabase's public signing keys, keyed by `kid`.
 
@@ -39,11 +49,21 @@ def _get_signing_key(kid: str | None) -> Any:
     now = time.time()
     if now - _jwks_cache["fetched_at"] > _JWKS_TTL_SECONDS or kid not in _jwks_cache["keys"]:
         jwks_url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-        with httpx.Client(timeout=10.0) as client:
-            r = client.get(jwks_url)
-            r.raise_for_status()
-        _jwks_cache["keys"] = {k["kid"]: jwt.PyJWK(k).key for k in r.json()["keys"]}
-        _jwks_cache["fetched_at"] = now
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                r = client.get(jwks_url)
+                r.raise_for_status()
+            _jwks_cache["keys"] = {k["kid"]: jwt.PyJWK(k).key for k in r.json()["keys"]}
+            _jwks_cache["fetched_at"] = now
+        except (httpx.HTTPError, KeyError, ValueError) as exc:
+            # Prefer a STALE cached key over failing the request. Supabase
+            # signing keys rotate on the order of months, so a key that was
+            # valid five minutes ago is still valid; a transient JWKS blip
+            # would otherwise 5xx every authenticated request for the whole
+            # TTL window. Only when we have nothing cached for this kid is
+            # the request genuinely unservable.
+            if kid not in _jwks_cache["keys"]:
+                raise SigningKeyUnavailable(f"Could not fetch Supabase signing keys: {exc}") from exc
 
     if kid not in _jwks_cache["keys"]:
         raise jwt.InvalidTokenError(f"No matching signing key for kid={kid}")

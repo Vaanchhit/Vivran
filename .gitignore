@@ -10,3 +10,4 @@ frontend/tsconfig.tsbuildinfo
 backend/jobs.sqlite
 .env.local
 .env*.local
+landing-preview/

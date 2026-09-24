@@ -27,4 +27,6 @@ def generate_premium_cloud(
             "task": task,
             "content": "",
             "error": str(e),
+            # Classified failure for app/core/errors.py — see cheap_model.py.
+            "failure": e.failure,
         }
