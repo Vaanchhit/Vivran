@@ -96,15 +96,32 @@ function buildHeaders(): Record<string, string> {
   return headers;
 }
 
-async function parseErrorDetail(res: Response): Promise<string> {
-  let detail = res.statusText;
+/** Carries the HTTP status without putting it in `message`.
+ *
+ * The backend already translates upstream failures into copy meant to be read
+ * by a teacher (see backend/app/core/errors.py). Prefixing that with
+ * "API error (402): " undid the translation, so the status lives here instead
+ * — still one property away in devtools, no longer in the sentence. */
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+async function apiError(res: Response): Promise<ApiError> {
+  let detail = "";
   try {
     const err = await res.json();
     if (err?.detail) detail = typeof err.detail === "string" ? err.detail : JSON.stringify(err.detail);
   } catch {
-    // ignore JSON parse errors; fall back to status text
+    // ignore JSON parse errors; fall back below
   }
-  return detail;
+  // A bare status line ("Internal Server Error") tells a teacher nothing, so
+  // only surface it when the backend sent no curated message at all.
+  return new ApiError(res.status, detail || "Something went wrong — please try again.");
 }
 
 async function request<T>(
@@ -119,7 +136,7 @@ async function request<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   if (!res.ok) {
-    throw new Error(`API error (${res.status}): ${await parseErrorDetail(res)}`);
+    throw await apiError(res);
   }
   return res.json();
 }
@@ -129,7 +146,7 @@ async function requestForm<T>(path: string, form: FormData): Promise<T> {
   delete headers["Content-Type"]; // browser sets the multipart boundary itself
   const res = await fetch(`${API_BASE_URL}${path}`, { method: "POST", headers, body: form });
   if (!res.ok) {
-    throw new Error(`API error (${res.status}): ${await parseErrorDetail(res)}`);
+    throw await apiError(res);
   }
   return res.json();
 }
@@ -141,7 +158,7 @@ async function requestBlob(path: string, body: unknown): Promise<Blob> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    throw new Error(`API error (${res.status}): ${await parseErrorDetail(res)}`);
+    throw await apiError(res);
   }
   return res.blob();
 }
@@ -289,6 +306,30 @@ export interface CoursePlan {
   grounded_on?: number;
   sources?: Source[];
   error?: string;
+}
+
+/** A persisted project row as `GET /api/projects` returns it. Only the fields
+ * the UI actually reads are typed; `specification_json` is whatever was stored
+ * at creation time, so every part of it is optional. */
+export interface Project {
+  id: string;
+  workspace_id?: string;
+  created_by?: string;
+  title: string;
+  type: string;
+  status?: string;
+  created_at?: string;
+  updated_at?: string;
+  specification_json?: {
+    grade?: string;
+    subject?: string;
+    topics?: string[];
+    course_plan?: CoursePlan;
+  } | null;
+}
+
+export async function listProjects(): Promise<Project[]> {
+  return request<Project[]>("GET", "/projects");
 }
 
 export async function generateCoursePlan(params: {

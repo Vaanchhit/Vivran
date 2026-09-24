@@ -22,10 +22,17 @@ export function ReferralGate() {
     e.preventDefault();
     setError("");
     setSubmitting(true);
-    const ok = await verifyReferral(code.trim());
+    const { ok, error: failure } = await verifyReferral(code.trim());
     setSubmitting(false);
     if (!ok) {
-      setError("That referral code isn't valid. Vivran is invite-only during beta — request access below and we'll get you one.");
+      // Only claim the code is wrong when the server actually said so. A
+      // throttle or a failed write is not the teacher's mistake, and telling
+      // them to re-check a correct code leaves them with nothing to try.
+      setError(
+        failure
+          ? `We couldn't check that code right now. ${failure}`
+          : "That referral code isn't valid. Vivran is invite-only during beta — request access below and we'll get you one.",
+      );
     }
     // On success, user.referralVerified flips to true and TeacherLayout
     // re-renders the real page (or the onboarding wizard) in place of this.
@@ -33,9 +40,9 @@ export function ReferralGate() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-10">
-      <div className="w-full max-w-md bg-surface border border-border rounded-2xl shadow-2xl p-8 space-y-6">
+      <div className="w-full max-w-md bg-surface border border-border rounded-2xl shadow-panel p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-[#7C6EFA]/10 border border-[#7C6EFA]/20 text-[#7C6EFA]">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-accent-soft border border-accent-line text-accent">
             <KeyRound className="w-3.5 h-3.5" /> Invite-Only Beta
           </div>
           <h1 className="text-2xl font-extrabold font-display text-foreground tracking-tight">
@@ -59,17 +66,17 @@ export function ReferralGate() {
               autoComplete="off"
               autoFocus
               required
-              className="w-full h-11 px-3.5 bg-white/5 border border-border rounded-xl text-foreground placeholder-[#55555F] text-sm focus:outline-none focus:border-[#7C6EFA] transition-colors"
+              className="w-full h-11 px-3.5 bg-card border border-border rounded-xl text-foreground placeholder:text-faint text-sm focus:outline-none focus:border-accent transition-colors"
             />
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs space-y-2">
+            <div className="p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs space-y-2">
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
-              <a href={REQUEST_ACCESS_MAILTO} className="inline-flex items-center gap-1.5 text-[#4FC3F7] font-semibold hover:underline">
+              <a href={REQUEST_ACCESS_MAILTO} className="inline-flex items-center gap-1.5 text-accent font-semibold hover:underline">
                 <Mail className="w-3.5 h-3.5" /> Request access via email
               </a>
             </div>
@@ -78,7 +85,7 @@ export function ReferralGate() {
           <button
             type="submit"
             disabled={submitting || !code.trim()}
-            className="w-full h-11 bg-gradient-to-r from-[#7C6EFA] to-[#4FC3F7] text-white font-medium text-sm rounded-xl shadow-lg shadow-[#7C6EFA]/25 hover:opacity-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full h-11 btn-primary font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? "Checking..." : "Unlock Vivran"}
             {!submitting && <ArrowRight className="w-4 h-4" />}
@@ -88,7 +95,7 @@ export function ReferralGate() {
         <div className="flex items-center justify-between text-xs text-muted pt-2 border-t border-border">
           <span>
             Don&rsquo;t have a code?{" "}
-            <a href={REQUEST_ACCESS_MAILTO} className="text-[#4FC3F7] font-medium hover:underline">
+            <a href={REQUEST_ACCESS_MAILTO} className="text-accent font-medium hover:underline">
               Email {WAITLIST_EMAIL}
             </a>
           </span>

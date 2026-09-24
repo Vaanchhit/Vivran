@@ -9,10 +9,10 @@ import { ThemeToggle } from "@/app/components/theme-toggle";
  * and never mounts this. */
 export function GlobalHeader() {
   return (
-    <header className="w-full border-b border-border bg-background/85 backdrop-blur-2xl sticky top-0 z-40">
+    <header className="w-full border-b border-border bg-background backdrop-blur-2xl sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#7C6EFA] to-[#4FC3F7] flex items-center justify-center font-bold text-white text-xs">
+          <div className="w-8 h-8 rounded-lg bg-ink text-ink-fg flex items-center justify-center font-bold text-xs">
             विव
           </div>
           <span className="font-display font-extrabold text-lg tracking-tight text-foreground">
@@ -31,7 +31,7 @@ export function GlobalHeader() {
           <ThemeToggle />
           <Link
             href="/login"
-            className="grad-btn px-4 py-2 text-white text-sm font-medium rounded-xl"
+            className="btn-primary px-4 py-2 text-sm font-medium rounded-xl"
           >
             Login
           </Link>

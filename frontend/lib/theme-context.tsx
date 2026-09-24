@@ -13,13 +13,18 @@ function getInitialTheme(): Theme {
   if (typeof window !== "undefined") {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved === "light" || saved === "dark") return saved;
-    if (window.matchMedia?.("(prefers-color-scheme: light)").matches) return "light";
+    if (window.matchMedia?.("(prefers-color-scheme: dark)").matches) return "dark";
   }
-  return "dark";
+  // Warm "paper" is the product's default surface (it's what the marketing
+  // site uses), so light is the fallback and dark is opt-in — either via a
+  // saved choice or an explicit `prefers-color-scheme: dark`. app/layout.tsx
+  // hard-codes data-theme="light" for the same reason: it keeps the first
+  // server-rendered paint on the default rather than flashing the other mode.
+  return "light";
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
   // Single effect for the initial mount: compute the real theme (saved

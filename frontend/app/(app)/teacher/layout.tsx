@@ -41,8 +41,8 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
     <div className="relative flex min-h-screen bg-background">
       {/* decorative radial accents like landing */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-36 -top-24 w-96 h-96 rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,110,250,0.12) 0%, transparent 70%)' }} />
-        <div className="absolute right-0 bottom-[-60px] w-80 h-80 rounded-full" style={{ background: 'radial-gradient(circle, rgba(79,195,247,0.07) 0%, transparent 70%)' }} />
+        <div className="absolute -left-36 -top-24 w-96 h-96 rounded-full bg-glow-1" />
+        <div className="absolute right-0 bottom-[-60px] w-80 h-80 rounded-full bg-glow-2" />
       </div>
 
       {showChrome && <TeacherSidebar />}

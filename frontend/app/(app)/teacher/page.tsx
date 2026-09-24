@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { SmartPromptBox } from "@/app/components/smart-prompt-box";
+import { RecentProjects } from "@/app/components/recent-projects";
 import { useAuth } from "@/lib/auth-context";
 import {
   CalendarRange,
@@ -15,41 +16,23 @@ import {
   FolderKanban,
   Sparkles,
   ArrowRight,
-  Clock,
 } from "lucide-react";
 
 export default function TeacherDashboard() {
   const { user } = useAuth();
 
+  // Each shortcut deep-links to the page that actually does the job, with the
+  // artifact type the teacher clicked already selected. That's their explicit
+  // choice travelling across a navigation — nothing about their content
+  // (grade, subject, topic, length) is pre-filled by it.
   const suggestedActions = [
-    { title: "Plan a Course", desc: "Sequence topics, units & weekly objectives", href: "/teacher/plan", icon: CalendarRange, color: "text-[#7C6EFA]" },
-    { title: "Create Lesson", desc: "Draft full lesson plan with notes & activities", href: "/teacher/create", icon: BookOpenCheck, color: "text-[#4FC3F7]" },
-    { title: "Create Slides", desc: "Generate presentation slides structure", href: "/teacher/create", icon: Presentation, color: "text-amber-400" },
-    { title: "Create Video", desc: "Script and generate educational video", href: "/teacher/create", icon: Video, color: "text-purple-400" },
-    { title: "Create Worksheet", desc: "Generate practice problems & answer keys", href: "/teacher/create", icon: FileSpreadsheet, color: "text-emerald-400" },
-    { title: "Create Quiz", desc: "Short exit tickets, MCQs & quick checks", href: "/teacher/assess", icon: HelpCircle, color: "text-pink-400" },
-    { title: "Create Test", desc: "Full structured exam paper with rubrics", href: "/teacher/assess", icon: FileCheck, color: "text-indigo-400" },
-  ];
-
-  const recentProjects = [
-    {
-      title: "College 2nd Year Business Studies — Porter's Five Forces",
-      updated: "2 hours ago",
-      artifacts: ["Course Plan", "5 Lessons", "12 Slides", "Worksheet", "40-Mark Case Study Test"],
-      type: "Course Pack",
-    },
-    {
-      title: "College 1st Year Economics — Demand & Supply",
-      updated: "Yesterday",
-      artifacts: ["Lesson Plan", "Slides", "Video Script", "80-Mark Test Paper"],
-      type: "Assessment Pack",
-    },
-    {
-      title: "Class 9 Physics — Newton's Laws",
-      updated: "3 days ago",
-      artifacts: ["Interactive Coursework", "Video Segment", "3 Quizzes"],
-      type: "Interactive Coursework",
-    },
+    { title: "Plan a Course", desc: "Sequence topics, units & weekly objectives", href: "/teacher/plan", icon: CalendarRange, color: "text-accent" },
+    { title: "Create Lesson", desc: "Draft full lesson plan with notes & activities", href: "/teacher/create?type=lesson_notes", icon: BookOpenCheck, color: "text-chrome" },
+    { title: "Create Slides", desc: "Generate presentation slides structure", href: "/teacher/create?type=slides", icon: Presentation, color: "text-tint-bronze" },
+    { title: "Create Video", desc: "Script and generate educational video", href: "/teacher/create?type=video", icon: Video, color: "text-tint-umber" },
+    { title: "Create Worksheet", desc: "Generate practice problems & answer keys", href: "/teacher/create?type=worksheet", icon: FileSpreadsheet, color: "text-tint-olive" },
+    { title: "Create Quiz", desc: "Short exit tickets, MCQs & quick checks", href: "/teacher/assess?mode=quiz", icon: HelpCircle, color: "text-tint-rose" },
+    { title: "Create Test", desc: "Full structured exam paper with rubrics", href: "/teacher/assess?mode=test", icon: FileCheck, color: "text-tint-olive" },
   ];
 
   return (
@@ -64,7 +47,7 @@ export default function TeacherDashboard() {
             Turn your teaching intent and materials into classroom-ready outputs.
           </p>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border text-xs text-[#4FC3F7] font-medium">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-card border border-border text-xs text-chrome font-medium">
           <Sparkles className="w-3.5 h-3.5" /> Teacher Beta Workspace
         </div>
       </div>
@@ -90,10 +73,10 @@ export default function TeacherDashboard() {
               <Link
                 key={action.title}
                 href={action.href}
-                className="p-4 rounded-2xl bg-surface/80 border border-border hover:border-[#7C6EFA]/40 hover:bg-card transition-all group relative overflow-hidden hover:-translate-y-0.5"
+                className="p-4 rounded-2xl bg-surface border border-border hover:border-accent-line hover:bg-card transition-all group relative overflow-hidden hover:-translate-y-0.5"
               >
                 <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2.5 rounded-xl bg-white/5 ${action.color}`}>
+                  <div className={`p-2.5 rounded-xl bg-card ${action.color}`}>
                     <Icon className="w-5 h-5" />
                   </div>
                   <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
@@ -114,55 +97,24 @@ export default function TeacherDashboard() {
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold font-display text-foreground tracking-tight flex items-center gap-2">
-            <FolderKanban className="w-5 h-5 text-[#7C6EFA]" />
+            <FolderKanban className="w-5 h-5 text-accent" />
             Recent Teaching Projects
           </h2>
           <Link
             href="/teacher/recent"
-            className="text-xs font-medium text-[#4FC3F7] hover:underline"
+            className="text-xs font-medium text-accent hover:underline"
           >
             View all projects →
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {recentProjects.map((project) => (
-            <div
-              key={project.title}
-              className="p-5 rounded-2xl bg-surface/90 border border-border space-y-3 hover:border-white/20 transition-all"
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] uppercase font-semibold tracking-wider text-[#7C6EFA] bg-[#7C6EFA]/10 px-2 py-0.5 rounded-md border border-[#7C6EFA]/20">
-                  {project.type}
-                </span>
-                <span className="text-[11px] text-muted flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> {project.updated}
-                </span>
-              </div>
-
-              <div className="font-bold text-sm text-foreground font-display">
-                {project.title}
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {project.artifacts.map((art) => (
-                  <span
-                    key={art}
-                    className="px-2 py-0.5 rounded-md bg-card text-[11px] text-muted border border-border"
-                  >
-                    {art}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <RecentProjects limit={3} />
       </section>
 
       {/* Future Capabilities Notice (Spec §2) */}
       <section className="p-4 rounded-xl border border-border bg-card flex items-center justify-between text-xs text-muted">
         <div>
-          🚀 <strong className="text-foreground">Future Features:</strong> AI Teacher Twin & AI Automated Student Grading are currently marked as <span className="text-[#4FC3F7] bg-card px-2 py-0.5 rounded border border-border">Coming Soon</span> per specification.
+          🚀 <strong className="text-foreground">Future Features:</strong> AI Teacher Twin & AI Automated Student Grading are currently marked as <span className="text-chrome bg-card px-2 py-0.5 rounded border border-border">Coming Soon</span> per specification.
         </div>
       </section>
     </div>

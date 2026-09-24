@@ -41,11 +41,11 @@ export function TeacherSidebar() {
   ];
 
   return (
-    <aside className="w-64 border-r border-border bg-surface-2/90 flex flex-col h-screen sticky top-0 z-20">
+    <aside className="w-64 border-r border-border bg-surface-2 flex flex-col h-screen sticky top-0 z-20">
       {/* Brand Header */}
       <div className="p-5 border-b border-border flex items-center justify-between">
         <Link href="/teacher" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#7C6EFA] to-[#4FC3F7] flex items-center justify-center font-bold text-white text-xs">
+          <div className="w-8 h-8 rounded-lg bg-ink text-ink-fg flex items-center justify-center font-bold text-xs">
             विव
           </div>
           <div>
@@ -64,7 +64,7 @@ export function TeacherSidebar() {
       <div className="p-4">
         <Link
           href="/teacher/create"
-          className="w-full h-10 grad-btn text-white font-medium text-sm rounded-xl flex items-center justify-center gap-2"
+          className="w-full h-10 btn-primary font-medium text-sm rounded-xl flex items-center justify-center gap-2"
         >
           <Plus className="w-4 h-4" /> Create Content
         </Link>
@@ -81,11 +81,11 @@ export function TeacherSidebar() {
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 isActive
-                  ? "bg-[#7C6EFA]/15 text-foreground font-semibold border border-[#7C6EFA]/30"
-                  : "text-muted hover:text-foreground hover:bg-white/5"
+                  ? "bg-accent-soft text-foreground font-semibold border border-accent-line"
+                  : "text-muted hover:text-foreground hover:bg-card"
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? "text-[#7C6EFA]" : ""}`} />
+              <Icon className={`w-4 h-4 ${isActive ? "text-accent" : ""}`} />
               {item.label}
             </Link>
           );
@@ -96,7 +96,7 @@ export function TeacherSidebar() {
       <div className="p-3 m-3 border border-border rounded-xl bg-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-foreground shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-card flex items-center justify-center text-foreground shrink-0">
               <User className="w-4 h-4" />
             </div>
             <div className="min-w-0">
@@ -112,7 +112,7 @@ export function TeacherSidebar() {
             onClick={handleLogout}
             title="Logout"
             aria-label="Logout"
-            className="p-1.5 rounded-lg text-muted hover:text-red-400 hover:bg-white/5 transition-colors"
+            className="p-1.5 rounded-lg text-muted hover:text-danger hover:bg-card transition-colors"
           >
             <LogOut className="w-4 h-4" />
           </button>

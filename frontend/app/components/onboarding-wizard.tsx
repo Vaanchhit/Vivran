@@ -75,9 +75,9 @@ export function OnboardingWizard() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-10">
-      <div className="w-full max-w-xl bg-surface border border-border rounded-2xl shadow-2xl p-8 space-y-6">
+      <div className="w-full max-w-xl bg-surface border border-border rounded-2xl shadow-panel p-8 space-y-6">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-[#7C6EFA]/10 border border-[#7C6EFA]/20 text-[#7C6EFA]">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-accent-soft border border-accent-line text-accent">
             <Sparkles className="w-3.5 h-3.5" /> Quick Setup
           </div>
           <h1 className="text-2xl font-extrabold font-display text-foreground tracking-tight">
@@ -98,17 +98,17 @@ export function OnboardingWizard() {
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center border text-xs font-semibold transition-colors ${
                     state === "done"
-                      ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                      ? "bg-success-soft border-success-line text-success"
                       : state === "active"
-                        ? "bg-[#7C6EFA]/20 border-[#7C6EFA] text-[#7C6EFA]"
-                        : "bg-white/5 border-border text-muted"
+                        ? "bg-accent-soft border-accent text-accent"
+                        : "bg-card border-border text-muted"
                   }`}
                   aria-label={s.label}
                   title={s.label}
                 >
                   {state === "done" ? <Check className="w-4 h-4" /> : <Icon className="w-3.5 h-3.5" />}
                 </div>
-                {i < steps.length - 1 && <div className={`w-6 h-px ${i < step ? "bg-emerald-500/40" : "bg-border"}`} />}
+                {i < steps.length - 1 && <div className={`w-6 h-px ${i < step ? "bg-success-line" : "bg-border"}`} />}
               </div>
             );
           })}
@@ -129,8 +129,8 @@ export function OnboardingWizard() {
                   onClick={() => toggle(subjects, setSubjects, s)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     subjects.includes(s)
-                      ? "bg-[#7C6EFA]/15 border-[#7C6EFA] text-foreground"
-                      : "bg-card border-border text-muted hover:border-white/20 hover:text-foreground"
+                      ? "bg-accent-soft border-accent text-foreground"
+                      : "bg-card border-border text-muted hover:border-border-hi hover:text-foreground"
                   }`}
                 >
                   {s}
@@ -148,12 +148,12 @@ export function OnboardingWizard() {
                   }
                 }}
                 placeholder="Add another subject…"
-                className="flex-1 px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                className="flex-1 px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-accent"
               />
               <button
                 type="button"
                 onClick={() => addCustom(subjectDraft, setSubjectDraft, subjects, setSubjects)}
-                className="p-2 rounded-lg border border-border text-muted hover:text-foreground hover:border-white/20"
+                className="p-2 rounded-lg border border-border text-muted hover:text-foreground hover:border-border-hi"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -161,7 +161,7 @@ export function OnboardingWizard() {
             {subjects.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {subjects.map((s) => (
-                  <span key={s} className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 text-[11px] text-[#4FC3F7]">
+                  <span key={s} className="flex items-center gap-1 px-2 py-1 rounded-md bg-chrome-soft border border-chrome-line text-[11px] text-chrome">
                     {s}
                     <button type="button" onClick={() => toggle(subjects, setSubjects, s)} aria-label={`Remove ${s}`}>
                       <X className="w-3 h-3" />
@@ -185,8 +185,8 @@ export function OnboardingWizard() {
                   onClick={() => toggle(grades, setGrades, g)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     grades.includes(g)
-                      ? "bg-[#7C6EFA]/15 border-[#7C6EFA] text-foreground"
-                      : "bg-card border-border text-muted hover:border-white/20 hover:text-foreground"
+                      ? "bg-accent-soft border-accent text-foreground"
+                      : "bg-card border-border text-muted hover:border-border-hi hover:text-foreground"
                   }`}
                 >
                   {g}
@@ -204,12 +204,12 @@ export function OnboardingWizard() {
                   }
                 }}
                 placeholder="Add another grade/year…"
-                className="flex-1 px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                className="flex-1 px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-accent"
               />
               <button
                 type="button"
                 onClick={() => addCustom(gradeDraft, setGradeDraft, grades, setGrades)}
-                className="p-2 rounded-lg border border-border text-muted hover:text-foreground hover:border-white/20"
+                className="p-2 rounded-lg border border-border text-muted hover:text-foreground hover:border-border-hi"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -217,7 +217,7 @@ export function OnboardingWizard() {
             {grades.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {grades.map((g) => (
-                  <span key={g} className="flex items-center gap-1 px-2 py-1 rounded-md bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 text-[11px] text-[#4FC3F7]">
+                  <span key={g} className="flex items-center gap-1 px-2 py-1 rounded-md bg-chrome-soft border border-chrome-line text-[11px] text-chrome">
                     {g}
                     <button type="button" onClick={() => toggle(grades, setGrades, g)} aria-label={`Remove ${g}`}>
                       <X className="w-3 h-3" />
@@ -241,8 +241,8 @@ export function OnboardingWizard() {
                   onClick={() => setLanguage(l)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     language === l
-                      ? "bg-[#7C6EFA]/15 border-[#7C6EFA] text-foreground"
-                      : "bg-card border-border text-muted hover:border-white/20 hover:text-foreground"
+                      ? "bg-accent-soft border-accent text-foreground"
+                      : "bg-card border-border text-muted hover:border-border-hi hover:text-foreground"
                   }`}
                 >
                   {l}
@@ -255,7 +255,7 @@ export function OnboardingWizard() {
                 onChange={(e) => setCustomLanguage(e.target.value)}
                 placeholder="Type your preferred language…"
                 autoFocus
-                className="w-full px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-[#7C6EFA]"
+                className="w-full px-3 py-2 bg-card border border-border rounded-lg text-xs text-foreground focus:outline-none focus:border-accent"
               />
             )}
           </div>
@@ -275,8 +275,8 @@ export function OnboardingWizard() {
                   onClick={() => setDifficulty(d.value)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     difficulty === d.value
-                      ? "bg-[#7C6EFA]/15 border-[#7C6EFA] text-foreground"
-                      : "bg-card border-border text-muted hover:border-white/20 hover:text-foreground"
+                      ? "bg-accent-soft border-accent text-foreground"
+                      : "bg-card border-border text-muted hover:border-border-hi hover:text-foreground"
                   }`}
                 >
                   {d.label}
@@ -288,7 +288,7 @@ export function OnboardingWizard() {
         )}
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+          <div className="p-3 rounded-xl bg-danger-soft border border-danger-line text-danger text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" /> {error}
           </div>
         )}
@@ -306,7 +306,7 @@ export function OnboardingWizard() {
           <button
             type="button"
             onClick={() => logout()}
-            className="text-[11px] text-muted hover:text-red-400 underline"
+            className="text-[11px] text-muted hover:text-danger underline"
           >
             Sign out
           </button>
@@ -315,7 +315,7 @@ export function OnboardingWizard() {
             type="button"
             onClick={goNext}
             disabled={!canAdvance || saving}
-            className="grad-btn px-5 py-2.5 text-white text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary px-5 py-2.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving ? (
               <>

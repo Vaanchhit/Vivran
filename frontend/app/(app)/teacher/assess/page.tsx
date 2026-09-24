@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { BookMarked, Download, ExternalLink, FileCheck2, Loader2, RefreshCw, AlertCircle } from "lucide-react";
 import {
   downloadAssessmentPdf,
@@ -26,7 +27,35 @@ interface UIQuestion {
 
 const REGEN_OPTIONS = ["harder", "easier", "application", "conceptual", "case"];
 
+/** Copy presets for the two shortcuts that land here from the dashboard.
+ * `?mode=quiz` and `?mode=test` only reframe the box — they never pre-fill a
+ * mark count, difficulty or topic, which stay the teacher's to pick. */
+const MODES = {
+  quiz: {
+    heading: "What quick quiz would you like?",
+    placeholder:
+      "Just the topic and the angle — e.g. 'Demand and supply, exit-ticket level, mostly MCQs'. Set the grade, subject and marks below.",
+  },
+  test: {
+    heading: "What full test paper would you like?",
+    placeholder:
+      "Just the topic and the angle — e.g. 'Porter's Five Forces with case-study application questions'. Set the grade, subject, marks and difficulty below.",
+  },
+} as const;
+
 export default function AssessPage() {
+  return (
+    <Suspense fallback={null}>
+      <AssessPageInner />
+    </Suspense>
+  );
+}
+
+function AssessPageInner() {
+  const searchParams = useSearchParams();
+  const modeParam = searchParams.get("mode");
+  const mode = modeParam === "quiz" || modeParam === "test" ? MODES[modeParam] : null;
+
   const [grade, setGrade] = useState("");
   const [subject, setSubject] = useState("");
   const [totalMarks, setTotalMarks] = useState(40);
@@ -127,7 +156,7 @@ export default function AssessPage() {
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="border-b border-border pb-6">
         <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
-          <FileCheck2 className="w-6 h-6 text-[#7C6EFA]" /> Pillar 3 — Assessment & Test Generation
+          <FileCheck2 className="w-6 h-6 text-accent" /> Pillar 3 — Assessment & Test Generation
         </h1>
         <p className="text-sm text-muted mt-1">
           Create structured tests, quizzes, and question banks. Regenerate individual questions without re-creating the paper.
@@ -135,15 +164,18 @@ export default function AssessPage() {
       </div>
 
       {/* Smart Prompt Box, locked to assessment — same free-text + mic +
-          Interpret Intent + editable grade/subject/topics/marks/difficulty
-          pattern as the dashboard, feeding this page's own paper preview,
-          export, and per-question regeneration UI below. */}
+          customization dropdowns + editable topics pattern as the dashboard,
+          feeding this page's own paper preview, export, and per-question
+          regeneration UI below. */}
       <SmartCreationBox
+        key={modeParam ?? "default"}
         lockedArtifactType="assessment"
         showInlineResult={false}
-        showShortcuts={false}
-        heading="What test or quiz would you like to create?"
-        promptPlaceholder="Tell Vivran what you want to test... e.g. 'Create a difficult 40-mark College 2nd Year Business Studies paper on Porter's Five Forces with case-study application questions.'"
+        heading={mode?.heading ?? "What test or quiz would you like to create?"}
+        promptPlaceholder={
+          mode?.placeholder ??
+          "Just the topic and the angle — e.g. 'Porter's Five Forces with case-study application questions'. Set the grade, subject and marks below."
+        }
         onGenerated={(result) => {
           if (result.artifactType !== "assessment") return;
           setError(null);
@@ -177,12 +209,12 @@ export default function AssessPage() {
       />
 
       {error && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-xs text-red-300">
+        <div className="p-3 bg-danger-soft border border-danger-line rounded-xl flex items-center gap-2 text-xs text-danger">
           <AlertCircle className="w-4 h-4 shrink-0" /> {error}
         </div>
       )}
       {validationErrors.length > 0 && (
-        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-300 space-y-1">
+        <div className="p-3 bg-warning-soft border border-warning-line rounded-xl text-xs text-warning space-y-1">
           <div className="font-semibold flex items-center gap-2"><AlertCircle className="w-4 h-4" /> Validation issues:</div>
           {validationErrors.map((e, i) => <div key={i}>• {e}</div>)}
         </div>
@@ -194,14 +226,14 @@ export default function AssessPage() {
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold font-display text-foreground">Generated Paper Preview {title ? `(${title})` : ""}</h2>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[#4FC3F7] font-semibold bg-[#4FC3F7]/10 px-2.5 py-1 rounded-lg border border-[#4FC3F7]/20">
+                <span className="text-xs text-chrome font-semibold bg-chrome-soft px-2.5 py-1 rounded-lg border border-chrome-line">
                   Total: {totalMarks} Marks {groundedOn > 0 ? `· Grounded on ${groundedOn} excerpts` : ""}
                 </span>
                 <button
                   type="button"
                   onClick={exportPdf}
                   disabled={exporting}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-[#7C6EFA]/40 disabled:opacity-50"
+                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-accent-line disabled:opacity-50"
                 >
                   {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                   Export PDF
@@ -211,7 +243,7 @@ export default function AssessPage() {
                     type="button"
                     onClick={exportTally}
                     disabled={exportingTally}
-                    className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-[#7C6EFA]/40 disabled:opacity-50"
+                    className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-accent-line disabled:opacity-50"
                   >
                     {exportingTally ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
                     Export to Tally
@@ -221,7 +253,7 @@ export default function AssessPage() {
             </div>
 
             {tallyResult && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center justify-between gap-3 text-xs text-emerald-300">
+              <div className="p-3 bg-success-soft border border-success-line rounded-xl flex items-center justify-between gap-3 text-xs text-success">
                 <span>
                   Tally quiz created with {tallyResult.mcq_count} MCQ{tallyResult.mcq_count !== 1 ? "s" : ""}
                   {tallyResult.skipped_non_mcq > 0 ? ` (${tallyResult.skipped_non_mcq} non-MCQ question${tallyResult.skipped_non_mcq !== 1 ? "s" : ""} skipped)` : ""}.
@@ -239,14 +271,14 @@ export default function AssessPage() {
                   onClick={() => setSelected(i)}
                   className={`p-4 rounded-xl border transition-all cursor-pointer ${
                     selected === i
-                      ? "bg-[#7C6EFA]/10 border-[#7C6EFA] text-white shadow-lg shadow-[#7C6EFA]/10"
-                      : "bg-surface border-border text-muted hover:border-white/20"
+                      ? "bg-accent-soft border-accent text-foreground shadow-soft"
+                      : "bg-surface border-border text-muted hover:border-border-hi"
                   }`}
                 >
                   <div className="flex items-center justify-between text-xs mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-foreground bg-white/10 px-2 py-0.5 rounded">Q{question.question_number}</span>
-                      <span className="text-[#4FC3F7] font-medium">{question.question_type}</span>
+                      <span className="font-bold text-foreground bg-card px-2 py-0.5 rounded">Q{question.question_number}</span>
+                      <span className="text-chrome font-medium">{question.question_type}</span>
                       <span>({question.marks} Mark{question.marks > 1 ? "s" : ""})</span>
                     </div>
                   </div>
@@ -262,7 +294,7 @@ export default function AssessPage() {
                         const src = sources.find((s) => s.chunk_id === sid);
                         if (!src) return null;
                         return (
-                          <span key={sid} className="inline-flex items-center gap-1 text-[10px] text-[#4FC3F7] bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 px-2 py-0.5 rounded-full">
+                          <span key={sid} className="inline-flex items-center gap-1 text-[10px] text-chrome bg-chrome-soft border border-chrome-line px-2 py-0.5 rounded-full">
                             <BookMarked className="w-2.5 h-2.5" />
                             {src.source_material}{src.page_number ? ` p.${src.page_number}` : ""}
                           </span>
@@ -289,7 +321,7 @@ export default function AssessPage() {
                     type="button"
                     onClick={runRegenerate}
                     disabled={regenerating}
-                    className="w-full px-3 py-2 bg-[#7C6EFA] hover:bg-[#684af3] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full px-3 py-2 btn-primary text-xs font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? "animate-spin" : ""}`} /> Regenerate
                   </button>
@@ -302,7 +334,7 @@ export default function AssessPage() {
             {sources.length > 0 && (
               <div className="p-5 rounded-2xl bg-surface border border-border space-y-2">
                 <div className="text-sm font-bold text-foreground font-display flex items-center gap-2">
-                  <BookMarked className="w-4 h-4 text-[#4FC3F7]" /> Sources Used
+                  <BookMarked className="w-4 h-4 text-chrome" /> Sources Used
                 </div>
                 {sources.map((s) => (
                   <div key={s.chunk_id} className="p-2.5 rounded-lg bg-card border border-border text-[11px]">

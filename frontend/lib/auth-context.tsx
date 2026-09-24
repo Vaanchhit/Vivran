@@ -38,8 +38,13 @@ interface AuthContextType {
    * method) by referral-gate.tsx. On success, flips referralVerified to true
    * on the local user object immediately, same pattern as
    * completeOnboarding, so TeacherLayout stops showing the gate without a
-   * full session resync. */
-  verifyReferral: (code: string) => Promise<boolean>;
+   * full session resync.
+   *
+   * Returns a result rather than a bare boolean, and never throws: "the code
+   * was wrong" and "the backend couldn't record that the code was right"
+   * (502) or "you've tried too many times" (429) are different problems and
+   * telling a teacher their correct code is invalid sends them nowhere. */
+  verifyReferral: (code: string) => Promise<{ ok: boolean; error?: string }>;
   /** Permanently deletes the signed-in teacher's account (backend + Supabase
    * Auth user). Does NOT sign the user out locally — callers should call
    * logout() themselves right after a successful delete. */
@@ -190,15 +195,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const verifyReferral = async (code: string): Promise<boolean> => {
+  const verifyReferral = async (code: string): Promise<{ ok: boolean; error?: string }> => {
     try {
       const ok = await verifyReferralForAccount(code);
       if (ok) {
         setUser((prev) => (prev ? { ...prev, referralVerified: true } : prev));
       }
-      return ok;
-    } catch {
-      return false;
+      return { ok };
+    } catch (e) {
+      // A thrown error means the request itself failed (429 throttle, 502
+      // because the verification couldn't be persisted, network down) — NOT
+      // that the code was rejected. Pass the reason up so the gate can say so.
+      return { ok: false, error: e instanceof Error ? e.message : "Something went wrong. Please try again." };
     }
   };
 

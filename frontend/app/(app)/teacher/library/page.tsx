@@ -9,7 +9,7 @@ export default function LibraryPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="border-b border-border pb-6">
         <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
-          <Library className="w-6 h-6 text-[#7C6EFA]" /> Library & Curriculum Repository
+          <Library className="w-6 h-6 text-accent" /> Library & Curriculum Repository
         </h1>
         <p className="text-sm text-muted mt-1">
           Browse saved course templates, standardized syllabus structures, and shared educational material.

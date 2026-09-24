@@ -6,38 +6,143 @@
 
 @layer base {
 
+  /* ------------------------------------------------------------------
+     Vivran product palette — warm "paper & ink".
+     :root is the LIGHT (paper) theme, which is now the product default and
+     matches the marketing site's cream palette. [data-theme="dark"] is the
+     warm-charcoal counterpart of the same brand — NOT a cool near-black.
+     Nothing in here is purple, blue or cyan, and there are no gradients:
+     hierarchy comes from type, spacing and hairline rules.
+     Every colour a component needs lives here. Component files should
+     reference the Tailwind semantic classes (bg-surface, text-muted,
+     text-accent, bg-warning-soft, …), never a raw hex.
+     ------------------------------------------------------------------ */
   :root {
-    --bg: #09090E;
-    --bg-card: rgba(255, 255, 255, 0.035);
-    --surface: #0F0F16;
-    --surface-2: #0C0C12;
-    --border: rgba(255, 255, 255, 0.07);
-    --border-hi: rgba(255, 255, 255, 0.13);
-    --text-1: #F4F4F6;
-    --text-2: #8B8B99;
-    --text-3: #55555F;
-    --accent-1: #7C6EFA;
-    --accent-2: #4FC3F7;
-    --grad: linear-gradient(135deg, #7C6EFA 0%, #9C72F7 45%, #4FC3F7 100%);
-    --grad-text: linear-gradient(130deg, #C4B5FD 0%, #818CF8 40%, #67E8F9 100%);
+    color-scheme: light;
+
+    /* surfaces */
+    --bg: #FBF8F3;          /* paper */
+    --surface: #FFFFFF;     /* raised panel / card */
+    --surface-2: #F4F0E8;   /* recessed chrome (sidebar) */
+    --bg-card: #F4F1EB;     /* inset fills: inputs, chips, sub-cards */
+
+    /* hairlines */
+    --border: rgba(20, 16, 12, 0.12);
+    --border-hi: rgba(20, 16, 12, 0.26);
+
+    /* type */
+    --text-1: #14100C;      /* ink — body & headings, 17.9:1 on paper */
+    --text-2: #5B544A;      /* secondary,            7.1:1 on paper */
+    --text-3: #6F6659;      /* placeholder / meta,   5.3:1 on paper */
+
+    /* the single brand accent (vermillion) */
+    --accent-1: #B23C17;
+    --accent-soft: rgba(178, 60, 23, 0.10);
+    --accent-soft-hi: rgba(178, 60, 23, 0.16); /* hover; accent text still 4.6:1 */
+    --accent-line: rgba(178, 60, 23, 0.28);
+
+    /* "chrome" — the warm neutral that replaced the cyan secondary.
+       Used for provenance/metadata (source chips, grounding counts) so it
+       stays clearly distinct from the three semantic state colours. */
+    --accent-2: #5E574D;
+    --chrome-soft: rgba(94, 87, 77, 0.10);
+    --chrome-line: rgba(94, 87, 77, 0.26);
+
+    /* primary button — solid, no gradient. Ink on paper. */
+    --btn-bg: #14100C;
+    --btn-bg-hover: #332C22;
+    --btn-fg: #FBF8F3;
+
+    /* semantic states — retuned warm, all >= 4.5:1 on their own soft tint */
+    --ok: #146A47;
+    --ok-soft: rgba(20, 106, 71, 0.10);
+    --ok-line: rgba(20, 106, 71, 0.28);
+    --warn: #7E5700;
+    --warn-soft: rgba(126, 87, 0, 0.12);
+    --warn-line: rgba(126, 87, 0, 0.30);
+    --err: #A3261C;
+    --err-soft: rgba(163, 38, 28, 0.10);
+    --err-line: rgba(163, 38, 28, 0.28);
+
+    /* Decorative categorical tints for shortcut/artifact icons only.
+       Deliberately separate from --ok/--warn/--err so that a semantic
+       colour never turns up as decoration (and vice versa). */
+    --tint-clay: #A4451F;
+    --tint-bronze: #8A6212;
+    --tint-olive: #4F6135;
+    --tint-rose: #96435A;
+    --tint-umber: #6B4A2E;
+
+    /* keyboard focus */
+    --focus: #B23C17;
+
+    /* decorative page wash (teacher layout / login) */
+    --glow-1: rgba(178, 60, 23, 0.07);
+    --glow-2: rgba(94, 87, 77, 0.06);
+
+    /* elevation — warm, low-contrast; no coloured glow anywhere */
+    --shadow-soft: 0 1px 2px rgba(20, 16, 12, 0.06);
+    --shadow-panel: 0 1px 2px rgba(20, 16, 12, 0.04), 0 10px 28px rgba(20, 16, 12, 0.07);
+
     --font-display: 'Space Grotesk', sans-serif;
     --font-body: 'Inter', sans-serif;
-    --noise-opacity: 0.55;
+    --noise-opacity: 0.35;
   }
 
-  [data-theme="light"] {
-    --bg: #FAFAFD;
-    --bg-card: rgba(15, 15, 22, 0.035);
-    --surface: #FFFFFF;
-    --surface-2: #F2F2F7;
-    --border: rgba(15, 15, 22, 0.09);
-    --border-hi: rgba(15, 15, 22, 0.16);
-    --text-1: #111118;
-    --text-2: #5A5A66;
-    --text-3: #9A9AA6;
-    --accent-1: #7C6EFA;
-    --accent-2: #10A0E0;
-    --noise-opacity: 0.2;
+  [data-theme="dark"] {
+    color-scheme: dark;
+
+    --bg: #131110;
+    --surface: #1C1917;
+    --surface-2: #171412;
+    --bg-card: rgba(244, 239, 231, 0.05);
+
+    --border: rgba(244, 239, 231, 0.11);
+    --border-hi: rgba(244, 239, 231, 0.24);
+
+    --text-1: #F4EFE7;      /* bone,       15.3:1 on surface */
+    --text-2: #A8A095;      /*              6.8:1 on surface */
+    --text-3: #9A9184;      /*              5.6:1 on surface */
+
+    --accent-1: #E8794E;
+    --accent-soft: rgba(232, 121, 78, 0.13);
+    --accent-soft-hi: rgba(232, 121, 78, 0.18);
+    --accent-line: rgba(232, 121, 78, 0.34);
+
+    --accent-2: #CFC7BA;    /* chrome / off-white */
+    --chrome-soft: rgba(207, 199, 186, 0.10);
+    --chrome-line: rgba(207, 199, 186, 0.26);
+
+    /* inverted: the primary button is literally chrome/off-white here */
+    --btn-bg: #F0EBE1;
+    --btn-bg-hover: #FFFFFF;
+    --btn-fg: #14100C;
+
+    --ok: #5FCB99;
+    --ok-soft: rgba(95, 203, 153, 0.12);
+    --ok-line: rgba(95, 203, 153, 0.30);
+    --warn: #E3B451;
+    --warn-soft: rgba(227, 180, 81, 0.12);
+    --warn-line: rgba(227, 180, 81, 0.30);
+    --err: #F08C7E;
+    --err-soft: rgba(240, 140, 126, 0.12);
+    --err-line: rgba(240, 140, 126, 0.30);
+
+    --tint-clay: #E8955F;
+    --tint-bronze: #D8B266;
+    --tint-olive: #A8C07E;
+    --tint-rose: #E39BAB;
+    --tint-umber: #C6A183;
+
+    --focus: #E8794E;
+
+    --glow-1: rgba(232, 121, 78, 0.10);
+    --glow-2: rgba(207, 199, 186, 0.05);
+
+    --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
+
+    --noise-opacity: 0.5;
   }
 
   body {
@@ -47,7 +152,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* subtle noise overlay to match landing visuals */
+  /* subtle grain — reads as paper tooth in light, as film in dark */
   body::before {
     content: '';
     position: fixed;
@@ -65,30 +170,35 @@
 
   /* Utility class used in components for display headings */
   .font-display { font-family: var(--font-display); }
-
-  /* Gradient text accent (matching landing .grad-text) */
-  .grad-text {
-    background: linear-gradient(130deg, #C4B5FD 0%, #818CF8 40%, #67E8F9 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
 }
 
-/* Primary button: 3-stop gradient with purple glow (landing .btn-primary) */
-.grad-btn {
-  background: linear-gradient(135deg, #7C6EFA 0%, #9C72F7 45%, #4FC3F7 100%);
-  box-shadow: 0 0 28px rgba(124, 110, 250, 0.28);
-  transition: box-shadow 0.2s ease, transform 0.15s ease;
+/* Primary button: solid, no gradient, no glow. Ink-on-paper in light mode,
+   chrome/off-white-on-ink in dark mode. */
+.btn-primary {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  transition: background-color 0.15s ease, opacity 0.15s ease;
 }
 
-.grad-btn:hover {
-  box-shadow: 0 0 42px rgba(124, 110, 250, 0.5);
+.btn-primary:hover:not(:disabled) {
+  background: var(--btn-bg-hover);
 }
 
-/* Glass ghost button (landing .btn-ghost) */
+/* Glass ghost button (kept for parity with the marketing chrome) */
 .glass-btn {
   background: var(--bg-card);
   border: 1px solid var(--border-hi);
   backdrop-filter: blur(8px);
+}
+
+/* Keyboard focus.
+   Many controls in the product carry Tailwind's `focus:outline-none`
+   (a `.class:focus` rule, specificity 0-2-0) plus a focus-only border
+   tint, which on its own is far too weak to be a focus indicator. This
+   rule re-asserts a real 2px ring for keyboard users only — it has to
+   win against that utility, hence !important. Mouse clicks are
+   unaffected (:focus-visible). */
+html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus) !important;
+  outline-offset: 2px !important;
 }
