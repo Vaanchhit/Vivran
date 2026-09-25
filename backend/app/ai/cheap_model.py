@@ -18,6 +18,7 @@ from app.ai import groq_client
 from app.ai.gemini_client import GeminiError, generate_text
 from app.ai.router import ModelTier, model_for_tier
 from app.ai.usage import TokenUsage, record, usage_scope
+from app.core.config import settings
 from app.core.errors import FailureClass
 from app.core.logging import logger
 
@@ -122,9 +123,16 @@ def generate_cloud(
     system_prompt: str = "",
     json_mode: bool = False,
     temperature: float = 0.4,
+    model_override: str = "",
 ) -> Dict[str, Any]:
-    """One generation call on `tier`, with the dormant second-provider seam."""
-    model_name = model_for_tier(tier)
+    """One generation call on `tier`, with the dormant second-provider seam.
+
+    `model_override` pins a specific model while keeping the tier's behaviour
+    (pacing, retry, failover policy, usage accounting). Used by exam-paper
+    generation so that repinning the authoring model cannot silently change
+    which model writes a marks-constrained paper.
+    """
+    model_name = model_override or model_for_tier(tier)
 
     # The scope collects what gemini_client recorded for this call — including
     # any retried attempt, which a return value would miss. It nests, so a
@@ -194,4 +202,23 @@ def generate_slm(
         system_prompt=system_prompt,
         json_mode=json_mode,
         temperature=temperature,
+    )
+
+
+def generate_assessment_cloud(
+    prompt: str, task: str = "assessment_creation", system_prompt: str = "", json_mode: bool = False
+) -> Dict[str, Any]:
+    """Exam papers, on their own explicitly-pinned model.
+
+    Separate from the authoring tier so that changing which model writes slides
+    never silently changes which model writes a marks-constrained paper. See
+    settings.assessment_model for the measurement behind the current pin.
+    """
+    return generate_cloud(
+        prompt,
+        tier=ModelTier.CHEAP_CLOUD,
+        task=task,
+        system_prompt=system_prompt,
+        json_mode=json_mode,
+        model_override=settings.assessment_model,
     )

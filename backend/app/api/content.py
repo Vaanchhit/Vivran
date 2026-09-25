@@ -6,10 +6,11 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
+from app.ai.cheap_model import generate_cheap_cloud
 from app.api.deps import require_teacher, teacher_session
 from app.api.jobs import ASYNC_JOB_QUERY, dispatch_generation
 from app.core.auth import CurrentUser
-from app.core.errors import raise_for_service_result
+from app.core.errors import FailureClass, http_error, raise_for_service_result
 from app.core.logging import logger
 from app.core.rate_limit import limit
 from app.generation.artifacts import generate_lesson_notes, generate_slides, generate_worksheet
@@ -329,3 +330,104 @@ def api_render_slides_html(
         # A genuine, actionable input error — stays specific, never masked.
         raise HTTPException(status_code=400, detail="This deck has no slides to render.")
     return HTMLResponse(content=render_slides_html(payload.deck, include_notes_pages=payload.include_notes_pages))
+
+
+# ---------------------------------------------------------------------------
+# slidekit seam.
+#
+# slidekit (frontend/lib/slidekit) owns understanding the teacher's request,
+# planning the lesson skeleton, deriving character budgets from layouts it has
+# verified, validating and repairing the model's JSON, and choosing a layout.
+# All of that is deterministic and needs no key, so it runs in the frontend.
+#
+# What it cannot do from there is hold an API key, reach pgvector, or inherit
+# the retry/backoff, error masking, request pacing and token accounting that
+# already wrap every model call here. So the split is: slidekit prepares the
+# prompt and consumes the result; these two endpoints do the parts that must
+# stay server-side.
+# ---------------------------------------------------------------------------
+
+
+class GroundingRequest(BaseModel):
+    query: str
+    material_id: Optional[str] = None
+    limit: int = 6
+
+
+@router.post("/grounding")
+@limit(_TEXT_GEN_LIMIT)
+def api_grounding(
+    request: Request,
+    payload: GroundingRequest,
+    workspace_id: Optional[str] = Header(None, alias="Workspace-Id"),
+    session: Dict[str, Any] = Depends(teacher_session),
+    user: CurrentUser = Depends(require_teacher),
+):
+    """Retrieved chunks for slidekit to label S1..Sn and put in its prompt.
+
+    Returns [] rather than erroring when nothing is indexed: an ungrounded deck
+    is a worse deck, not a failed one, and the teacher is told which it was.
+    """
+    ws = _validated_workspace(workspace_id, session)
+    if not ws:
+        return {"chunks": [], "grounded": False}
+    chunks = search_knowledge_base(
+        payload.query, workspace_id=ws, material_id=payload.material_id, limit=payload.limit
+    )
+    return {
+        "chunks": [
+            {
+                "chunk_id": c.get("chunk_id") or c.get("id"),
+                "excerpt": c.get("content") or c.get("excerpt") or "",
+                "source_material": c.get("source_material") or c.get("title"),
+                "page_number": c.get("page_number"),
+            }
+            for c in chunks
+        ],
+        "grounded": bool(chunks),
+    }
+
+
+class BlockFillRequest(BaseModel):
+    system_prompt: str
+    user_prompt: str
+
+
+@router.post("/blocks")
+@limit(_TEXT_GEN_LIMIT)
+def api_fill_blocks(
+    request: Request,
+    payload: BlockFillRequest,
+    workspace_id: Optional[str] = Header(None, alias="Workspace-Id"),
+    session: Dict[str, Any] = Depends(teacher_session),
+    user: CurrentUser = Depends(require_teacher),
+):
+    """Runs a slidekit-prepared prompt on the authoring tier.
+
+    Deliberately thin: it does NOT parse, validate or repair the response.
+    slidekit's zod schemas and repair.ts are the authority on block shape, and
+    duplicating that here would give two implementations that can disagree.
+    The raw string goes back as-is; failures are masked as everywhere else.
+    """
+    _validated_workspace(workspace_id, session)
+    result = generate_cheap_cloud(
+        payload.user_prompt,
+        task="slidekit_blocks",
+        system_prompt=payload.system_prompt,
+        json_mode=True,
+    )
+    # NOTE: the model tiers return {"success": ...}, not the media services'
+    # {"status": "ready"} envelope — raise_for_service_result is for the latter
+    # and silently treats every generation result as a failure.
+    if not result.get("success"):
+        raise http_error(
+            result.get("failure") or FailureClass.UPSTREAM_ERROR,
+            context="slides",
+            detail=str(result.get("error", "")),
+        )
+    return {
+        "content": result.get("content", ""),
+        "provider": result.get("provider"),
+        "model_name": result.get("model_name"),
+        "usage": result.get("usage"),
+    }

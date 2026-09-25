@@ -53,12 +53,38 @@ class Settings(BaseSettings):
     #
     # CAVEAT, measured today: this model is currently unreliable — 503 "model
     # overloaded" on 3/10 calls in one run and 4/4 in another, ~12s median when
-    # it works. It is kept here anyway because authoring is the one job the SLM
-    # has NOT been shown to do as well, and gemini_client.py already retries a
-    # 503. If the overload rate stays this high, this is the next thing to
-    # revisit — it needs a judgement call about output quality, not a config
-    # edit made on availability grounds alone.
-    cheap_model: str = "gemini-3.6-flash"
+    # it works.
+    #
+    # That judgement call has since been made, with the missing measurement:
+    # the same full deck generated through the same pipeline, twice.
+    #   gemini-3.6-flash      4 consecutive 429/503 — no deck at all
+    #   gemini-3.5-flash-lite 4.1s, 12 slides, 11 layouts, ZERO repairs,
+    #                         nothing trimmed, split or dropped
+    # Zero repairs means the output was schema-perfect on the first attempt,
+    # which is the authoring-quality evidence that was missing before. Combined
+    # with slidekit — which fixes the plan, derives every character budget from
+    # a verified layout, and deterministically repairs what comes back — the
+    # remaining risk of the smaller model is prose quality, not structure.
+    #
+    # So authoring moves to flash-lite on availability AND measured quality.
+    # Set CHEAP_MODEL=gemini-3.6-flash to revert; everything still routes
+    # through app/ai/router.py.
+    cheap_model: str = SLM_MODEL
+    # Exam papers get their own pin, because "which model writes a paper whose
+    # marks must sum to the requested total" is a decision that should be
+    # visible, not a side effect of whatever the authoring tier happens to be.
+    #
+    # Measured (3 papers, marks arithmetic checked against the requested total):
+    #   gemini-3.6-flash      429 on all three — no paper at all
+    #   gemini-3.5-flash-lite 40 -> 40 OK, 60 -> 60 OK, one hard error
+    # generate_assessment also runs a validate -> feed-errors-back -> regenerate
+    # loop, so a miss is caught rather than shipped. Flash-lite is therefore the
+    # better paper today on availability, with the arithmetic risk covered.
+    #
+    # Repin here the moment a more capable model is reliably reachable — this is
+    # the first setting to revisit when billing is enabled.
+    assessment_model: str = SLM_MODEL
+
     # Requires a Google Cloud billing account with Pro-tier quota — verified
     # live that this key gets 429 "quota exceeded" on every Pro-tier model
     # (gemini-pro-latest, gemini-2.5-pro, gemini-3.1-pro-preview).

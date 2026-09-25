@@ -27,15 +27,22 @@ def test_authoring_tasks_stay_on_the_cheap_cloud_tier():
         assert select_tier(task) is ModelTier.CHEAP_CLOUD, task
 
 
-def test_the_slm_tier_is_a_different_model_from_the_authoring_tier():
-    """The whole point. If these ever collapse back to one model the tier layer
-    is decorative again and this test should fail loudly."""
-    assert model_for_tier(ModelTier.SLM) != model_for_tier(ModelTier.CHEAP_CLOUD)
-    # The measured choice, pinned against the module default rather than the
-    # live setting so an env override is a deliberate act, not a silent one.
-    from app.core.config import SLM_MODEL
+def test_the_tier_layer_routes_rather_than_decorates():
+    """The tiers were originally three names for one model, with a router that
+    only described routes. They are now separately addressable settings.
+
+    This deliberately does NOT assert the models differ. They currently do not:
+    gemini-3.6-flash returned 429/503 on every authoring attempt measured, while
+    flash-lite produced a full 12-slide deck with zero repairs, so authoring was
+    repinned onto it. What must stay true is that each tier is pinned by its own
+    setting, so repinning one cannot silently move another."""
+    from app.core.config import SLM_MODEL, settings
 
     assert SLM_MODEL == "gemini-3.5-flash-lite"
+    # Each tier reads its own setting rather than sharing one knob.
+    assert model_for_tier(ModelTier.SLM) == settings.slm_model
+    assert model_for_tier(ModelTier.CHEAP_CLOUD) == settings.cheap_model
+    assert settings.assessment_model  # papers are pinned independently
 
 
 def test_the_dead_2_5_model_is_not_referenced_anywhere_in_settings():
@@ -101,16 +108,33 @@ def _capture_models(monkeypatch, module_path, payload):
     return models
 
 
-def test_assessment_generation_never_uses_the_small_model(monkeypatch):
+def test_assessment_generation_uses_its_own_pinned_model(monkeypatch):
     """Marks arithmetic under a constraint is the classic small-model failure,
-    and a paper that misses the total costs an extra request to regenerate."""
+    so which model writes a paper must be an explicit decision rather than a
+    consequence of whatever the authoring tier is pinned to this week.
+
+    Measured before pinning: gemini-3.6-flash 429'd on all three test papers;
+    flash-lite got 40 -> 40 and 60 -> 60 correct. generate_assessment also runs
+    a validate -> feed-errors-back -> regenerate loop, so a miss is caught.
+    Repinning settings.assessment_model is the one-line way to change this."""
     from app.generation.assessments import generate_assessment
 
     models = _capture_models(monkeypatch, "app.ai.cheap_model.generate_text", json.dumps(VALID_ASSESSMENT))
     generate_assessment("Class 12", "Accountancy", ["Balance Sheets"], total_marks=80, difficulty="hard")
 
-    assert models and all(m == settings.cheap_model for m in models)
-    assert settings.slm_model not in models
+    assert models and all(m == settings.assessment_model for m in models)
+
+
+def test_repinning_the_authoring_model_does_not_move_exam_papers(monkeypatch):
+    """The regression the separate pin exists to prevent."""
+    from app.generation.assessments import generate_assessment
+
+    monkeypatch.setattr(settings, "cheap_model", "some-other-authoring-model")
+    models = _capture_models(monkeypatch, "app.ai.cheap_model.generate_text", json.dumps(VALID_ASSESSMENT))
+    generate_assessment("Class 12", "Accountancy", ["Balance Sheets"], total_marks=80, difficulty="hard")
+
+    assert models and all(m == settings.assessment_model for m in models)
+    assert "some-other-authoring-model" not in models
 
 
 def test_a_hard_80_mark_paper_does_not_touch_the_premium_model(monkeypatch):
