@@ -31,6 +31,7 @@ translation, never a loss of information.
 """
 from __future__ import annotations
 
+import re
 from enum import Enum
 from typing import Optional
 
@@ -134,6 +135,30 @@ def _looks_like(body: str, markers: tuple[str, ...]) -> bool:
     return any(m in lowered for m in markers)
 
 
+# Gemini's free-tier 429 says "Please retry in 25.4s" and also carries a
+# structured RetryInfo {"retryDelay": "25s"}. Either form gives us seconds.
+_RETRY_HINT_RE = re.compile(
+    r"(?:please\s+)?retry(?:\s+in|delay\"?\s*:\s*\"?)\s*([0-9]+(?:\.[0-9]+)?)\s*s",
+    re.IGNORECASE,
+)
+
+# A transient limit replenishes in seconds; a spent daily/billing allowance
+# either gives no retry hint at all or one measured in hours. Five minutes is
+# comfortably above any per-minute window and far below a daily reset.
+_TRANSIENT_RETRY_CEILING_SECONDS = 300.0
+
+
+def retry_hint_seconds(body: str) -> Optional[float]:
+    """Seconds the provider asked us to wait, if it said so."""
+    m = _RETRY_HINT_RE.search(body or "")
+    if not m:
+        return None
+    try:
+        return float(m.group(1))
+    except ValueError:
+        return None
+
+
 def classify_upstream_status(status_code: Optional[int], body: str = "") -> FailureClass:
     """Maps an upstream HTTP status + body to a FailureClass.
 
@@ -155,6 +180,25 @@ def classify_upstream_status(status_code: Optional[int], body: str = "") -> Fail
         # The fork that matters most. A per-minute rate limit is transient and
         # must NOT be reported as "your free tier is over"; a daily/project
         # quota or billing cap genuinely is.
+        #
+        # The body markers alone CANNOT tell these apart on Gemini, which was a
+        # live bug: its free-tier per-minute limit returns
+        #   "You exceeded your current quota ... generate_content_free_tier_requests,
+        #    limit: 20 ... Please retry in 25.4s"
+        # — every quota marker we look for, on an error that clears in 25
+        # seconds. Teachers were told to contact the admin because they
+        # generated twenty things in a minute.
+        #
+        # So the retry hint wins when it is present: nothing that asks you back
+        # in half a minute is a spent allowance. A hint measured in hours, or
+        # no hint at all alongside quota wording, still means genuinely out.
+        hint = retry_hint_seconds(body)
+        if hint is not None:
+            return (
+                FailureClass.UPSTREAM_BUSY
+                if hint <= _TRANSIENT_RETRY_CEILING_SECONDS
+                else FailureClass.QUOTA_EXHAUSTED
+            )
         return (
             FailureClass.QUOTA_EXHAUSTED
             if _looks_like(body, _QUOTA_MARKERS)

@@ -303,3 +303,45 @@ def test_our_own_validation_errors_stay_specific(client, provisioned_workspace):
     )
     assert resp.status_code == 400
     assert resp.json()["detail"] == "This deck has no slides to render."
+
+
+# ---------------------------------------------------------------------------
+# Regression: Gemini's free-tier PER-MINUTE limit is worded like a spent
+# allowance. Captured verbatim from the founder's dev log, where it produced
+# "Your free tier limit has been reached — contact the admin" for an error
+# that cleared in 25 seconds.
+# ---------------------------------------------------------------------------
+
+_GEMINI_PER_MINUTE_429 = (
+    '{"error":{"code":429,"message":"You exceeded your current quota, please check '
+    "your plan and billing details. For more information on this error, head to: "
+    "https://ai.google.dev/gemini-api/docs/rate-limits.\\n* Quota exceeded for metric: "
+    "generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, "
+    'model: gemini-3.6-flash\\nPlease retry in 25.411575375s.","status":"RESOURCE_EXHAUSTED"}}'
+)
+
+
+def test_gemini_per_minute_limit_is_transient_not_quota():
+    """It carries every quota marker we look for, and still is not quota."""
+    assert classify_upstream_status(429, _GEMINI_PER_MINUTE_429) is FailureClass.UPSTREAM_BUSY
+    message = USER_MESSAGES[classify_upstream_status(429, _GEMINI_PER_MINUTE_429)]
+    assert "free tier" not in message.lower()
+    assert "admin" not in message.lower()
+
+
+def test_structured_retry_info_is_transient():
+    body = (
+        '{"error":{"code":429,"details":[{"@type":"type.googleapis.com/google.rpc.RetryInfo",'
+        '"retryDelay":"31s"}],"message":"Resource has been exhausted (e.g. check quota)."}}'
+    )
+    assert classify_upstream_status(429, body) is FailureClass.UPSTREAM_BUSY
+
+
+def test_a_retry_hint_measured_in_hours_is_a_real_cap():
+    body = '{"error":{"code":429,"message":"Quota exceeded for requests per day. Please retry in 7200s."}}'
+    assert classify_upstream_status(429, body) is FailureClass.QUOTA_EXHAUSTED
+
+
+def test_quota_without_any_retry_hint_still_reads_as_quota():
+    body = '{"error":{"code":429,"message":"You exceeded your current quota. Upgrade your plan."}}'
+    assert classify_upstream_status(429, body) is FailureClass.QUOTA_EXHAUSTED
