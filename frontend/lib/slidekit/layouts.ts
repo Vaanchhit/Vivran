@@ -49,6 +49,14 @@ export interface FormulaSlot extends SlotBase { kind: "formula"; bind: string }
 export interface CodeSlot extends SlotBase { kind: "code"; bind: string; maxLines: number }
 export interface DiagramSlot extends SlotBase {
   kind: "diagram"; diagram: "tree" | "venn" | "fishbone" | "chain" | "mindmap"; binds: string[];
+  /**
+   * Characters this diagram is verified to hold, by block path ("rows[].values[]").
+   * A diagram's regions are lunes and ribs, not rectangles, so some hold much less
+   * than the schema ceiling. Anything longer overflows and the block goes to this
+   * layout's non-diagram sibling — which is the honest outcome, not a failure.
+   * Omitted paths default to the schema ceiling. Keys must be in KIND_PATHS.
+   */
+  budget?: Record<string, number>;
 }
 export interface MetaSlot extends SlotBase { kind: "meta"; binds: string[] }
 
@@ -282,7 +290,11 @@ export const LAYOUTS: LayoutSpec[] = [
     id: "compare_venn", accepts: "comparison", family: "diagram", density: "medium", gradeFit: ALL,
     capacity: { subjects: [2, 2], rows: [2, 4], similarities: [1, 4] }, requires: ["similarities"],
     description: "Venn diagram: differences in each circle, similarities in the overlap.",
-    slots: [heading(), { kind: "diagram", id: "venn", diagram: "venn", binds: ["subjects", "rows", "similarities"], area: A(1, 10, 1, 7) }],
+    // A crescent and a lens hold much less than the 90/80 the schema allows: measured
+    // against the real geometry at every grade this layout claims. Longer text overflows
+    // and the block goes to compare_table, which is the right call for a wordy comparison.
+    slots: [heading(), { kind: "diagram", id: "venn", diagram: "venn", binds: ["subjects", "rows", "similarities"], area: A(1, 10, 1, 7),
+      budget: { "rows[].values[]": 70, "similarities[]": 55 } }],
   },
 
   // CAUSE → EFFECT ──────────────────────────────────────────

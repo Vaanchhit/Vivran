@@ -46,6 +46,9 @@ export function budgetFor(type: BlockType, g: GradeBand, l: LayoutSpec = fallbac
       chars[`${s.bind}[].values[]`] = Math.min(s.cell.maxChars, cap);
     }
     if (s.kind === "code") b.code = { lines: s.maxLines, cols: 60 };
+    // A diagram's regions are not rectangles; what it holds is declared on the slot
+    // and verified by running the real geometry. Omitted paths keep the schema ceiling.
+    if (s.kind === "diagram") for (const [k, v] of Object.entries(s.budget ?? {})) chars[k] = Math.min(v, cap);
   }
   for (const [key, [lo, hi]] of Object.entries(l.capacity))
     items[key] = [lo, Math.max(lo, Math.min(hi, gp.maxItems))];

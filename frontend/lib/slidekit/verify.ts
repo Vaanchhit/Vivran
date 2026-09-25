@@ -3,7 +3,8 @@
 // its advertised content at a grade's minimum font never ships.
 // ─────────────────────────────────────────────────────────────
 import { Blocks, BLOCK_TYPES, type BlockType } from "./blocks";
-import { LAYOUTS, type Field, type LayoutSpec, type Slot } from "./layouts";
+import { layoutDiagram, worstCaseData, KIND_PATHS } from "./diagram";
+import { LAYOUTS, type DiagramSlot, type Field, type LayoutSpec, type Slot } from "./layouts";
 import { GRADE_BLOCK_EXCLUDES } from "./subjects";
 import {
   GLYPH, GRADE_PROFILES, ITEM_PAD, LABEL_H, LINE_HEIGHT, ROLE_SIZES, SAFE, WRAP_SLACK, WRAP_WORD,
@@ -17,6 +18,17 @@ const CHARS_PER_WORD = 6.5;
 // ── schema introspection (zod v4) ───────────────────────────
 function unwrap(s: any): any { while (s?._zod?.def?.innerType) s = s._zod.def.innerType; return s; }
 function shapeOf(t: BlockType): Record<string, any> { return (Blocks[t] as any).shape; }
+/** Resolve a block path ("rows[].values[]") to its zod node. */
+function nodeAt(t: BlockType, path: string): any {
+  let node: any;
+  path.split(".").forEach((part, i) => {
+    const key = part.replace(/\[\]/g, "");
+    node = i === 0 ? shapeOf(t)[key] : unwrap(node)._zod.def.shape[key];
+    for (const _ of part.match(/\[\]/g) ?? []) node = unwrap(node)._zod.def.element;
+  });
+  return unwrap(node);
+}
+const checkOf = (s: any, name: string) => (s?._zod?.def?.checks ?? []).find((c: any) => c._zod.def.check === name)?._zod.def;
 export function arrayBounds(t: BlockType, key: string): [number, number] | null {
   const s = unwrap(shapeOf(t)[key]);
   if (s?._zod?.def?.type !== "array") return null;
@@ -133,9 +145,58 @@ function slotFits(slot: Slot, l: LayoutSpec, grade: GradeBand): string | null {
       const size = Math.min(...sizesFor("label", grade));
       return lines(11, size, box.w / slot.binds.length - 24, "label") > 1 ? `meta chips too narrow` : null;
     }
-    default:
-      return null; // image, icon, formula (scales to fit), diagram (auto-layout)
+    case "diagram":
+      return diagramFits(slot, l, grade, box);
+    // No `default`: every slot kind is accounted for here, so adding one fails the
+    // build rather than silently skipping verification, which is how diagrams went
+    // five layouts unchecked.
+    case "image":
+    case "icon":
+      return null; // no text of their own; both scale to their box
+    case "formula":
+      return null; // KaTeX scales the expression down to fit
   }
+}
+
+/**
+ * Run the real geometry at this layout's own maximum — every array at its
+ * capacity ceiling for the grade, every string at its declared budget — and
+ * insist the result is drawable: inside the box, no two labels touching, and
+ * nothing set below the grade's minimum font.
+ */
+function diagramFits(slot: DiagramSlot, l: LayoutSpec, grade: GradeBand, box: Box): string | null {
+  const cap = Math.floor(GRADE_PROFILES[grade].maxWordsPerItem * CHARS_PER_WORD);
+  const wc = {
+    // Exactly what budgets.ts hands the mock model, so the verifier and the sweep agree.
+    chars: (p: string) => slot.budget?.[p] !== undefined
+      ? Math.min(slot.budget[p], cap)
+      : checkOf(nodeAt(l.accepts, p), "max_length")?.maximum ?? 60,
+    // Arrays the layout declares a capacity for are capped by grade; nested ones by the schema.
+    count: (p: string) => l.capacity[p] ? maxCount(l, p, grade) : checkOf(nodeAt(l.accepts, p), "max_length")?.maximum ?? 1,
+  };
+  let gm;
+  try { gm = layoutDiagram(slot.diagram, worstCaseData(slot.diagram, wc), box, grade); }
+  catch (e) { return `${slot.diagram} diagram threw: ${(e as Error).message}`; }
+
+  if (gm.overflow.length)
+    return `${slot.diagram} diagram cannot hold its own budget (${gm.overflow.map(o => `${o.path} ${o.chars}>${o.budget}`).join(", ")})`;
+
+  const within = (b: Box) => b.x >= box.x - 0.5 && b.y >= box.y - 0.5 && b.x + b.w <= box.x + box.w + 0.5 && b.y + b.h <= box.y + box.h + 0.5;
+  for (const s of gm.shapes) {
+    const b: Box = s.s === "line"
+      ? { x: Math.min(s.x1, s.x2), y: Math.min(s.y1, s.y2), w: Math.abs(s.x2 - s.x1), h: Math.abs(s.y2 - s.y1) }
+      : s;
+    if (!within(b)) return `${slot.diagram} diagram ${s.s} leaves its box`;
+  }
+  const min = GRADE_PROFILES[grade].minFont;
+  for (const lb of gm.labels) {
+    if (!within(lb)) return `${slot.diagram} diagram label "${lb.path}" leaves its box`;
+    if (lb.size < min) return `${slot.diagram} diagram label "${lb.path}" is ${lb.size}px, below the ${min}px minimum`;
+  }
+  for (let i = 0; i < gm.labels.length; i++) for (let j = i + 1; j < gm.labels.length; j++)
+    if (boxesOverlap(gm.labels[i], gm.labels[j]))
+      return `${slot.diagram} diagram labels "${gm.labels[i].path}" and "${gm.labels[j].path}" overlap`;
+  return null;
 }
 
 // ── the verifier ────────────────────────────────────────────
@@ -163,6 +224,8 @@ export function verifyLibrary(): Issue[] {
       const binds = "binds" in slot ? slot.binds : [slot.bind];
       for (const b of binds) if (!keys.includes(b)) issues.push({ layout: l.id, msg: `slot "${slot.id}" binds unknown "${b}"` });
       if (slot.kind === "repeat" && !l.capacity[slot.bind]) issues.push({ layout: l.id, msg: `repeat "${slot.id}" has no capacity` });
+      if (slot.kind === "diagram") for (const k of Object.keys(slot.budget ?? {}))
+        if (!KIND_PATHS[slot.diagram].includes(k)) issues.push({ layout: l.id, msg: `diagram "${slot.id}" budgets unknown path "${k}"` });
     }
 
     for (const g of l.gradeFit) {

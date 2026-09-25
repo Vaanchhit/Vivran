@@ -10,13 +10,13 @@ const audit = JSON.parse(readFileSync("test/out/audit.json", "utf8"));
 const decks: { id: string; profile: string; grade: string; script: string; placements: Placement[] }[] = JSON.parse(readFileSync("test/out/decks.json", "utf8"));
 const pdfCollisions = Number(process.argv[3] ?? 0), pptxSlides = Number(process.argv[4] ?? 0);
 
-// worst-case samples: one slide per layout from max-length corpus decks, skipping diagram placeholders
+// worst-case samples: one slide per layout from max-length corpus decks
 const seen = new Set<string>();
 const samples: { p: Placement; label: string }[] = [];
 for (const d of decks.filter(d => d.profile === "max" && d.script === "latin" && !d.id.startsWith("sweep")))
   for (const p of d.placements) {
     const fam = LAYOUTS.find(l => l.id === p.layoutId)!.family;
-    if (seen.has(p.layoutId) || p.elements.some(e => e.t === "diagram") || fam === "hero" && samples.filter(s => LAYOUTS.find(l => l.id === s.p.layoutId)!.family === "hero").length > 2) continue;
+    if (seen.has(p.layoutId) || fam === "hero" && samples.filter(s => LAYOUTS.find(l => l.id === s.p.layoutId)!.family === "hero").length > 2) continue;
     seen.add(p.layoutId);
     samples.push({ p, label: `${p.layoutId} · ${d.id}` });
   }
@@ -105,7 +105,7 @@ ${shown.map(s => `<figure><div class="frame">${slideHTML(s.p)}</div><figcaption>
 <h2>Known limits</h2>
 <ul class="limits">
   <li>Hindi and Bengali decks passed matching, but this test environment has no Indic fonts, so they weren't measured in a browser. Test them on a machine with Noto Sans Devanagari and Noto Sans Bengali.</li>
-  <li>Diagram layouts (tree, Venn, fishbone, chain, mind map) are placed and sized, but the auto-layout that draws them isn't built yet.</li>
+  <li>Diagram layouts (tree, Venn, fishbone, chain, mind map) are drawn natively, as SVG in the browser and as editable PowerPoint shapes. A Venn's crescents hold much less text than a table cell, so a wordy comparison overflows the Venn on purpose and goes to the table instead.</li>
   <li>Formulas render with KaTeX here. The PowerPoint export shows raw LaTeX until formulas are rendered to images.</li>
   <li>The mock model tests length and structure, not whether the content is true. Accuracy still depends on the prompt rules and teacher review.</li>
 </ul>

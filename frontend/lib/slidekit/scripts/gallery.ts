@@ -55,7 +55,7 @@ function drawSlot(s: Slot, l: LayoutSpec): string {
     for (let r = 1; r < rows; r++) { const y = box.y + (box.h / rows) * r; out += `<line class="grid-l" x1="${box.x}" y1="${y}" x2="${box.x + box.w}" y2="${y}"/>`; }
     return out + label(box, `${s.mode === "table" ? "table" : "columns"}: ${s.header} × ${s.bind}`, 40);
   }
-  if (s.kind === "diagram") return rect(box, cls, 18) + label(box, `${s.diagram} diagram (auto-layout)`);
+  if (s.kind === "diagram") return rect(box, cls, 18) + label(box, `${s.diagram} diagram`);
   if (s.kind === "image") return rect(box, cls + opt, 12) +
     `<path class="x" d="M${box.x} ${box.y}L${box.x + box.w} ${box.y + box.h}M${box.x + box.w} ${box.y}L${box.x} ${box.y + box.h}"/>` + label(box, "photo");
   if (s.kind === "icon") return rect(box, cls + opt, 12) + label(box, "icon");
@@ -178,7 +178,7 @@ svg text{font-family:"Atkinson Hyperlegible",system-ui,sans-serif;fill:var(--ink
   <span><i style="background:var(--rep-f);border-color:var(--rep-s)"></i>Repeated items / table</span>
   <span><i style="background:var(--img-f);border-color:var(--img-s)"></i>Photo / icon</span>
   <span><i style="background:var(--math-f);border-color:var(--math-s)"></i>Formula / code</span>
-  <span><i style="background:var(--dia-f);border-color:var(--dia-s)"></i>Auto-laid-out diagram</span>
+  <span><i style="background:var(--dia-f);border-color:var(--dia-s)"></i>Natively drawn diagram</span>
 </div>
 <main>${sections}</main>
 <script>

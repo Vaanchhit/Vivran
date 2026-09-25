@@ -11,6 +11,7 @@
 //             plus a flagged, deterministic trim so it always renders
 // ─────────────────────────────────────────────────────────────
 import type { Block, BlockType } from "./blocks";
+import { layoutDiagram, type DiagramGeom } from "./diagram";
 import { fitAtStep, fitText, charBudget, sizesFor, trimToBudget } from "./fit";
 import { LAYOUTS, fallbackFor, type Field, type LayoutSpec, type Slot, type Tone } from "./layouts";
 import {
@@ -30,7 +31,7 @@ export type El =
   | { t: "icon"; x: number; y: number; w: number; h: number; name: string }
   | { t: "formula"; x: number; y: number; w: number; h: number; latex: string }
   | { t: "code"; x: number; y: number; w: number; h: number; code: string; size: number; language: string }
-  | { t: "diagram"; x: number; y: number; w: number; h: number; kind: string; data: Record<string, unknown> };
+  | { t: "diagram"; x: number; y: number; w: number; h: number; kind: string; data: Record<string, unknown>; geom?: DiagramGeom };
 
 export interface Overflow { path: string; chars: number; budget: number; kind: "text" | "lines" | "formula"; cols?: number }
 
@@ -296,7 +297,18 @@ export function tryLayout(block: Block, l: LayoutSpec, g: GradeBand, startAt = 0
         break;
       }
       case "diagram": {
-        A.els.push({ t: "diagram", ...box, kind: s.diagram, data: Object.fromEntries(s.binds.map(k => [k, b[k]])) });
+        const data = Object.fromEntries(s.binds.map(k => [k, b[k]]));
+        // The geometry is computed here, not at render time, so it lands in
+        // Placement.elements and the determinism assertion actually covers it.
+        // A throw in diagram.ts must never cost a whole deck: fall back to the
+        // placeholder box, which is exactly what shipped before it existed.
+        let geom: DiagramGeom | undefined;
+        try { geom = layoutDiagram(s.diagram, data, box, g); } catch { geom = undefined; }
+        A.els.push({ t: "diagram", ...box, kind: s.diagram, data, geom });
+        if (geom) {
+          A.overflows.push(...geom.overflow);
+          A.ranks.push(geom.rank); A.fills.push(geom.fill);
+        }
         break;
       }
       case "meta": {

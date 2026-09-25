@@ -14,26 +14,35 @@ export function sizesFor(role: TypeRole, grade: GradeBand): number[] {
 }
 
 /** Browsers and PowerPoint differ by a pixel or two per line in kerning and rounding; never fill the last 2%. */
-const WIDTH_SAFETY = 0.98;
+export const WIDTH_SAFETY = 0.98;
 
-/** Lines needed to wrap text greedily at a size, using real glyph widths. Null if a single word is wider than the box. */
-export function wrapLines(text: string, size: number, width: number, role: TypeRole): number | null {
+/**
+ * Greedy word wrap at a size, using real glyph widths. Null if a single word is
+ * wider than the box. The diagram renderer needs the actual lines (SVG <text>
+ * does not wrap); everything else only needs the count, so `wrapLines` counts these.
+ */
+export function wrapToLines(text: string, size: number, width: number, role: TypeRole): string[] | null {
   const weight = role === "mono" ? "mono" : BOLD_ROLES.has(role) ? "bold" : "regular";
   const w0 = width * WIDTH_SAFETY;
   const space = textWidth(" ", size, weight);
-  let lines = 0;
+  const out: string[] = [];
   for (const para of text.split("\n")) {
-    lines++;
-    let cur = 0;
+    let cur = 0, line = "";
     for (const word of para.split(/\s+/).filter(Boolean)) {
       const w = textWidth(word, size, weight);
       if (w > w0) return null;
-      if (cur === 0) cur = w;
-      else if (cur + space + w <= w0) cur += space + w;
-      else { lines++; cur = w; }
+      if (cur === 0) { cur = w; line = word; }
+      else if (cur + space + w <= w0) { cur += space + w; line += " " + word; }
+      else { out.push(line); line = word; cur = w; }
     }
+    out.push(line);
   }
-  return lines;
+  return out;
+}
+
+/** Lines needed to wrap text greedily at a size. Null if a single word is wider than the box. */
+export function wrapLines(text: string, size: number, width: number, role: TypeRole): number | null {
+  return wrapToLines(text, size, width, role)?.length ?? null;
 }
 
 export interface TextFit { size: number; lines: number; height: number; rank: number }

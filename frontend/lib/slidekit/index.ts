@@ -25,3 +25,4 @@ export { verifyLibrary } from "./verify";
 export * from "./matcher";
 export * from "./budgets";
 export * from "./fit";
+export * from "./diagram";

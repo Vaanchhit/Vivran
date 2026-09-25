@@ -1,5 +1,6 @@
 // Exports placements to a real .pptx with pptxgenjs, reading the same elements as the HTML renderer.
 import pptxgen from "pptxgenjs";
+import type { DiagramGeom, DiaFill, DiaStroke } from "../diagram";
 import type { El, Placement } from "../matcher";
 import { BOLD_ROLES, CANVAS, DECK_FONT, LINE_HEIGHT } from "../tokens";
 import { THEME } from "./render";
@@ -9,6 +10,41 @@ const PT = (px: number) => px * 0.5; // 1 px = 0.5 pt at this canvas size
 const hex = (c: string) => c.replace("#", "");
 const ink = (t?: string) => hex(t === "accent" ? THEME.accent : t === "positive" ? THEME.positive : t === "negative" ? THEME.negative : t === "muted" ? THEME.muted : t === "inverse" ? "#FFFFFF" : THEME.ink);
 const bg = (t?: string) => hex(t === "accent" ? THEME.accentBg : t === "positive" ? THEME.positiveBg : t === "negative" ? THEME.negativeBg : THEME.card);
+
+const diaFill = (f: DiaFill) => f === "card" ? hex(THEME.card) : f === "accent" ? hex(THEME.accentBg) : f === "positive" ? hex(THEME.positiveBg)
+  : f === "header" ? hex(THEME.header) : null;
+const diaLine = (s: DiaStroke) => s === "none" ? null : s === "neutral" ? hex(THEME.line) : ink(s);
+
+/**
+ * Native PowerPoint shapes — ellipse, roundRect, line, text — not a picture.
+ * The teacher can move a node, retype a label or recolour a circle, and it stays
+ * crisp at any zoom. That editability is the whole point of drawing this natively.
+ */
+function diagramShapes(pres: pptxgen, s: pptxgen.Slide, gm: DiagramGeom) {
+  const at = (x: number, y: number, w: number, h: number) => ({ x: x / IN, y: y / IN, w: w / IN, h: h / IN });
+  for (const sp of gm.shapes) {
+    if (sp.s === "line") {
+      s.addShape(pres.ShapeType.line, {
+        ...at(Math.min(sp.x1, sp.x2), Math.min(sp.y1, sp.y2), Math.abs(sp.x2 - sp.x1) || 0.15, Math.abs(sp.y2 - sp.y1) || 0.15),
+        flipH: sp.x2 < sp.x1, flipV: sp.y2 < sp.y1,
+        line: { color: hex(THEME.muted), width: 1.5, dashType: sp.dash ? "dash" : "solid", endArrowType: sp.arrow ? "triangle" : undefined },
+      });
+      continue;
+    }
+    const fill = diaFill(sp.fill), stroke = diaLine(sp.stroke);
+    s.addShape(sp.s === "ellipse" ? pres.ShapeType.ellipse : pres.ShapeType.roundRect, {
+      ...at(sp.x, sp.y, sp.w, sp.h),
+      ...(sp.s === "rect" ? { rectRadius: 0.12 } : {}),
+      fill: fill ? { color: fill, ...(sp.transparency ? { transparency: sp.transparency } : {}) } : { type: "none" },
+      line: stroke ? { color: stroke, width: 1.5 } : { type: "none" },
+    });
+  }
+  for (const l of gm.labels)
+    s.addText(l.lines.join("\n"), {
+      ...at(l.x, l.y, l.w, l.h), fontFace: DECK_FONT, fontSize: PT(l.size), bold: BOLD_ROLES.has(l.role), color: ink(l.tone),
+      align: l.align === "center" ? "center" : "left", valign: "top", margin: 0, lineSpacingMultiple: LINE_HEIGHT * 0.87, fit: "none", wrap: true,
+    });
+}
 
 export async function exportPptx(slides: Placement[], title: string, file: string) {
   const pres = new pptxgen();
@@ -55,7 +91,8 @@ export async function exportPptx(slides: Placement[], title: string, file: strin
             valign: "top", margin: 20 / IN * 72, lineSpacingMultiple: LINE_HEIGHT * 0.87, fit: "none" });
           break;
         case "diagram":
-          s.addText(`${e.kind} diagram (auto-layout)`, { ...pos(e), line: { color: hex(THEME.line), width: 1.5, dashType: "dash" }, color: hex(THEME.muted), fontSize: 12, align: "center" });
+          if (e.geom) diagramShapes(pres, s, e.geom);
+          else s.addText(`${e.kind} diagram · could not be drawn`, { ...pos(e), line: { color: hex(THEME.line), width: 1.5, dashType: "dash" }, color: hex(THEME.muted), fontSize: 12, align: "center" });
           break;
       }
     }
