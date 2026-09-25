@@ -22,6 +22,15 @@ const base = {
   icon: s(40).optional(),
   /** Speaker notes for the teacher. Never rendered on the slide. */
   notes: s(600).optional(),
+  /**
+   * Tags naming the SOURCE MATERIAL excerpts this block was written from —
+   * "S1", "S2", as labelled in the prompt. The model emits tags, not ids,
+   * because it never sees real identifiers; the caller maps them back to the
+   * chunks it supplied and drops any tag it did not issue, so an invented
+   * citation cannot survive. Empty or absent means ungrounded, which is a
+   * fact worth showing rather than hiding.
+   */
+  sourceIds: z.array(s(8)).max(6).optional(),
 };
 
 export const Blocks = {

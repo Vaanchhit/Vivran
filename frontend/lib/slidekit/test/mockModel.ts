@@ -98,7 +98,7 @@ export function mockBlock(item: PlanItem, ctx: Pick<LessonContext, "grade" | "to
     if (t === "object") {
       const o: any = {};
       for (const [k, v] of Object.entries(s._zod.def.shape as Record<string, any>)) {
-        if (["intent", "source", "icon", "notes", "imageQuery"].includes(k)) continue;
+        if (["intent", "source", "icon", "notes", "imageQuery", "sourceIds"].includes(k)) continue;
         const val = gen(v, path ? `${path}.${k}` : k, k);
         if (val !== undefined) o[k] = val;
       }

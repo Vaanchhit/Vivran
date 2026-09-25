@@ -66,3 +66,65 @@ export function toSubjectId(subject: string | null | undefined): SubjectId | nul
   const guessed = inferSubject(subject);
   return guessed && guessed.confidence >= 0.75 ? guessed.id : null;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Citation round-trip.
+//
+// The model never sees a real chunk id — it sees excerpts labelled S1, S2…
+// and cites those tags. We map them back here and drop anything we did not
+// issue, which is what makes a hallucinated citation structurally impossible
+// rather than merely unlikely. Mirrors the approach already proven in
+// backend/app/generation/assessments.py.
+// ─────────────────────────────────────────────────────────────
+
+export interface SourceChunk {
+  chunk_id: string;
+  excerpt: string;
+  source_material?: string | null;
+  page_number?: number | null;
+}
+
+/** Label retrieved chunks S1..Sn and return the prompt text plus the tag map. */
+export function buildSourceMaterial(chunks: SourceChunk[]): {
+  sourceText: string;
+  tagToChunk: Map<string, SourceChunk>;
+} {
+  const tagToChunk = new Map<string, SourceChunk>();
+  const parts: string[] = [];
+  chunks.forEach((c, i) => {
+    const tag = `S${i + 1}`;
+    tagToChunk.set(tag, c);
+    const where = [c.source_material, c.page_number ? `p.${c.page_number}` : null]
+      .filter(Boolean).join(" · ");
+    parts.push(`[${tag}]${where ? ` (${where})` : ""} ${c.excerpt}`);
+  });
+  return { sourceText: parts.join("\n\n"), tagToChunk };
+}
+
+export interface Grounding {
+  /** Chunks actually cited, deduped and in first-cited order. */
+  cited: SourceChunk[];
+  /** Tags the model emitted that we never issued. Kept for telemetry: this is
+   *  the hallucinated-citation rate, and it is unobservable if silently dropped. */
+  invented: string[];
+}
+
+/** Resolve every sourceIds tag across a deck's blocks to real chunks. */
+export function resolveCitations(
+  blocks: { sourceIds?: string[] }[],
+  tagToChunk: Map<string, SourceChunk>,
+): Grounding {
+  const cited: SourceChunk[] = [];
+  const seen = new Set<string>();
+  const invented: string[] = [];
+  for (const b of blocks) {
+    for (const tag of b.sourceIds ?? []) {
+      const chunk = tagToChunk.get(tag.trim().toUpperCase());
+      if (!chunk) { invented.push(tag); continue; }
+      if (seen.has(chunk.chunk_id)) continue;
+      seen.add(chunk.chunk_id);
+      cited.push(chunk);
+    }
+  }
+  return { cited, invented };
+}

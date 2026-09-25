@@ -9,7 +9,7 @@ import { fallbackFor, type LayoutSpec } from "./layouts";
 import { GRADE_PROFILES, type GradeBand } from "./tokens";
 
 const CHARS_PER_WORD = 6.5;
-const BASE_KEYS = new Set(["intent", "source", "imageQuery", "icon", "notes", "type"]);
+const BASE_KEYS = new Set(["intent", "source", "imageQuery", "icon", "notes", "sourceIds", "type"]);
 
 export interface Budget {
   /** Max characters by path pattern, e.g. "steps[].label", "points[]", "meaning". */

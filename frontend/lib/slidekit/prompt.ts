@@ -32,6 +32,9 @@ export function buildPrompt(ctx: LessonContext, items: PlanItem[]): BuiltPrompt 
     "BLOCK SHAPES (\"≤N\" = hard max characters, aim for about two thirds of it; \"?\" = optional):",
     ...types.map(t => `- ${hintFor(t, ctx.grade)}`),
     "Any block may also have \"imageQuery\" (2–4 word photo search of a concrete, photographable thing) and \"notes\" (speaker notes for the teacher).",
+    ctx.grounding === "strict"
+      ? "- Also set \"sourceIds\": the SOURCE MATERIAL tags (\"S1\", \"S2\") a block was written from. Cite only tags that appear in SOURCE MATERIAL; omit it when the block is not drawn from one."
+      : "",
     "",
     "ACCURACY RULES — these override everything else:",
     ctx.grounding === "strict"
