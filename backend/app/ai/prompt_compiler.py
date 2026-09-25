@@ -1,4 +1,5 @@
 """Prompt Compiler (§25) — Converts natural language teacher prompts into structured intent."""
+import re
 from typing import List
 from pydantic import BaseModel, ValidationError
 
@@ -115,13 +116,16 @@ def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
         subject = "Business Studies"
 
     # Extract marks
+    # Any mark value, not just the three that happened to be literal-matched
+    # before (80/40/20) — "a 25 mark quiz" and "50 marks exam" silently lost
+    # their marks and fell through to the caller's default.
     marks = None
-    if "80-mark" in prompt_lower or "80 mark" in prompt_lower:
-        marks = 80
-    elif "40-mark" in prompt_lower or "40 mark" in prompt_lower:
-        marks = 40
-    elif "20-mark" in prompt_lower or "20 mark" in prompt_lower:
-        marks = 20
+    _marks = re.search(r"\b(\d{1,3})\s*[-\s]?\s*marks?\b", prompt_lower)
+    if _marks:
+        value = int(_marks.group(1))
+        # Guard against reading a year or a question count as a mark total.
+        if 1 <= value <= 200:
+            marks = value
 
     # Extract requested artifacts
     artifacts = []

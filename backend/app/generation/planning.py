@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 from app.ai.cheap_model import generate_cheap_cloud
 from app.ai.prompt_snippets import LEVEL_INSTRUCTION
+from app.core.errors import FailureClass, mask
 from app.core.logging import logger
 from app.retrieval.search import search_knowledge_base
 
@@ -57,7 +58,11 @@ def generate_course_plan(
             "subject": subject,
             "duration_weeks": duration_weeks,
             "weekly_structure": [],
-            "error": result.get("error"),
+            "error": mask(
+                result.get("failure") or FailureClass.UPSTREAM_ERROR,
+                context="course_plan",
+                detail=str(result.get("error", "")),
+            ),
         }
 
     try:
@@ -69,7 +74,7 @@ def generate_course_plan(
             "subject": subject,
             "duration_weeks": duration_weeks,
             "weekly_structure": [],
-            "error": f"AI returned invalid JSON: {e}",
+            "error": mask(FailureClass.UPSTREAM_ERROR, context="course_plan", detail=f"invalid JSON: {e}"),
         }
 
     plan["grounded_on"] = len(context)
