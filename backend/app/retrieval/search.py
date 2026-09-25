@@ -6,7 +6,7 @@ just in application code, so a bug here can't leak another teacher's content.
 """
 from typing import Any, Dict, List, Optional
 
-from app.retrieval.embeddings import generate_embedding
+from app.retrieval.embeddings import generate_query_embedding
 from app.services.supabase_service import rpc
 
 
@@ -22,7 +22,11 @@ def search_knowledge_base(
     callers should treat an empty result as "no grounding available", not an
     error.
     """
-    query_embedding = generate_embedding(query, task_type="RETRIEVAL_QUERY")
+    # Cached: the same query string arrives repeatedly (every artifact in one
+    # classroom pack embeds the identical "{subject} {topics}" key), and this is
+    # a round-trip on the critical path of a request a teacher is watching. See
+    # app/retrieval/embeddings.py for why the cache is safe across tenants.
+    query_embedding = generate_query_embedding(query)
     rows = rpc(
         "match_source_chunks",
         {

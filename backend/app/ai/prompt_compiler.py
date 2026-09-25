@@ -4,7 +4,8 @@ from typing import List
 from pydantic import BaseModel, ValidationError
 
 from app.ai.gemini_client import GeminiError, generate_json
-from app.core.config import settings
+from app.ai.language import uses_non_latin_script
+from app.ai.router import ModelTier, model_for_tier
 from app.core.logging import logger
 
 
@@ -38,13 +39,29 @@ produce college-appropriate content depth rather than school-level simplificatio
 
 
 def compile_teacher_prompt(raw_prompt: str) -> tuple[StructuredIntent, bool]:
-    """Parses teacher intent with the Tier-1 Gemini model.
+    """Parses teacher intent on the SLM tier.
 
     Returns (intent, degraded) — degraded=True means the Gemini call failed
     and a deterministic keyword-based heuristic was used instead.
+
+    WHY THE SMALL MODEL IS THE RIGHT CALL HERE
+        The job is pulling six fields out of one sentence. The output is short,
+        schema-validated on arrival (``StructuredIntent``), and if it is wrong
+        the frontend already shows the teacher every field and lets them fix it.
+        On top of that, this call is the first thing that happens after a
+        teacher hits enter, so its ~1.9s median instead of ~12s is the single
+        most visible latency win available — and when it fails there is a
+        deterministic keyword fallback below rather than a broken screen.
+
+        The exception is a request written in an Indic script: see
+        app/ai/language.py for why untested multilingual quality is not a saving
+        worth taking.
     """
+    tier = ModelTier.CHEAP_CLOUD if uses_non_latin_script(raw_prompt) else ModelTier.SLM
     try:
-        data = generate_json(raw_prompt, system_prompt=_SYSTEM_PROMPT, model=settings.open_model, temperature=0.1)
+        data = generate_json(
+            raw_prompt, system_prompt=_SYSTEM_PROMPT, model=model_for_tier(tier), temperature=0.1
+        )
         return StructuredIntent(**data), False
     except (GeminiError, ValidationError, TypeError) as e:
         logger.warning("AI intent parsing failed, using heuristic fallback: %s", e)

@@ -1,7 +1,8 @@
 """Tier 1 Open / Local AI Interface (§22 & §59).
 
 Tries a local Ollama runtime first (cheap for local dev); if unset or
-unreachable, falls back to Gemini's cheapest/fastest model so the tier still
+unreachable, falls back to the SLM-tier Gemini model (``settings.open_model``,
+which is the same gemini-3.5-flash-lite the SLM tier uses) so the tier still
 does real work in any environment (including production, where no Ollama
 host exists).
 """

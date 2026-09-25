@@ -6,7 +6,8 @@ something an image/video model can actually render well.
 import json
 from typing import Any, Dict, Optional
 
-from app.ai.cheap_model import generate_cheap_cloud
+from app.ai.cheap_model import generate_cheap_cloud, generate_slm
+from app.ai.language import uses_non_latin_script
 from app.retrieval.search import search_knowledge_base
 from app.core.errors import FailureClass, mask
 from app.core.logging import logger
@@ -47,7 +48,20 @@ def enhance_creative_prompt(
     prompt = f'Artifact type: {artifact_type}\nOriginal request: "{raw_prompt}"{context_note}'
     system_prompt = _SYSTEM_PROMPT.format(artifact_type=artifact_type)
 
-    result = generate_cheap_cloud(prompt, task="prompt_enhancement", system_prompt=system_prompt, json_mode=True)
+    # SLM tier. This is a rewrite of text the teacher already wrote, not new
+    # subject content: the input and the output are both a few sentences, the
+    # shape is checked on arrival, and the fallback on any failure is the
+    # teacher's own prompt, unchanged and still perfectly usable. It is also on
+    # the interactive path — the teacher is watching a spinner — so the measured
+    # ~1.9s vs ~12s matters more here than almost anywhere else.
+    #
+    # Non-Latin scripts stay on the authoring model: this call REWRITES the
+    # teacher's words, so a weaker model shows up directly in prose they read.
+    # See app/ai/language.py.
+    if uses_non_latin_script(raw_prompt):
+        result = generate_cheap_cloud(prompt, task="prompt_enhancement", system_prompt=system_prompt, json_mode=True)
+    else:
+        result = generate_slm(prompt, task="prompt_enhancement", system_prompt=system_prompt, json_mode=True)
     # On failure the teacher's original prompt is returned unchanged and still
     # usable, so "error" here is advisory, not fatal — but it is rendered
     # verbatim in the UI (create/page.tsx), so it carries the translated

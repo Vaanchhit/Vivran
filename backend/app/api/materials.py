@@ -33,11 +33,14 @@ async def create_material(
     """Ingest a teaching material: parse -> chunk -> embed -> persist.
 
     This handler MUST be ``async def`` — it awaits ``UploadFile.read()`` — but
-    ``ingest_material`` is entirely synchronous and, for a 50-page PDF, spends
-    minutes in ``generate_embedding`` one chunk at a time. FastAPI runs
-    ``async def`` handlers directly on the event loop, so that work used to
-    freeze the whole instance (Render runs ONE worker): no other request, not
-    even /health, could be served until the upload finished.
+    ``ingest_material`` is entirely synchronous and, for a large PDF, spends
+    tens of seconds parsing, embedding and persisting. FastAPI runs ``async
+    def`` handlers directly on the event loop, so that work used to freeze the
+    whole instance (Render runs ONE worker): no other request, not even
+    /health, could be served until the upload finished. (Embedding is batched
+    now — see app/services/ingestion_pipeline.py — which took a 300-page PDF
+    from ~900 sequential HTTP calls to ~9, but it is still far too long to hold
+    the loop.)
 
     Two fixes, in order of importance:
       1. ``run_in_threadpool`` for the synchronous path, so the event loop is

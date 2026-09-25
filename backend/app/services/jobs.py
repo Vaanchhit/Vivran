@@ -58,6 +58,7 @@ from typing import Any, Callable, Dict, List, Optional
 from fastapi import HTTPException
 
 from app.ai.gemini_client import GeminiError
+from app.ai.usage import TokenUsage, estimated_cost, usage_scope
 from app.core.config import settings
 from app.core.errors import FailureClass, mask, service_result_message
 from app.core.logging import logger
@@ -287,7 +288,39 @@ def update_progress(job_id: str, workspace_id: str, progress: int) -> None:
         logger.warning("Progress update for job %s failed (continuing): %s", job_id, exc)
 
 
-def complete_job(job_id: str, workspace_id: str, result: Dict[str, Any], params: Dict[str, Any]) -> None:
+def _usage_patch(usage: Optional[TokenUsage], model_name: str) -> Dict[str, Any]:
+    """The token/cost columns for a finished job.
+
+    ``generation_jobs`` has carried ``input_tokens``, ``output_tokens`` and
+    ``estimated_cost`` since the first migration and nothing has ever written
+    them, so every statement about what Vivran costs to run has been a guess.
+    Gemini returns the counts in the same response as the content
+    (app/ai/usage.py), so this is free information we were discarding.
+
+    Omitted entirely when nothing was recorded — a job that made no model call
+    (or whose calls were mocked) should leave the columns NULL rather than
+    assert a confident zero.
+    """
+    if usage is None or usage.calls == 0:
+        return {}
+    patch: Dict[str, Any] = {
+        "input_tokens": usage.input_tokens,
+        "output_tokens": usage.output_tokens,
+    }
+    cost = estimated_cost(model_name, usage)
+    if cost is not None:
+        patch["estimated_cost"] = cost
+    return patch
+
+
+def complete_job(
+    job_id: str,
+    workspace_id: str,
+    result: Dict[str, Any],
+    params: Dict[str, Any],
+    usage: Optional[TokenUsage] = None,
+    model_name: str = "",
+) -> None:
     _patch(
         job_id,
         workspace_id,
@@ -298,11 +331,18 @@ def complete_job(job_id: str, workspace_id: str, result: Dict[str, Any], params:
             # PostgREST replaces the whole jsonb value, so `params` is written
             # back alongside the result rather than lost.
             "metadata": {"params": params, "result": result},
+            **_usage_patch(usage, model_name),
         },
     )
 
 
-def fail_job(job_id: str, workspace_id: str, message: str) -> None:
+def fail_job(
+    job_id: str,
+    workspace_id: str,
+    message: str,
+    usage: Optional[TokenUsage] = None,
+    model_name: str = "",
+) -> None:
     """Stores the TEACHER-SAFE message. Callers must have masked already.
 
     Nothing in this module ever puts ``str(exception)`` in this column: that
@@ -312,7 +352,15 @@ def fail_job(job_id: str, workspace_id: str, message: str) -> None:
     _patch(
         job_id,
         workspace_id,
-        {"status": FAILED, "completed_at": _iso(_now()), "error": message},
+        # A failed job still spent tokens, and those are the ones most worth
+        # counting — a quota problem is exactly when you want to know what was
+        # burned getting nowhere.
+        {
+            "status": FAILED,
+            "completed_at": _iso(_now()),
+            "error": message,
+            **_usage_patch(usage, model_name),
+        },
     )
 
 
@@ -373,11 +421,21 @@ def _run_job(
     run: Callable[[], Dict[str, Any]],
     context: str,
     service_context: Optional[str],
+    model_name: str = "",
 ) -> None:
-    """The worker body. Runs on a pool thread; must never raise."""
+    """The worker body. Runs on a pool thread; must never raise.
+
+    The whole body runs inside a ``usage_scope`` so the tokens spent by every
+    model call the job makes — the generation itself, its retries, the
+    validate-and-regenerate loop, and the embedding call retrieval made first —
+    land on this job's row. The scope is thread-local, so two jobs running
+    concurrently on the pool cannot bill each other.
+    """
+    usage = TokenUsage()
     try:
         mark_processing(job_id, workspace_id)
-        result = run()
+        with usage_scope() as usage:
+            result = run()
 
         if service_context is not None:
             # Media services signal failure by returning an envelope rather
@@ -385,14 +443,20 @@ def _run_job(
             # wording cannot drift between the two modes.
             message = service_result_message(result, context=service_context)
             if message:
-                fail_job(job_id, workspace_id, message)
+                fail_job(job_id, workspace_id, message, usage=usage, model_name=model_name)
                 return
 
-        complete_job(job_id, workspace_id, result, params)
+        complete_job(job_id, workspace_id, result, params, usage=usage, model_name=model_name)
     except BaseException as exc:  # noqa: BLE001 - a job thread may not propagate
         logger.exception("Background job %s (%s) failed", job_id, context)
         try:
-            fail_job(job_id, workspace_id, _error_message_for(exc, context=context))
+            fail_job(
+                job_id,
+                workspace_id,
+                _error_message_for(exc, context=context),
+                usage=usage,
+                model_name=model_name,
+            )
         except Exception:  # pragma: no cover - the DB is down too
             # Nothing left to do but leave it; the stale reaper will resolve
             # this row for the teacher rather than leaving a live spinner.
@@ -444,6 +508,10 @@ def enqueue(
             run=run,
             context=task_type,
             service_context=service_context,
+            # The model this job was planned against, which is what its cost is
+            # priced with. create_job already defaulted it, so read it back off
+            # the row rather than repeating the default here.
+            model_name=row.get("model_name") or "",
         )
     except RuntimeError as exc:
         # The interpreter is shutting down (deploy in progress). Resolve the

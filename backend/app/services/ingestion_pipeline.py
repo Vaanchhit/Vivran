@@ -1,10 +1,27 @@
 """End-to-end material ingestion (§19): parse -> chunk -> embed -> persist.
 
-Fully synchronous and CPU/network-bound (``generate_embedding`` runs once per
-chunk, sequentially), so it must NEVER be called from the event loop. Its two
-supported call sites both keep it off: POST /api/materials runs it via
-``run_in_threadpool``, and ``?async_job=true`` hands it to the bounded job
-pool in app/services/jobs.py so a big PDF survives the teacher navigating away.
+Fully synchronous and CPU/network-bound, so it must NEVER be called from the
+event loop. Its two supported call sites both keep it off: POST /api/materials
+runs it via ``run_in_threadpool``, and ``?async_job=true`` hands it to the
+bounded job pool in app/services/jobs.py so a big PDF survives the teacher
+navigating away.
+
+EMBEDDING IS BATCHED
+--------------------
+This used to be ``for chunk in chunks: generate_embedding(chunk)`` — one HTTP
+round-trip per chunk, in series. A 300-page PDF is roughly 900 chunks, so that
+was 900 sequential calls: four to six minutes of wall clock holding one of only
+two job workers, during which no other teacher's generation could start. It is
+now batches of up to 100 (Google's documented cap for batchEmbedContents), i.e.
+about nine calls for the same PDF.
+
+AND PARTIALLY RECOVERABLE
+-------------------------
+The old loop was also all-or-nothing: one transient failure at chunk 847 raised,
+and the 846 embeddings already paid for were discarded along with the upload.
+Batches now fail independently — whatever embedded is kept and persisted, and
+the material comes back usable and honest about what is missing, rather than the
+teacher being told to upload their 300-page textbook again.
 """
 from __future__ import annotations
 
@@ -19,7 +36,7 @@ from app.ingestion.docx import parse_docx
 from app.ingestion.pdf import parse_pdf
 from app.ingestion.pptx import parse_pptx
 from app.ingestion.youtube import YouTubeIngestionError, parse_youtube
-from app.retrieval.embeddings import generate_embedding
+from app.retrieval.embeddings import generate_embeddings_batch
 from app.services.supabase_service import (
     SupabaseError,
     ensure_bucket,
@@ -124,8 +141,28 @@ def ingest_material(
         if not chunks:
             raise IngestionError("No extractable text was found in this material")
 
-        for chunk in chunks:
-            chunk["embedding"] = generate_embedding(chunk["content"])
+        embedded = generate_embeddings_batch([c["content"] for c in chunks])
+        if embedded.all_failed:
+            # Nothing was embedded, so there is nothing to retrieve over and the
+            # material would be dead weight. Raising here keeps the existing
+            # FAILED envelope and its honest message.
+            raise embedded.failures[0].error
+
+        skipped = embedded.failed
+        if skipped:
+            logger.warning(
+                "Ingesting '%s': %s of %s chunks could not be embedded and were skipped "
+                "(the rest are stored and searchable)",
+                title, skipped, len(chunks),
+            )
+        # Only chunks that actually have a vector are persisted: a row in
+        # source_chunks with a null embedding is invisible to match_source_chunks
+        # anyway, so storing it would just be a chunk count that lies.
+        chunks = [
+            {**chunk, "embedding": vector}
+            for chunk, vector in zip(chunks, embedded.embeddings)
+            if vector is not None
+        ]
 
         summary = _generate_summary(units)
 
@@ -189,6 +226,17 @@ def ingest_material(
     material_row = table_update(
         "materials",
         {"id": f"eq.{material_id}"},
-        {"processing_status": "READY", "metadata": {"chunk_count": len(chunks), "created_by": created_by, "summary": summary}},
+        {
+            "processing_status": "READY",
+            "metadata": {
+                "chunk_count": len(chunks),
+                "created_by": created_by,
+                "summary": summary,
+                # Recorded so a material that is quietly only 90% indexed can be
+                # found later, rather than being indistinguishable from a
+                # complete one when retrieval mysteriously misses a chapter.
+                "skipped_chunks": skipped,
+            },
+        },
     )[0]
-    return {**material_row, "chunk_count": len(chunks)}
+    return {**material_row, "chunk_count": len(chunks), "skipped_chunks": skipped}

@@ -27,6 +27,20 @@ os.environ["SUPABASE_SERVICE_ROLE_KEY"] = ""
 os.environ["SUPABASE_ANON_KEY"] = ""
 os.environ.setdefault("APP_ENV", "test")
 
+# The outbound rate limiter (app/ai/rate_limiter.py) sleeps in REAL time — it
+# deliberately binds time.sleep at import so that the retry-backoff patching in
+# test_error_mapping.py cannot turn its waits into a busy-spin. That makes it
+# unusable as a global in a test suite: a few dozen mocked calls would drain the
+# bucket and then start costing 3.3s each. It is switched off here and tested
+# directly in test_rate_limiter.py with an injected clock, which is a stronger
+# test of the bucket than incidentally sleeping through it would be.
+os.environ["GEMINI_RATE_LIMIT_ENABLED"] = "false"
+
+# Nothing in the suite may reach the real Groq endpoint, and the failover is
+# supposed to be completely inert without a key. Blanked explicitly rather than
+# left to the .env file, for the same reason the Supabase keys above are.
+os.environ["GROQ_API_KEY"] = ""
+
 import jwt  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
