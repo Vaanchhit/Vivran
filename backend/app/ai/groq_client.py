@@ -1,22 +1,12 @@
-"""Dormant second provider: Groq's OpenAI-compatible chat completions API.
+"""Second provider: Groq's OpenAI-compatible chat completions API.
 
-STATUS: THIS CODE HAS NEVER RUN AGAINST THE REAL SERVICE.
---------------------------------------------------------
-There is no GROQ_API_KEY on this machine or in the deployed environment, so
-nothing here has been exercised beyond its unit tests with a mocked transport.
-It is therefore built to be *inert*: ``is_configured()`` is False without a key,
-every caller checks that first, and with no key set the behaviour of this
-backend is byte-for-byte what it was before this module existed. Switching it on
-is one environment variable — and the first real call will also be the first
-test of this file, so watch the logs when you do.
+Reached only from the failover in app/ai/cheap_model.py — that is where the
+decision lives, because the tier wrapper has the classified failure in hand.
 
-WHERE THE FAILOVER DECISION LIVES
----------------------------------
-Not here, and not in app/ai/gemini_client.py's retry loop. That loop is
-provider-specific and has no idea what the call was for; the tier wrapper in
-app/ai/cheap_model.py has the classified failure in hand and knows whether a
-different provider could plausibly do the job. See the comment there for which
-failure classes may fail over and, more importantly, which must not.
+Measured on this key (scripts/bench_models.py, 2026-09-27): openai/gpt-oss-120b
+answers intent in ~1.1s (Hindi included) and a valid 8-slide deck in ~2-4s, but
+the free tier's tokens-per-minute limit 429s after about five paper-sized calls.
+Good as a last resort, too thin to carry primary traffic.
 """
 from __future__ import annotations
 
@@ -32,6 +22,12 @@ from app.core.logging import logger
 from app.ai.usage import TokenUsage, usage_from_openai_compatible
 
 ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
+
+# Measured: without an explicit ceiling, gpt-oss papers stopped at exactly 3072
+# output tokens and came back missing questions. Kept well under 16k because
+# Groq counts the ceiling against the per-minute token limit up front, and
+# smaller models reject a large one as "Request too large".
+MAX_COMPLETION_TOKENS = 8192
 
 
 class GroqError(RuntimeError):
@@ -90,7 +86,12 @@ def generate_text(
         "model": model_name,
         "messages": messages,
         "temperature": temperature,
+        "max_completion_tokens": MAX_COMPLETION_TOKENS,
     }
+    if model_name.startswith("openai/gpt-oss"):
+        # Reasoning tokens count toward the ceiling; "low" measured the same
+        # validity with a third of the output.
+        payload["reasoning_effort"] = "low"
     if json_mode:
         # OpenAI-compatible JSON mode. Gemini's json_mode needs no instruction
         # in the prompt; this one is documented to require the word "JSON" to

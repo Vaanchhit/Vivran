@@ -1,10 +1,8 @@
-"""The dormant Groq failover (app/ai/groq_client.py, app/ai/cheap_model.py).
+"""The provider failover (app/ai/groq_client.py, app/ai/cheap_model.py).
 
-There is no GROQ_API_KEY on this machine, so none of this has ever run against
-the real service. That is exactly why it is tested here against a mocked
-transport, and why the first assertions below are about it doing NOTHING: the
-guarantee the founder is relying on is that with no key set, this backend
-behaves precisely as it did before the seam existed.
+Tested against a mocked transport; the suite blanks GROQ_API_KEY (conftest.py)
+so nothing here reaches the real service. The first assertions are about it
+doing NOTHING without a key.
 """
 import pytest
 
@@ -236,6 +234,17 @@ def test_json_mode_is_translated_to_the_openai_response_format(groq_transport):
     assert payload["response_format"] == {"type": "json_object"}
     assert payload["messages"][0] == {"role": "system", "content": "Return JSON only"}
     assert payload["messages"][1] == {"role": "user", "content": "hello"}
+
+
+def test_requests_carry_an_output_ceiling_and_low_reasoning_for_gpt_oss(groq_transport):
+    calls = groq_transport()
+    groq_client.generate_text("hello", model="openai/gpt-oss-120b")
+    payload = calls[0]["json"]
+    assert payload["max_completion_tokens"] == groq_client.MAX_COMPLETION_TOKENS
+    assert payload["reasoning_effort"] == "low"
+
+    groq_client.generate_text("hello", model="qwen/qwen3.8-27b")
+    assert "reasoning_effort" not in calls[1]["json"]
 
 
 def test_the_slm_tier_gets_the_same_failover(gemini_fails, groq_transport):

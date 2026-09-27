@@ -36,6 +36,7 @@ GEMINI_CANDIDATES = [
 GROQ_PREFERRED = [
     "openai/gpt-oss-120b",
     "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b",
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
     "qwen/qwen3-32b",
@@ -83,7 +84,10 @@ def call_groq(model: str, system: str, prompt: str, temperature: float) -> Call:
         "messages": [{"role": "system", "content": system}, {"role": "user", "content": prompt}],
         "temperature": temperature,
         "response_format": {"type": "json_object"},
+        "max_completion_tokens": 16384,
     }
+    if model.startswith("openai/gpt-oss"):
+        payload["reasoning_effort"] = "low"
     t = time.monotonic()
     try:
         r = httpx.post(
