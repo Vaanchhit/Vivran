@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { Analytics } from '@vercel/analytics/next';
 import { ThemeProvider } from '@/lib/theme-context';
 import './globals.css';
 
@@ -26,6 +27,7 @@ export default function RootLayout({
     <html lang="en" data-theme="light">
       <body className="bg-background text-foreground min-h-screen antialiased font-sans">
         <ThemeProvider>{children}</ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
