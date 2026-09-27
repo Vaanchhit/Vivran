@@ -1,19 +1,9 @@
-"use client";
-
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { GlobalHeader } from "@/app/components/global-header";
 
+/** Chrome for /privacy, /terms, /student and /institution. The home page (/) is
+ * public/home.html, served by the rewrite in next.config.mjs, and has its own. */
 export default function MarketingLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  // The root landing page ships its own complete nav + footer (ported from
-  // the original static design) — stacking this layout's generic header/
-  // footer on top of it would duplicate navigation. /student and
-  // /institution still use the shared marketing chrome.
-  const isRoot = pathname === "/";
-
-  if (isRoot) return <>{children}</>;
-
   return (
     <>
       <GlobalHeader />

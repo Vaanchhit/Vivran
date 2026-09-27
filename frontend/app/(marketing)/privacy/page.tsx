@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { LegalPage } from "@/app/components/legal-page";
 import { WAITLIST_EMAIL } from "@/lib/constants";
 
-export const metadata: Metadata = { title: "Privacy policy — Vivran" };
+export const metadata: Metadata = { title: "Privacy policy | Vivran" };
 
 export default function PrivacyPage() {
   return (

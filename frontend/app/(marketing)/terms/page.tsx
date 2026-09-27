@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LegalPage } from "@/app/components/legal-page";
 import { WAITLIST_EMAIL } from "@/lib/constants";
 
-export const metadata: Metadata = { title: "Terms & conditions — Vivran" };
+export const metadata: Metadata = { title: "Terms & conditions | Vivran" };
 
 export default function TermsPage() {
   return (

@@ -11,17 +11,18 @@ export function GlobalHeader() {
   return (
     <header className="w-full border-b border-border bg-background backdrop-blur-2xl sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
+        {/* Plain anchors: "/" is a static document (public/home.html), not an app route. */}
+        <a href="/" className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-ink text-ink-fg flex items-center justify-center font-bold text-xs">
             विव
           </div>
           <span className="font-display font-extrabold text-lg tracking-tight text-foreground">
             VIVRAN
           </span>
-        </Link>
+        </a>
 
         <nav className="hidden sm:flex items-center gap-6 text-sm text-muted">
-          <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
+          <a href="/" className="hover:text-foreground transition-colors">Home</a>
           <Link href="/teacher" className="hover:text-foreground transition-colors">Teacher</Link>
           <Link href="/student" className="hover:text-foreground transition-colors">Student</Link>
           <Link href="/institution" className="hover:text-foreground transition-colors">Institution</Link>
