@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { FolderOpen, Upload, FileText, CheckCircle2, Clock, XCircle, Loader2 } from "lucide-react";
+import { FolderOpen, Upload, FileText, CheckCircle2, XCircle } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 import { listMaterials, uploadMaterial, type Material } from "@/services/api";
 
 function inferType(filename: string): Material["type"] | null {
@@ -92,7 +93,7 @@ export default function MaterialsPage() {
         className={`p-8 rounded-2xl border-2 border-dashed ${dragOver ? "border-accent bg-accent-soft" : "border-border bg-card"} flex flex-col items-center justify-center text-center space-y-3 transition-colors`}
       >
         <div className="p-3 rounded-full bg-accent-soft text-accent">
-          {uploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <Upload className="w-6 h-6" />}
+          {uploading ? <BookLoader className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
         </div>
         <div className="text-sm font-semibold text-foreground">
           {uploading ? "Processing material..." : "Drag and drop a PDF, DOCX, or PPTX here"}
@@ -175,7 +176,7 @@ export default function MaterialsPage() {
                 )}
                 {mat.processing_status === "PROCESSING" && (
                   <span className="inline-flex items-center gap-1 text-warning bg-warning-soft border border-warning-line px-2.5 py-1 rounded-full text-[11px] font-medium">
-                    <Clock className="w-3 h-3 animate-spin" /> PROCESSING
+                    <BookLoader className="w-3 h-3" /> PROCESSING
                   </span>
                 )}
                 {mat.processing_status === "FAILED" && (

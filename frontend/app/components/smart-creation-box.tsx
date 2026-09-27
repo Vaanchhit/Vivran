@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, Loader2, X, Plus } from "lucide-react";
+import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, X, Plus } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 import { useAuth } from "@/lib/auth-context";
 import {
   parseTeacherIntent,
@@ -639,7 +640,7 @@ export function SmartCreationBox({
             }`}
           >
             {transcribing ? (
-              <Loader2 className="w-4 h-4 text-chrome animate-spin" />
+              <BookLoader className="w-4 h-4 text-chrome" />
             ) : (
               <Mic className={`w-4 h-4 ${listening ? "text-danger animate-pulse" : "text-chrome"}`} />
             )}
@@ -966,7 +967,8 @@ export function SmartCreationBox({
               title={!readyToGenerate ? `Pick ${missingFields.join(" and ")} first` : undefined}
               className="btn-primary px-6 py-2.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
             >
-              {generating ? "Generating..." : "Confirm & Generate Outputs"} <Sparkles className="w-3.5 h-3.5" />
+              {generating ? "Generating..." : "Confirm & Generate Outputs"}{" "}
+              {generating ? <BookLoader className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
             </button>
           </div>
         </div>

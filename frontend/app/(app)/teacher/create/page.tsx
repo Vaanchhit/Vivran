@@ -2,7 +2,8 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Video as VideoIcon, Loader2, AlertCircle, Wand2, RotateCcw } from "lucide-react";
+import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Video as VideoIcon, AlertCircle, Wand2, RotateCcw } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 import {
   enhancePrompt,
   generateImage,
@@ -284,7 +285,7 @@ function CreatePageInner() {
                 disabled={enhancing || !currentPrompt.trim()}
                 className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-accent-line bg-accent-soft text-accent hover:bg-accent-soft-hi disabled:opacity-50"
               >
-                {enhancing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+                {enhancing ? <BookLoader className="w-3.5 h-3.5" /> : <Wand2 className="w-3.5 h-3.5" />}
                 {enhancing ? "Enhancing…" : enhanceState ? "Enhance again" : "Enhance with AI"}
               </button>
 
@@ -365,7 +366,7 @@ function CreatePageInner() {
               disabled={loading || !currentPrompt.trim()}
               className="btn-primary px-5 py-2.5 text-xs font-semibold rounded-xl flex items-center gap-2 disabled:opacity-50"
             >
-              {loading && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              {loading && <BookLoader className="w-3.5 h-3.5" />}
               {loading ? (active === "video" ? "Generating video (1-3 min)…" : "Generating…") : "Generate"}
             </button>
           )}

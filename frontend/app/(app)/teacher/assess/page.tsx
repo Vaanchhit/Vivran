@@ -2,7 +2,8 @@
 
 import React, { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { BookMarked, Download, ExternalLink, FileCheck2, Loader2, RefreshCw, AlertCircle } from "lucide-react";
+import { BookMarked, Download, ExternalLink, FileCheck2, RefreshCw, AlertCircle } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 import {
   downloadAssessmentPdf,
   exportAssessmentToTally,
@@ -235,7 +236,7 @@ function AssessPageInner() {
                   disabled={exporting}
                   className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-accent-line disabled:opacity-50"
                 >
-                  {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                  {exporting ? <BookLoader className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
                   Export PDF
                 </button>
                 {questions.some((q) => q.question_type === "mcq") && (
@@ -245,7 +246,7 @@ function AssessPageInner() {
                     disabled={exportingTally}
                     className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-accent-line disabled:opacity-50"
                   >
-                    {exportingTally ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                    {exportingTally ? <BookLoader className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
                     Export to Tally
                   </button>
                 )}
@@ -323,7 +324,7 @@ function AssessPageInner() {
                     disabled={regenerating}
                     className="w-full px-3 py-2 btn-primary text-xs font-semibold rounded-lg flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? "animate-spin" : ""}`} /> Regenerate
+                    {regenerating ? <BookLoader className="w-3.5 h-3.5" /> : <RefreshCw className="w-3.5 h-3.5" />} Regenerate
                   </button>
                 </>
               ) : (

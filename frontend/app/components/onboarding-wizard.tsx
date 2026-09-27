@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Sparkles, BookOpen, GraduationCap, Languages, Gauge, ArrowRight, ArrowLeft, Check, Plus, X, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, BookOpen, GraduationCap, Languages, Gauge, ArrowRight, ArrowLeft, Check, Plus, X, AlertCircle } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 import { useAuth } from "@/lib/auth-context";
 import { GRADE_LEVEL_OPTIONS, SUBJECT_OPTIONS, LANGUAGE_OPTIONS, DIFFICULTY_OPTIONS } from "@/lib/constants";
 
@@ -319,7 +320,7 @@ export function OnboardingWizard() {
           >
             {saving ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                <BookLoader className="w-3.5 h-3.5" /> Saving...
               </>
             ) : step < steps.length - 1 ? (
               <>

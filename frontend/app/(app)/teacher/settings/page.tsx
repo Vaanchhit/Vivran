@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Settings, AlertTriangle, Loader2 } from "lucide-react";
+import { Settings, AlertTriangle } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 import { useAuth } from "@/lib/auth-context";
 
 export default function SettingsPage() {
@@ -113,7 +114,7 @@ export default function SettingsPage() {
         >
           {deleting ? (
             <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" /> Deleting account...
+              <BookLoader className="w-3.5 h-3.5" /> Deleting account...
             </>
           ) : (
             "Delete Account"

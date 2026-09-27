@@ -202,3 +202,55 @@ html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible 
   outline: 2px solid var(--focus) !important;
   outline-offset: 2px !important;
 }
+
+/* ---------------- BookLoader (app/components/book-loader.tsx) ----------------
+   Two covers, and two pages that turn right-to-left about the spine, half a
+   cycle apart, so a page is always mid-turn. 3D on HTML boxes rather than SVG,
+   because SVG elements do not reliably honour rotateY. */
+.book-loader {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: middle;
+  perspective: 60px;
+}
+.book-loader .bl-half {
+  position: absolute;
+  top: 16%;
+  width: 46%;
+  height: 68%;
+  border: 1.5px solid currentColor;
+  box-sizing: border-box;
+}
+.book-loader .bl-left {
+  left: 4%;
+  border-right-width: 0.75px;
+  border-radius: 2px 0 0 2px;
+}
+.book-loader .bl-right {
+  left: 50%;
+  border-left-width: 0.75px;
+  border-radius: 0 2px 2px 0;
+}
+.book-loader .bl-flip {
+  background: color-mix(in srgb, currentColor 22%, transparent);
+  transform-origin: left center;
+  backface-visibility: visible;
+  animation: bl-turn 1.3s cubic-bezier(0.45, 0.05, 0.35, 1) infinite;
+}
+.book-loader .bl-flip-2 {
+  animation-delay: -0.65s;
+}
+@keyframes bl-turn {
+  0% { transform: rotateY(0deg); opacity: 1; }
+  70% { transform: rotateY(-180deg); opacity: 1; }
+  85%, 100% { transform: rotateY(-180deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .book-loader .bl-flip { animation: none; opacity: 0; }
+  .book-loader { animation: bl-breathe 1.8s ease-in-out infinite; }
+}
+@keyframes bl-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}

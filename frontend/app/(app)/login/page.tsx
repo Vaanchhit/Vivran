@@ -7,13 +7,14 @@ import { verifyReferralCode } from "@/services/api";
 import { WAITLIST_EMAIL, REQUEST_ACCESS_MAILTO } from "@/lib/constants";
 import type { Role } from "@/types";
 import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound, User } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 
 export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center text-muted">
-          Loading...
+        <div className="min-h-screen bg-background flex items-center justify-center gap-2 text-muted">
+          <BookLoader className="w-5 h-5" /> Loading...
         </div>
       }
     >
@@ -337,6 +338,7 @@ function LoginForm() {
               disabled={selectedRole !== "teacher" || submitting}
               className="w-full h-11 btn-primary font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              {submitting && <BookLoader className="w-4 h-4" />}
               {submitting
                 ? mode === "signup" ? "Creating account..." : "Signing in..."
                 : mode === "signup" ? "Create Account" : "Enter Teacher Terminal"}{" "}

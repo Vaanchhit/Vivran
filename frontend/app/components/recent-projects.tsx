@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, Clock, FolderKanban, Loader2 } from "lucide-react";
+import { AlertCircle, Clock, FolderKanban } from "lucide-react";
+import { BookLoader } from "@/app/components/book-loader";
 import { listProjects, type Project } from "@/services/api";
 
 /** Reads the teacher's real saved projects from GET /api/projects. This
@@ -57,7 +58,7 @@ export function RecentProjects({ limit }: { limit?: number }) {
   if (projects === null) {
     return (
       <div className="p-6 rounded-2xl bg-surface border border-border text-sm text-muted flex items-center justify-center gap-2">
-        <Loader2 className="w-4 h-4 animate-spin" /> Loading your projects…
+        <BookLoader className="w-4 h-4" /> Loading your projects…
       </div>
     );
   }
