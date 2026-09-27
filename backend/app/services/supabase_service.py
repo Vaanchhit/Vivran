@@ -114,6 +114,52 @@ def rpc(function_name: str, args: Dict[str, Any]) -> Any:
     return r.json()
 
 
+def delete_storage_prefix(bucket: str, prefix: str) -> int:
+    """Deletes every object under ``prefix`` in ``bucket``. Returns the count.
+
+    Storage's list endpoint returns one folder level at a time (a folder is an
+    entry with no ``id``), so this walks down before deleting. A missing bucket
+    means there is nothing to delete, not a failure.
+    """
+    headers = {
+        "apikey": settings.supabase_service_role_key,
+        "Authorization": f"Bearer {settings.supabase_service_role_key}",
+    }
+    keys: List[str] = []
+    with httpx.Client(timeout=30.0) as client:
+        pending = [prefix.strip("/")]
+        while pending:
+            folder = pending.pop()
+            offset = 0
+            while True:
+                r = client.post(
+                    f"{_base()}/storage/v1/object/list/{bucket}",
+                    json={"prefix": folder, "limit": 1000, "offset": offset},
+                    headers=headers,
+                )
+                if r.status_code in (400, 404) and "not found" in r.text.lower():
+                    return 0
+                if r.status_code != 200:
+                    raise SupabaseError(f"Storage list failed ({r.status_code}): {r.text[:300]}")
+                entries = r.json()
+                for e in entries:
+                    path = f"{folder}/{e['name']}"
+                    (keys if e.get("id") else pending).append(path)
+                if len(entries) < 1000:
+                    break
+                offset += 1000
+        for i in range(0, len(keys), 1000):
+            r = client.request(
+                "DELETE",
+                f"{_base()}/storage/v1/object/{bucket}",
+                json={"prefixes": keys[i:i + 1000]},
+                headers=headers,
+            )
+            if r.status_code not in (200, 204):
+                raise SupabaseError(f"Storage delete failed ({r.status_code}): {r.text[:300]}")
+    return len(keys)
+
+
 def ensure_bucket(bucket: str) -> None:
     """Idempotently creates a PRIVATE storage bucket if it doesn't already exist.
 

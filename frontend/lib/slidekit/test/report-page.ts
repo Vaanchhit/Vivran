@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import type { Placement } from "../matcher";
 import { LAYOUTS } from "../layouts";
-import { slideHTML, SLIDE_CSS } from "./render";
+import { slideHTML, SLIDE_CSS } from "../render";
 
 const esc = (s: string) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const S = JSON.parse(readFileSync("test/out/summary.json", "utf8"));

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { BookLoader } from "@/app/components/book-loader";
 import {
   clearApiAuth,
   setApiAuth,
@@ -221,8 +222,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center text-muted">
-        Loading Vivran...
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3 text-muted">
+        <BookLoader className="w-10 h-10 text-foreground" label="Loading Vivran" />
+        <span className="text-xs tracking-wide">Opening your workspace…</span>
       </div>
     );
   }

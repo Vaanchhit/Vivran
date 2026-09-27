@@ -212,18 +212,22 @@ html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible 
   display: inline-block;
   flex-shrink: 0;
   vertical-align: middle;
+  /* Depth scales with the loader so the turning page stays inside its box at
+     any size; the px value is the fallback where container units are missing. */
+  container-type: size;
   perspective: 60px;
+  perspective: 400cqw;
 }
 .book-loader .bl-half {
   position: absolute;
-  top: 16%;
-  width: 46%;
-  height: 68%;
+  top: 13%;
+  width: 45%;
+  height: 74%;
   border: 1.5px solid currentColor;
   box-sizing: border-box;
 }
 .book-loader .bl-left {
-  left: 4%;
+  left: 5%;
   border-right-width: 0.75px;
   border-radius: 2px 0 0 2px;
 }

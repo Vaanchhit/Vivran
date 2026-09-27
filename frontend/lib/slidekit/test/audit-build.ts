@@ -1,7 +1,7 @@
 // Builds test/out/audit.html: every typical/max/sweep slide, for the browser audit.
 import { readFileSync, writeFileSync } from "node:fs";
 import type { Placement } from "../matcher";
-import { slideHTML, SLIDE_CSS } from "./render";
+import { slideHTML, SLIDE_CSS } from "../render";
 const decks: { id: string; profile: string; grade: string; script: string; placements: Placement[] }[] = JSON.parse(readFileSync("test/out/decks.json", "utf8"));
 const latin = decks.filter(d => d.script === "latin");
 const slides = latin.flatMap(d => d.placements.map((p, i) => slideHTML(p, `${d.id}/${d.profile}@${d.grade}#${i + 1}`)));

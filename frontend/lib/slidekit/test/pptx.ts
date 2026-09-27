@@ -3,7 +3,7 @@ import pptxgen from "pptxgenjs";
 import type { DiagramGeom, DiaFill, DiaStroke } from "../diagram";
 import type { El, Placement } from "../matcher";
 import { BOLD_ROLES, CANVAS, DECK_FONT, LINE_HEIGHT } from "../tokens";
-import { THEME } from "./render";
+import { THEME } from "../render";
 
 const IN = 144;                     // 1920 px ↔ 13.333 in
 const PT = (px: number) => px * 0.5; // 1 px = 0.5 pt at this canvas size

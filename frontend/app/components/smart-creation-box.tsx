@@ -10,7 +10,7 @@ import {
   transcribeAudio,
   generateAssessmentPaper,
   generateCoursePlan,
-  generateSlides,
+  generateDeck,
   generateWorksheet,
   generateLessonNotes,
   generateInteractiveCoursework,
@@ -19,7 +19,7 @@ import {
   type Material,
   type CoursePlan,
   type AssessmentGenerateResponse,
-  type SlidesResult,
+  type DeckReady,
   type WorksheetResult,
   type LessonNotesResult,
   type InteractiveResult,
@@ -243,7 +243,7 @@ interface Interpretation {
 export type SmartCreationResult =
   | { artifactType: "course_plan"; ok: true; data: CoursePlan; params: { grade: string; subject: string; topics: string[]; durationWeeks: number } }
   | { artifactType: "assessment"; ok: true; data: AssessmentGenerateResponse; params: { grade: string; subject: string; topics: string[]; marks: number; difficulty: string; materialId?: string } }
-  | { artifactType: "slides"; ok: true; data: SlidesResult; params: { grade: string; subject: string; topic: string; slideCount: number } }
+  | { artifactType: "slides"; ok: true; data: DeckReady; params: { grade: string; subject: string; topic: string; slideCount: number } }
   | { artifactType: "worksheet"; ok: true; data: WorksheetResult; params: { grade: string; subject: string; topic: string; questionCount: number } }
   | { artifactType: "lesson_notes"; ok: true; data: LessonNotesResult; params: { grade: string; subject: string; topic: string } }
   | { artifactType: "interactive"; ok: true; data: InteractiveResult; params: { grade: string; subject: string; topic: string; durationMinutes: number } }
@@ -533,10 +533,23 @@ export function SmartCreationBox({
         }
         case "slides": {
           const resolved = slideCount ?? COUNT_DEFAULTS.slideCount;
-          const data = await generateSlides(topicStr, resolved, grade, subject);
-          if (data.error) setGenerateResult({ ok: false, message: `Generation failed: ${data.error}` });
-          else setGenerateResult({ ok: true, message: `Slide deck "${data.title}" (${data.slide_count} slides) generated.`, href: "/teacher/create?type=slides" });
-          onGenerated?.({ artifactType: "slides", ok: true, data, params: { grade, subject, topic: topicStr, slideCount: resolved } });
+          const data = await generateDeck({
+            topic: baseTopicStr,
+            grade,
+            subject,
+            slideCount: resolved,
+            language: language || undefined,
+            materialId: materialId || undefined,
+          });
+          if (data.status === "needs_input") {
+            const asks = data.questions.filter((q) => q.blocking).map((q) => q.ask);
+            const message = `Before building this deck: ${(asks.length ? asks : data.questions.map((q) => q.ask)).join(" ")}`;
+            setGenerateResult({ ok: false, message });
+            onGenerated?.({ artifactType: "slides", ok: false, error: message });
+            break;
+          }
+          setGenerateResult({ ok: true, message: `Slide deck "${data.context.topic}" (${data.placements.length} slides) generated.`, href: "/teacher/create?type=slides" });
+          onGenerated?.({ artifactType: "slides", ok: true, data, params: { grade, subject, topic: baseTopicStr, slideCount: resolved } });
           break;
         }
         case "worksheet": {

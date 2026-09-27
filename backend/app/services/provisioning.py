@@ -18,7 +18,7 @@ import httpx
 from app.core.auth import CurrentUser
 from app.core.config import settings
 from app.core.logging import logger
-from app.services.supabase_service import SupabaseError, table_delete, table_upsert
+from app.services.supabase_service import SupabaseError, delete_storage_prefix, table_delete, table_select, table_upsert
 
 _NS = uuid.NAMESPACE_URL
 
@@ -359,6 +359,14 @@ def _delete_account_supabase(user_id: str) -> None:
     # Each of these is status-checked (table_delete raises): a "deleted"
     # account whose rows are actually still there is worse than a visible
     # error, because the teacher has been told their data is gone.
+    # Uploaded files live in Storage under materials/<workspace_id>/, which no
+    # database cascade reaches. Removed first: if this fails, nothing else has
+    # been deleted yet and the teacher sees an error rather than a "deleted"
+    # account whose files are still stored.
+    for ws in table_select("workspaces", {"owner_id": f"eq.{user_id}", "select": "id"}):
+        removed = delete_storage_prefix("materials", str(ws["id"]))
+        logger.info("Account deletion removed %s stored file(s) for workspace %s", removed, ws["id"])
+
     table_delete("projects", {"created_by": f"eq.{user_id}"})
     table_delete("assessments", {"created_by": f"eq.{user_id}"})
     table_delete("generation_jobs", {"user_id": f"eq.{user_id}"})

@@ -24,6 +24,11 @@ import {
 
 export const runtime = "nodejs";
 
+const withoutImage = (b: Block): Block => {
+  const { imageQuery: _unused, ...rest } = b as Block & { imageQuery?: string };
+  return rest as Block;
+};
+
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 /** Forward the caller's own credentials; this route never holds any of its own. */
@@ -148,8 +153,10 @@ export async function POST(req: Request) {
     );
   }
 
-  // 6. Layout, by arithmetic.
-  const placements = matchDeck(blocks, ctx.grade);
+  // 6. Layout, by arithmetic. Nothing generates photos yet, so an image
+  //    query would render as a labelled placeholder box. Dropping it lets the
+  //    matcher pick the text layout for that block instead.
+  const placements = matchDeck(blocks.map(withoutImage), ctx.grade);
   const { cited, invented } = resolveCitations(blocks, tagToChunk);
 
   return NextResponse.json({

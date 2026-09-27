@@ -3,17 +3,19 @@
 // what the matcher decided; it makes no layout decisions of its own.
 // The PPTX exporter reads the same elements.
 // ─────────────────────────────────────────────────────────────
-import type { DiagramGeom, DiaFill, DiaStroke } from "../diagram";
-import type { El, Placement } from "../matcher";
-import { BOLD_ROLES, CANVAS, DECK_FONT, LINE_HEIGHT } from "../tokens";
+import type { DiagramGeom, DiaFill, DiaStroke } from "./diagram";
+import type { El, Placement } from "./matcher";
+import { BOLD_ROLES, CANVAS, DECK_FONT, LINE_HEIGHT } from "./tokens";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
+// Vivran's paper-and-ink palette (frontend/app/globals.css), tuned for a
+// projected 16:9 slide and for print: warm paper, near-black ink, one accent.
 export const THEME = {
-  bg: "#FFFFFF", ink: "#17233A", muted: "#5B6B80", line: "#D5DCE6",
-  card: "#F3F6FA", accent: "#2F5BD3", accentBg: "#EAF0FD",
-  positive: "#1F7A4D", positiveBg: "#E6F4EC", negative: "#B23A33", negativeBg: "#FBEAEA",
-  header: "#E8EDF5", chip: "#EEF1F6", code: "#0F1B2D", codeInk: "#E3EAF5",
+  bg: "#FBF8F3", ink: "#1D1813", muted: "#6B6258", line: "#E2DBCF",
+  card: "#F3EEE5", accent: "#B8461F", accentBg: "#F7E6DD",
+  positive: "#1A7F5A", positiveBg: "#E3F1EA", negative: "#B3341A", negativeBg: "#F8E4DF",
+  header: "#EDE6DA", chip: "#F0EAE0", code: "#1E1A16", codeInk: "#EDE6DA",
 };
 
 const toneInk = (t?: string) => t === "accent" ? THEME.accent : t === "positive" ? THEME.positive : t === "negative" ? THEME.negative
@@ -60,7 +62,7 @@ function el(e: El, cardTone: string | undefined): string {
       return `<div class="t" data-path="${esc(e.path)}" data-size="${e.size}" style="${pos(e.x, e.y, e.w, e.h)};font-size:${e.size}px;line-height:${LINE_HEIGHT};font-weight:${BOLD_ROLES.has(e.role) ? 700 : 400};color:${ink};text-align:${e.align === "center" ? "center" : "left"}${e.strike ? ";text-decoration:line-through" : ""}">${esc(e.text)}</div>`;
     }
     case "box": {
-      if (e.tone === "inverse") return `<div class="b" style="${pos(e.x, e.y, e.w, e.h)};background:linear-gradient(90deg,rgba(10,18,32,.82),rgba(10,18,32,.35))"></div>`;
+      if (e.tone === "inverse") return `<div class="b" style="${pos(e.x, e.y, e.w, e.h)};background:linear-gradient(90deg,rgba(29,24,19,.84),rgba(29,24,19,.34))"></div>`;
       const st = e.style === "card" ? `background:${toneBg(e.tone)};border-radius:18px${e.tone && e.tone !== "muted" && e.tone !== "neutral" ? `;border:3px solid ${toneInk(e.tone)}` : ""}`
         : e.style === "header" ? `background:${THEME.header};border-radius:8px`
         : e.style === "chip" ? `background:${THEME.chip};border-radius:999px`
@@ -105,7 +107,7 @@ export const SLIDE_CSS = `
 .slide .t{overflow:hidden;white-space:normal;overflow-wrap:normal;word-break:normal}
 .slide .cn{left:0;top:0;width:100%;height:100%}
 .slide .m{display:flex;align-items:center;justify-content:center;border-radius:50%;background:${THEME.ink};color:#fff;font-weight:700}
-.slide .img{background:repeating-linear-gradient(135deg,#E9EEF5 0 18px,#DDE4EE 18px 36px);border-radius:18px;display:flex;align-items:flex-end}
+.slide .img{background:repeating-linear-gradient(135deg,#F0EAE0 0 18px,#E8E0D3 18px 36px);border-radius:18px;display:flex;align-items:flex-end}
 .slide .img span,.slide .ico span,.slide .dia span{font-size:20px;color:${THEME.muted};padding:14px 18px}
 .slide .ico{border-radius:50%;background:${THEME.accentBg};display:flex;align-items:center;justify-content:center}
 .slide .fx{display:flex;align-items:center;justify-content:center;font-size:44px;color:${THEME.accent};overflow:hidden}

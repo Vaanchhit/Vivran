@@ -13,7 +13,7 @@ import { prepareLesson, type TeacherInput } from "../index";
 import { repairBlock } from "../repair";
 import { matchDeck } from "../matcher";
 import type { Block } from "../blocks";
-import { slideHTML, SLIDE_CSS } from "../test/render";
+import { slideHTML, SLIDE_CSS } from "../render";
 
 const KEY = (() => {
   const env = readFileSync(new URL("../../../../backend/.env", import.meta.url), "utf8");

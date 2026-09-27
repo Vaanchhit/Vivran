@@ -1,3 +1,5 @@
+import type { Placement } from "@/lib/slidekit/matcher";
+import type { SourceChunk } from "@/lib/slidekit-bridge";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 interface ApiAuth {
@@ -349,17 +351,53 @@ export async function generateCoursePlan(params: {
   });
 }
 
-export interface SlidesResult {
-  title: string;
-  slide_count: number;
-  slides: { slide_number: number; title: string; bullet_points: string[]; speaker_notes?: string }[];
-  grounded_on?: number;
-  sources?: Source[];
-  error?: string;
+export type DeckSource = SourceChunk;
+
+/** A slidekit deck: laid-out slides, ready to render as HTML (lib/slidekit/render.ts). */
+export interface DeckReady {
+  status: "ready";
+  placements: Placement[];
+  plan: string[];
+  context: { topic: string; subject: string; grade: string; gradeLabel: string; goal: string; language: string; warnings: string[] };
+  grounding: { retrieved: number; cited: number; sources: DeckSource[]; inventedCitations: string[] };
+  quality: { slides: number; repaired: string[]; unrecoverable: number; copyFit: string[]; trimmed: unknown[]; dropped: unknown[] };
+  provider?: string;
+  model?: string;
 }
 
-export async function generateSlides(topic: string, slideCount = 12, grade?: string, subject?: string): Promise<SlidesResult> {
-  return request("POST", "/content/slides", { topic, slide_count: slideCount, grade, subject });
+/** slidekit asks instead of guessing when the request is too thin to plan from. */
+export interface DeckNeedsInput {
+  status: "needs_input";
+  questions: { field: string; ask: string; options?: string[]; blocking: boolean }[];
+}
+
+export type DeckResult = DeckReady | DeckNeedsInput;
+
+export async function generateDeck(params: {
+  topic: string;
+  grade?: string;
+  subject?: string;
+  slideCount?: number;
+  language?: string;
+  materialId?: string;
+}): Promise<DeckResult> {
+  // Same-origin Next route (app/api/deck), not the Python API: it runs the
+  // deterministic slidekit pipeline and calls the backend with these headers.
+  const res = await fetch("/api/deck", {
+    method: "POST",
+    headers: buildHeaders(),
+    body: JSON.stringify({
+      topic: params.topic.slice(0, 200),
+      grade: params.grade || undefined,
+      subject: params.subject || undefined,
+      slideCount: params.slideCount ? Math.min(30, Math.max(5, params.slideCount)) : undefined,
+      language: params.language || undefined,
+      materialId: params.materialId || undefined,
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, data?.error || "Could not generate that deck.");
+  return data as DeckResult;
 }
 
 export interface WorksheetResult {

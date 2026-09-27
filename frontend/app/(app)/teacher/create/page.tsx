@@ -11,10 +11,11 @@ import {
   type EnhancedPrompt,
   type InteractiveResult,
   type LessonNotesResult,
-  type SlidesResult,
+  type DeckReady,
   type WorksheetResult,
 } from "@/services/api";
 import { SmartCreationBox, type SmartCreationArtifactType } from "@/app/components/smart-creation-box";
+import { DeckView } from "@/app/components/deck-view";
 
 const VIDEO_THEMES = [
   { label: "Whiteboard Explainer", modifier: "as a hand-drawn whiteboard-style explainer animation" },
@@ -73,6 +74,40 @@ function resolveTypeParam(value: string | null): ArtifactKey | null {
   return ARTIFACT_KEYS.has(value) ? (value as ArtifactKey) : null;
 }
 
+type QA = { text?: string; answer?: string };
+
+function Answer({ answer }: { answer?: string }) {
+  if (!answer) return null;
+  return (
+    <details className="mt-1.5">
+      <summary className="text-muted cursor-pointer select-none">Show answer</summary>
+      <div className="mt-1 text-foreground">{answer}</div>
+    </details>
+  );
+}
+
+function InteractiveBlockBody({ content }: { content: Record<string, unknown> }) {
+  const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+  const questions = Array.isArray(content.questions) ? (content.questions as QA[]) : [];
+  return (
+    <div className="mt-1 space-y-1.5 text-foreground leading-relaxed">
+      {str(content.text) && <p>{str(content.text)}</p>}
+      {str(content.instructions) && <p className="text-muted"><span className="font-semibold text-foreground">Task: </span>{str(content.instructions)}</p>}
+      <Answer answer={str(content.answer)} />
+      {questions.length > 0 && (
+        <ol className="list-decimal list-inside space-y-2">
+          {questions.map((q, i) => (
+            <li key={i}>
+              {q.text}
+              <Answer answer={q.answer} />
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 export default function CreatePage() {
   return (
     <Suspense fallback={null}>
@@ -93,7 +128,7 @@ function CreatePageInner() {
   const [videoDuration, setVideoDuration] = useState<4 | 6 | 8>(8);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<SlidesResult | WorksheetResult | LessonNotesResult | InteractiveResult | { media_url: string } | null>(null);
+  const [result, setResult] = useState<DeckReady | WorksheetResult | LessonNotesResult | InteractiveResult | { media_url: string } | null>(null);
   const [enhancing, setEnhancing] = useState(false);
   const [enhancement, setEnhancement] = useState<EnhancedPrompt | null>(null);
   /** Keeps the teacher's own wording alongside the AI's rewrite so both are
@@ -377,16 +412,7 @@ function CreatePageInner() {
             </div>
           )}
 
-          {result && active === "slides" && (
-            <div className="space-y-2 pt-2 border-t border-border">
-              {(result as SlidesResult).slides?.map((s) => (
-                <div key={s.slide_number} className="p-3 rounded-lg bg-card border border-border text-xs">
-                  <div className="font-semibold text-foreground">Slide {s.slide_number}: {s.title}</div>
-                  <ul className="list-disc list-inside text-muted mt-1">{s.bullet_points?.map((b, i) => <li key={i}>{b}</li>)}</ul>
-                </div>
-              ))}
-            </div>
-          )}
+          {result && active === "slides" && "placements" in result && <DeckView deck={result} />}
 
           {result && active === "worksheet" && (
             <div className="space-y-2 pt-2 border-t border-border">
@@ -417,7 +443,7 @@ function CreatePageInner() {
               {(result as InteractiveResult).blocks?.map((b, i) => (
                 <div key={i} className="p-3 rounded-lg bg-card border border-border text-xs">
                   <div className="font-semibold text-chrome uppercase text-[10px]">{b.type}</div>
-                  <div className="text-foreground mt-1">{JSON.stringify(b.content)}</div>
+                  <InteractiveBlockBody content={b.content} />
                 </div>
               ))}
             </div>

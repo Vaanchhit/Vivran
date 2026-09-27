@@ -346,6 +346,11 @@ function LoginForm() {
             </button>
           </form>
 
+          <p className="mt-3 text-center text-[11px] text-muted">
+            By continuing you agree to the <a href="/terms" className="underline hover:text-foreground">Terms</a> and{" "}
+            <a href="/privacy" className="underline hover:text-foreground">Privacy policy</a>.
+          </p>
+
           <div className="mt-4 text-center text-xs text-muted">
             {mode === "signup" ? (
               <>

@@ -893,6 +893,8 @@ export default function LandingPage() {
               <a href="#analytics">Analytics</a>
               <a href="#team">Team</a>
               <a href="mailto:info@vivran.co.in">Contact</a>
+              <Link href="/privacy">Privacy</Link>
+              <Link href="/terms">Terms</Link>
             </div>
           </div>
           <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
