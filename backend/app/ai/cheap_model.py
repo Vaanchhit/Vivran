@@ -71,6 +71,13 @@ def _envelope(
     return out
 
 
+def _gemini_fallback_for(model_name: str) -> Optional[str]:
+    for candidate in (m.strip() for m in settings.gemini_fallback_models.split(",")):
+        if candidate and candidate != model_name:
+            return candidate
+    return None
+
+
 def _try_groq(
     prompt: str,
     *,
@@ -81,10 +88,8 @@ def _try_groq(
 ) -> Optional[Dict[str, Any]]:
     """Second-provider attempt. Returns None when it is unavailable or fails.
 
-    DORMANT: with no GROQ_API_KEY set — which is the case everywhere today —
-    ``is_configured()`` is False and this returns None before doing anything, so
-    the caller falls through to the original Gemini failure exactly as it did
-    before this existed. See app/ai/groq_client.py.
+    With no GROQ_API_KEY set, ``is_configured()`` is False and this returns None
+    before doing anything, so the caller reports the original Gemini failure.
 
     A Groq failure is swallowed rather than surfaced: the teacher's problem is
     that Gemini is busy, and replacing that honest, already-classified failure
@@ -157,25 +162,57 @@ def generate_cloud(
                 usage=usage,
             )
         except GeminiError as e:
-            if e.failure in _FAILOVER_CLASSES:
+            first_error = e
+
+        busy = first_error.failure in _FAILOVER_CLASSES
+        if busy:
+            fallback_model = _gemini_fallback_for(model_name)
+            if fallback_model:
+                logger.info("%s busy for %s; trying %s", model_name, task, fallback_model)
+                try:
+                    content = generate_text(
+                        prompt,
+                        system_prompt=system_prompt,
+                        model=fallback_model,
+                        json_mode=json_mode,
+                        temperature=temperature,
+                    )
+                    return _envelope(
+                        success=True,
+                        tier=tier,
+                        model_name=fallback_model,
+                        provider="gemini",
+                        task=task,
+                        content=content,
+                        usage=usage,
+                    )
+                except GeminiError as e2:
+                    # Reported, not surfaced: the teacher-facing failure stays
+                    # the primary model's. A spent quota or a refusal here still
+                    # rules out shopping the prompt to Groq.
+                    logger.warning("Fallback %s also failed (%s): %s", fallback_model, e2.failure.value, e2)
+                    busy = e2.failure in _FAILOVER_CLASSES
+
+            if busy:
                 failed_over = _try_groq(
                     prompt, tier=tier, task=task, system_prompt=system_prompt, json_mode=json_mode
                 )
                 if failed_over is not None:
                     return failed_over
-            # A failed call still spent input tokens (and, on a safety block,
-            # output ones), so the envelope reports them rather than pretending
-            # it was free.
-            return _envelope(
-                success=False,
-                tier=tier,
-                model_name=model_name,
-                provider="gemini",
-                task=task,
-                usage=usage,
-                error=str(e),
-                failure=e.failure,
-            )
+
+        # A failed call still spent input tokens (and, on a safety block,
+        # output ones), so the envelope reports them rather than pretending
+        # it was free.
+        return _envelope(
+            success=False,
+            tier=tier,
+            model_name=model_name,
+            provider="gemini",
+            task=task,
+            usage=usage,
+            error=str(first_error),
+            failure=first_error.failure,
+        )
 
 
 def generate_cheap_cloud(

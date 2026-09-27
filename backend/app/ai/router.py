@@ -8,13 +8,13 @@ itself, and all three tier settings pointed at the same model anyway, so "tier"
 was a label on a response rather than a decision. The tiers are real now, and
 this file is where the decision is written down.
 
-THE TIERS
-  SLM         gemini-3.5-flash-lite. Extraction and rewriting — short,
-              structured, checkable output, from call sites that already have a
-              deterministic or pass-through fallback. Measured far more
-              available and ~6x faster than the authoring model.
-  CHEAP_CLOUD gemini-3.6-flash. Authoring — slides, worksheets, lesson notes,
-              coursework, and assessments.
+THE TIERS  (models pinned in app/core/config.py, with the benchmark)
+  SLM         Extraction and rewriting — short, structured, checkable output,
+              from call sites that already have a deterministic or
+              pass-through fallback.
+  CHEAP_CLOUD Authoring — slides, worksheets, lesson notes, coursework.
+              Exam papers use this tier on their own pin
+              (settings.assessment_model).
   PREMIUM     a Pro model. Off by default; see ``settings.premium_tier_enabled``.
 
 WHAT DELIBERATELY DOES *NOT* GO TO THE SLM
@@ -36,7 +36,6 @@ from app.core.config import settings
 
 
 class ModelTier(str, Enum):
-    OPEN_LOCAL = "open_local"
     SLM = "slm"
     CHEAP_CLOUD = "cheap_cloud"
     PREMIUM = "premium"
@@ -45,7 +44,6 @@ class ModelTier(str, Enum):
 def model_for_tier(tier: ModelTier) -> str:
     """The model a tier runs on right now. Single source of truth."""
     return {
-        ModelTier.OPEN_LOCAL: settings.open_model,
         ModelTier.SLM: settings.slm_model,
         ModelTier.CHEAP_CLOUD: settings.cheap_model,
         ModelTier.PREMIUM: settings.premium_model,

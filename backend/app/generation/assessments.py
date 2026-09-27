@@ -1,5 +1,5 @@
 """Assessment Generation Engine (§14) & Question Regeneration (§15)."""
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import ValidationError
 
@@ -43,6 +43,53 @@ Every question needs a correct, non-empty "answer". Do not repeat a question. Re
 """ + LEVEL_INSTRUCTION
 
 
+# Share of the paper given to 1-mark MCQs, by difficulty; 2-mark short answers
+# take ~30% and the rest goes to long answers.
+_MCQ_SHARE = {"easy": 0.3, "medium": 0.2, "hard": 0.1}
+
+
+def marks_blueprint(total_marks: int, difficulty: str) -> List[Tuple[str, str, int, int]]:
+    """A section plan whose marks sum to total_marks exactly, decided in code.
+
+    Measured: small models miss the total on roughly half of papers even with
+    a feedback retry, while they follow a fixed count-and-marks structure. So
+    the arithmetic is done here and the model only writes the questions.
+    Returns (section name, question_type, count, marks each).
+    """
+    if total_marks < 6:
+        return [("Section A", "mcq", total_marks, 1)]
+    long_each = 5 if total_marks >= 30 else 3
+    mcq = max(2, round(total_marks * _MCQ_SHARE.get(difficulty, 0.2)))
+    short = max(1, round(total_marks * 0.3) // 2)
+    remaining = total_marks - mcq - short * 2
+    long_count, leftover = divmod(remaining, long_each)
+    mcq += leftover
+    plan = [("Section A", "mcq", mcq, 1), ("Section B", "short_answer", short, 2)]
+    if long_count:
+        plan.append(("Section C", "long_answer", long_count, long_each))
+    return plan
+
+
+def _apply_blueprint_marks(data: Dict[str, Any], blueprint: List[Tuple[str, str, int, int]], total_marks: int) -> None:
+    """Stamps each question's marks from the plan when the model kept its shape.
+
+    The slot a question fills defines its marks, so a model that wrote the
+    right questions but mislabelled one is corrected rather than regenerated.
+    A paper with a different shape is left alone for the validator to reject.
+    """
+    sections = data.get("sections")
+    if not isinstance(sections, list) or len(sections) != len(blueprint):
+        return
+    for sec, (_, _, count, each) in zip(sections, blueprint):
+        if not isinstance(sec, dict) or len(sec.get("questions") or []) != count:
+            return
+    for sec, (_, _, _, each) in zip(sections, blueprint):
+        for q in sec["questions"]:
+            if isinstance(q, dict):
+                q["marks"] = each
+    data["total_marks"] = total_marks
+
+
 def _build_prompt(grade: str, subject: str, topics: List[str], total_marks: int, difficulty: str, context: List[Dict[str, Any]]) -> str:
     lines = [
         f"Grade: {grade}",
@@ -50,7 +97,10 @@ def _build_prompt(grade: str, subject: str, topics: List[str], total_marks: int,
         f"Topics: {', '.join(topics)}",
         f"Total marks required: {total_marks} (must match exactly)",
         f"Overall difficulty: {difficulty}",
+        "\nPaper structure (fixed — use exactly these sections, question counts and marks):",
     ]
+    for name, qtype, count, each in marks_blueprint(total_marks, difficulty):
+        lines.append(f"- {name}: {count} {qtype} question(s) x {each} mark(s) = {count * each} marks")
     if context:
         lines.append("\nGround the questions in these excerpts from the teacher's own uploaded materials. Cite by their tag (S1, S2, ...) in \"source_ids\":")
         for i, c in enumerate(context, start=1):
@@ -127,6 +177,7 @@ def generate_assessment(
             import json
 
             data = json.loads(result["content"])
+            _apply_blueprint_marks(data, marks_blueprint(total_marks, difficulty), total_marks)
             data["created_by"] = created_by
             data["workspace_id"] = workspace_id
             assessment = AssessmentSchema(**data)

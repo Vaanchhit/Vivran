@@ -246,3 +246,72 @@ def test_the_slm_tier_gets_the_same_failover(gemini_fails, groq_transport):
     assert result["success"] is True
     assert result["provider"] == "groq"
     assert result["model_tier"] == "slm"
+
+
+# --- Second Gemini model before Groq ----------------------------------------
+
+def _gemini_by_model(monkeypatch, outcomes):
+    """outcomes: model -> FailureClass to raise, or text to return. Records calls."""
+    calls: list = []
+
+    def fake(prompt, *, model, **k):
+        calls.append(model)
+        out = outcomes[model]
+        if isinstance(out, FailureClass):
+            raise GeminiError(f"{model} failed", failure=out)
+        return out
+
+    monkeypatch.setattr(cheap_model, "generate_text", fake)
+    return calls
+
+
+def test_a_busy_model_falls_back_to_the_other_gemini_model_first(monkeypatch, groq_transport):
+    groq_calls = groq_transport()
+    calls = _gemini_by_model(monkeypatch, {
+        "gemini-3.5-flash-lite": FailureClass.UPSTREAM_BUSY,
+        "gemini-3.1-flash-lite": "from the fallback",
+    })
+    result = cheap_model.generate_slm("p")
+    assert result["success"] and result["content"] == "from the fallback"
+    assert result["provider"] == "gemini" and result["model_name"] == "gemini-3.1-flash-lite"
+    assert calls == ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"]
+    assert groq_calls == []
+
+
+def test_the_fallback_is_never_the_model_that_just_failed(monkeypatch):
+    calls = _gemini_by_model(monkeypatch, {
+        "gemini-3.1-flash-lite": FailureClass.UPSTREAM_BUSY,
+        "gemini-3.5-flash-lite": "ok",
+    })
+    result = cheap_model.generate_assessment_cloud("p")
+    assert result["success"]
+    assert calls == ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"]
+
+
+def test_groq_is_reached_only_when_both_gemini_models_are_busy(monkeypatch, groq_transport):
+    groq_calls = groq_transport()
+    _gemini_by_model(monkeypatch, {
+        "gemini-3.5-flash-lite": FailureClass.UPSTREAM_BUSY,
+        "gemini-3.1-flash-lite": FailureClass.UPSTREAM_BUSY,
+    })
+    result = cheap_model.generate_slm("p")
+    assert result["provider"] == "groq"
+    assert len(groq_calls) == 1
+
+
+def test_a_quota_error_on_the_fallback_stops_before_groq(monkeypatch, groq_transport):
+    groq_calls = groq_transport()
+    _gemini_by_model(monkeypatch, {
+        "gemini-3.5-flash-lite": FailureClass.UPSTREAM_BUSY,
+        "gemini-3.1-flash-lite": FailureClass.QUOTA_EXHAUSTED,
+    })
+    result = cheap_model.generate_slm("p")
+    assert not result["success"]
+    assert result["failure"] == FailureClass.UPSTREAM_BUSY
+    assert groq_calls == []
+
+
+def test_non_busy_failures_do_not_try_the_fallback_model(monkeypatch):
+    calls = _gemini_by_model(monkeypatch, {"gemini-3.5-flash-lite": FailureClass.QUOTA_EXHAUSTED})
+    result = cheap_model.generate_slm("p")
+    assert not result["success"] and calls == ["gemini-3.5-flash-lite"]

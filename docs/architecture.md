@@ -20,7 +20,7 @@ The product centers on converting **Teacher Intent + Teacher Material** into **S
    - Theme-switchable (`dark`/`light`) via CSS variables + `lib/theme-context.tsx`.
 
 3. **Backend Engine (`backend/`)**
-   - FastAPI Python application implementing the **Three-Tier AI Router** (Open/Local Ollama → Cheap Cloud → Premium Cloud), **Document Ingestion**, **pgvector RAG**, **Deterministic Assessment Validation**, and **Media Provider Integrations** (Cartesia & ElevenLabs).
+   - FastAPI Python application implementing the **Tiered AI Router** (SLM → Authoring → Premium, all on Gemini, with Groq as busy-failover), **Document Ingestion**, **pgvector RAG**, **Deterministic Assessment Validation**, and **Media Provider Integrations** (Cartesia & ElevenLabs).
 
 ---
 
@@ -59,9 +59,13 @@ searchbox/ (Vivran Workspace Root)
 
 ## Three-Tier AI Routing Strategy (§22, §24)
 
-- **Tier 1 (Open / Local AI)**: Ollama + open-weight model (e.g. Qwen 2.5). Handles intent parsing, prompt compilation, clarification, and routing.
-- **Tier 2 (Cheap Cloud AI)**: Handles standard quizzes, worksheets, lesson notes, and slide structures.
-- **Tier 3 (Premium Cloud AI)**: Used sparingly for complex multi-source reasoning, exam matching, and difficult assessment generation.
+Every call goes through `backend/app/ai/cheap_model.py::generate_cloud`; `app/ai/router.py` maps a task to a tier and `app/core/config.py` pins each tier to a model, with the benchmark behind each pin (`backend/scripts/bench_models.py`).
+
+- **SLM** (`gemini-3.5-flash-lite`): intent parsing, classification, prompt enhancement. Non-Latin-script prompts stay on the authoring tier.
+- **Authoring** (`gemini-3.5-flash-lite`): slides, worksheets, lesson notes, coursework.
+- **Exam papers** (`gemini-3.1-flash-lite`): the section/marks plan is computed in code (`marks_blueprint`), so totals are exact.
+- **Premium** (`gemini-pro-latest`): off until Pro-tier billing exists.
+- **When Gemini reports busy**: retry → the other flash-lite model → Groq (if `GROQ_API_KEY` is set). Quota errors and safety refusals never fail over.
 
 ---
 

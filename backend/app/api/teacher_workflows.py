@@ -63,9 +63,8 @@ def workflow_capabilities() -> dict:
         # Describes what each tier is actually used for today — see
         # app/ai/router.py, which is where the mapping lives.
         "model_layers": {
-            "open_local": "local Ollama when one is reachable; otherwise the SLM tier below",
             "slm": "extraction and rewriting: intent parsing, classification, creative prompt enhancement",
-            "cheap_cloud": "authoring: slides, worksheets, lesson notes, coursework, assessments",
+            "cheap_cloud": "authoring: slides, worksheets, lesson notes, coursework, and exam papers on their own pinned model",
             "premium": "complex multi-source assessment — disabled until Pro-tier billing is enabled",
         },
     }

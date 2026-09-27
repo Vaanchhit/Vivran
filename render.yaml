@@ -14,12 +14,8 @@ services:
         value: 3.11.9
       - key: GEMINI_API_KEY
         sync: false
-      # DORMANT second provider. With this unset — which it is today, and there
-      # is no key to test with — nothing in the backend ever reaches Groq and
-      # behaviour is identical to before the failover existed. Setting it turns
-      # on failover for exactly one case: Gemini reporting itself busy or
-      # overloaded (never a spent quota, never a safety refusal). The first
-      # real call will also be the first live test of app/ai/groq_client.py.
+      # Last-resort failover: used only when Gemini reports itself busy on both
+      # the primary and fallback model (never a spent quota or safety refusal).
       - key: GROQ_API_KEY
         sync: false
       - key: SUPABASE_URL

@@ -8,33 +8,26 @@ from pydantic_settings import BaseSettings
 # startup whenever production is still running on it.
 LEGACY_COMMITTED_REFERRAL_CODE = "632006"
 
-# The small/fast Gemini model that the SLM tier runs on. A module constant
-# rather than a literal repeated in the class body below, because two settings
-# default to the same model and they must not drift apart silently.
+# Model pins, from scripts/bench_models.py run on this key on 2026-09-27
+# (production prompts and validators, one raw attempt per call, no retries):
 #
-# Measured on this key, today, not taken from a model card:
-#   gemini-3.5-flash-lite  -> 4/4 success, 1.9s median, correct structured
-#                             extraction.
-#   gemini-3.6-flash       -> 503 "model overloaded" on 3/10 in one run and
-#                             4/4 in the next; ~12s median when it does answer.
-# So flash-lite is both markedly more AVAILABLE and ~6x faster. It is used
-# wherever the job is extraction or rewriting rather than authoring.
+#   model                  answered  intent+slides  exam marks exact  p50
+#   gemini-3.5-flash-lite  14/14     4/4 valid      0/8               1.5s intent, 4.4s deck
+#   gemini-3.1-flash-lite  12/12     4/4 valid      5/8 (misses: -2)  6.7s paper
+#   gemini-3.5-flash        4/6      4/4 valid      0/2 (503)         ~20s
+#   gemini-3.6/3.7/3.8-flash 1-3/6   mostly 503 "model overloaded"
+#   gemini-2.5-flash(-lite) 404 "no longer available to new users"
 #
-# NOT gemini-2.5-flash-lite: that name is still listed by the models endpoint
-# but every call 404s with "no longer available to new users" and points here.
+# So 3.5-flash-lite is the fastest model that answers every time and gets
+# structure right, and 3.1-flash-lite is the one that can do marks arithmetic.
+# Everything bigger is unavailable on this key often enough to be unusable.
 SLM_MODEL = "gemini-3.5-flash-lite"
+ASSESSMENT_MODEL = "gemini-3.1-flash-lite"
 
 
 class Settings(BaseSettings):
     app_env: str = "development"
     app_name: str = "Vivran"
-    
-    # Tier 1 - Open / Local AI (Ollama) per Spec §22 & §59.
-    # Optional: only used if reachable (local dev). Production has no Ollama
-    # host, so Tier 1 falls back to the same Gemini flash-lite model used
-    # below whenever Ollama is unset or unreachable.
-    ollama_host: str = ""
-    ollama_model: str = "qwen2.5:7b"
 
     # Gemini API. Tiers differ by model choice — see app/ai/router.py, which is
     # the one place that maps a task to a tier.
@@ -43,47 +36,20 @@ class Settings(BaseSettings):
     # and checkable, and both call sites already degrade gracefully. See the
     # SLM_MODEL comment above for the numbers behind this choice.
     slm_model: str = SLM_MODEL
-    # Tier 1's Gemini fallback when no Ollama host is reachable (which is always,
-    # in production). Tier 1's documented job list — intent, classification,
-    # metadata extraction, clarification — IS the SLM job list, so it runs the
-    # same model.
-    open_model: str = SLM_MODEL
-    # Authoring tier: slides, worksheets, lesson notes, coursework, assessments.
-    # Pinned to a concrete model rather than a "-latest" alias.
-    #
-    # CAVEAT, measured today: this model is currently unreliable — 503 "model
-    # overloaded" on 3/10 calls in one run and 4/4 in another, ~12s median when
-    # it works.
-    #
-    # That judgement call has since been made, with the missing measurement:
-    # the same full deck generated through the same pipeline, twice.
-    #   gemini-3.6-flash      4 consecutive 429/503 — no deck at all
-    #   gemini-3.5-flash-lite 4.1s, 12 slides, 11 layouts, ZERO repairs,
-    #                         nothing trimmed, split or dropped
-    # Zero repairs means the output was schema-perfect on the first attempt,
-    # which is the authoring-quality evidence that was missing before. Combined
-    # with slidekit — which fixes the plan, derives every character budget from
-    # a verified layout, and deterministically repairs what comes back — the
-    # remaining risk of the smaller model is prose quality, not structure.
-    #
-    # So authoring moves to flash-lite on availability AND measured quality.
-    # Set CHEAP_MODEL=gemini-3.6-flash to revert; everything still routes
-    # through app/ai/router.py.
+    # Authoring tier: slides, worksheets, lesson notes, coursework. slidekit
+    # fixes the plan and repairs what comes back, so the remaining risk of the
+    # small model is prose quality, not structure.
     cheap_model: str = SLM_MODEL
     # Exam papers get their own pin, because "which model writes a paper whose
-    # marks must sum to the requested total" is a decision that should be
-    # visible, not a side effect of whatever the authoring tier happens to be.
-    #
-    # Measured (3 papers, marks arithmetic checked against the requested total):
-    #   gemini-3.6-flash      429 on all three — no paper at all
-    #   gemini-3.5-flash-lite 40 -> 40 OK, 60 -> 60 OK, one hard error
-    # generate_assessment also runs a validate -> feed-errors-back -> regenerate
-    # loop, so a miss is caught rather than shipped. Flash-lite is therefore the
-    # better paper today on availability, with the arithmetic risk covered.
-    #
-    # Repin here the moment a more capable model is reliably reachable — this is
-    # the first setting to revisit when billing is enabled.
-    assessment_model: str = SLM_MODEL
+    # marks must sum to the requested total" should be a visible decision, not
+    # a side effect of the authoring tier. generate_assessment still runs a
+    # validate -> feed-errors-back -> regenerate loop behind it.
+    assessment_model: str = ASSESSMENT_MODEL
+    # Tried, in order, when the primary Gemini model reports itself busy — a
+    # different model is a separate capacity pool on Google's side. The first
+    # entry that differs from the model that just failed is used. Groq comes
+    # after this, not instead of it.
+    gemini_fallback_models: str = f"{SLM_MODEL},{ASSESSMENT_MODEL}"
 
     # Requires a Google Cloud billing account with Pro-tier quota — verified
     # live that this key gets 429 "quota exceeded" on every Pro-tier model
@@ -121,11 +87,9 @@ class Settings(BaseSettings):
     gemini_rate_limit_enabled: bool = True
 
     # --- Second provider (app/ai/groq_client.py) ----------------------------
-    # DORMANT. With no key set, nothing in this backend reaches Groq and the
-    # behaviour is exactly what it was before the failover existed. Set
-    # GROQ_API_KEY to switch it on; it then handles ONLY the case where Gemini
-    # reports itself busy/overloaded (see app/ai/cheap_model.py for why the
-    # other failure classes must not fail over).
+    # Last resort: reached only when Gemini reports itself busy on the primary
+    # AND the fallback model. Off without GROQ_API_KEY. See app/ai/cheap_model.py
+    # for why the other failure classes must not fail over.
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
 
@@ -186,6 +150,9 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        # A retired key left in someone's .env (OLLAMA_HOST, OPEN_MODEL) must
+        # not stop the backend from booting.
+        extra = "ignore"
 
 
 settings = Settings()

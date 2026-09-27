@@ -39,6 +39,7 @@ def test_the_tier_layer_routes_rather_than_decorates():
     from app.core.config import SLM_MODEL, settings
 
     assert SLM_MODEL == "gemini-3.5-flash-lite"
+    assert settings.assessment_model == "gemini-3.1-flash-lite"
     # Each tier reads its own setting rather than sharing one knob.
     assert model_for_tier(ModelTier.SLM) == settings.slm_model
     assert model_for_tier(ModelTier.CHEAP_CLOUD) == settings.cheap_model
@@ -48,7 +49,7 @@ def test_the_tier_layer_routes_rather_than_decorates():
 def test_the_dead_2_5_model_is_not_referenced_anywhere_in_settings():
     """gemini-2.5-flash-lite is still listed by the models endpoint but 404s
     with "no longer available to new users"."""
-    for name in (settings.slm_model, settings.open_model, settings.cheap_model, settings.premium_model):
+    for name in (settings.slm_model, settings.cheap_model, settings.assessment_model, settings.premium_model):
         assert "2.5" not in name, name
 
 
