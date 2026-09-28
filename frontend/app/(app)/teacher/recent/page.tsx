@@ -9,16 +9,15 @@ export default function RecentPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="border-b border-border pb-6">
         <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
-          <Clock className="w-6 h-6 text-accent" /> Recent Projects &amp; History
+          <Clock className="w-6 h-6 text-accent" /> Your saved work
         </h1>
         <p className="text-sm text-muted mt-1">
-          Access your recent teaching projects, generated assessments, and editable slides.
+          Everything you create is saved here automatically. Open, rename or delete it any time.
         </p>
       </div>
 
-      {/* Real projects from GET /api/projects — same component the dashboard
-          preview uses, so the two lists can never disagree. */}
-      <RecentProjects />
+      {/* Same component the dashboard preview uses, so the two lists can never disagree. */}
+      <RecentProjects manage />
     </div>
   );
 }

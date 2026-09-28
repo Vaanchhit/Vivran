@@ -7,6 +7,7 @@ import { BookLoader } from "@/app/components/book-loader";
 import {
   enhancePrompt,
   generateImage,
+  getLibraryItem,
   generateVideo,
   type EnhancedPrompt,
   type InteractiveResult,
@@ -119,6 +120,7 @@ export default function CreatePage() {
 function CreatePageInner() {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type");
+  const itemParam = searchParams.get("item");
 
   // Pre-selecting the card the teacher explicitly clicked on the dashboard is
   // their own choice carried across a navigation, not a guess about content.
@@ -134,11 +136,43 @@ function CreatePageInner() {
   /** Keeps the teacher's own wording alongside the AI's rewrite so both are
    * one click away. The live textarea is always the version that generates. */
   const [enhanceState, setEnhanceState] = useState<{ original: string; enhanced: string } | null>(null);
+  /** Set when this page was opened from saved work rather than a fresh generation. */
+  const [openedTitle, setOpenedTitle] = useState<string | null>(null);
+  const [openingItem, setOpeningItem] = useState(false);
 
   useEffect(() => {
     const resolved = resolveTypeParam(typeParam);
     if (resolved) setActive(resolved);
   }, [typeParam]);
+
+  // Reopening saved work: the saved result goes through the same display as a fresh one.
+  useEffect(() => {
+    if (!itemParam) return;
+    let cancelled = false;
+    setOpeningItem(true);
+    setError(null);
+    getLibraryItem(itemParam)
+      .then((item) => {
+        if (cancelled) return;
+        const kind = resolveTypeParam(item.type);
+        if (!kind || !item.content) {
+          setError("This item can't be opened here.");
+          return;
+        }
+        setActive(kind);
+        setResult(item.content as typeof result);
+        setOpenedTitle(item.title);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Could not open that item.");
+      })
+      .finally(() => {
+        if (!cancelled) setOpeningItem(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [itemParam]);
 
   const currentPrompt = active === "video" ? videoPrompt : imagePrompt;
   const setCurrentPrompt = (value: string) => {
@@ -187,6 +221,7 @@ function CreatePageInner() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setOpenedTitle(null);
     try {
       if (active === "image") setResult(await generateImage(imagePrompt));
       else if (active === "video") setResult(await generateVideo(videoPrompt, "16:9", videoDuration));
@@ -221,6 +256,7 @@ function CreatePageInner() {
               onClick={() => {
                 setActive(art.key);
                 setResult(null);
+                setOpenedTitle(null);
                 setError(null);
                 setEnhancement(null);
                 setEnhanceState(null);
@@ -376,6 +412,7 @@ function CreatePageInner() {
               heading={`Describe the ${activeMeta?.title.toLowerCase()} you want`}
               onGenerated={(r) => {
                 setError(null);
+                setOpenedTitle(null);
                 if (!r.ok) {
                   setError(r.error);
                   setResult(null);
@@ -404,6 +441,17 @@ function CreatePageInner() {
               {loading && <BookLoader className="w-3.5 h-3.5" />}
               {loading ? (active === "video" ? "Generating video (1-3 min)…" : "Generating…") : "Generate"}
             </button>
+          )}
+
+          {openingItem && (
+            <div className="p-3 rounded-xl bg-card border border-border flex items-center gap-2 text-xs text-muted">
+              <BookLoader className="w-3.5 h-3.5" /> Opening your saved work…
+            </div>
+          )}
+          {openedTitle && result && (
+            <div className="text-xs text-muted">
+              Opened from your saved work: <span className="text-foreground font-medium">{openedTitle}</span>
+            </div>
           )}
 
           {error && (

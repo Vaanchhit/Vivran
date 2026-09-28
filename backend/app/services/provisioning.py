@@ -18,6 +18,7 @@ import httpx
 from app.core.auth import CurrentUser
 from app.core.config import settings
 from app.core.logging import logger
+from app.services import library
 from app.services.supabase_service import SupabaseError, delete_storage_prefix, table_delete, table_select, table_upsert
 
 _NS = uuid.NAMESPACE_URL
@@ -364,7 +365,7 @@ def _delete_account_supabase(user_id: str) -> None:
     # been deleted yet and the teacher sees an error rather than a "deleted"
     # account whose files are still stored.
     for ws in table_select("workspaces", {"owner_id": f"eq.{user_id}", "select": "id"}):
-        removed = delete_storage_prefix("materials", str(ws["id"]))
+        removed = delete_storage_prefix("materials", str(ws["id"])) + library.delete_workspace_media(str(ws["id"]))
         logger.info("Account deletion removed %s stored file(s) for workspace %s", removed, ws["id"])
 
     table_delete("projects", {"created_by": f"eq.{user_id}"})

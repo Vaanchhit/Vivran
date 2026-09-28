@@ -11,6 +11,7 @@ from app.api.deps import require_teacher, teacher_session
 from app.api.jobs import ASYNC_JOB_QUERY, dispatch_generation
 from app.core.auth import CurrentUser
 from app.core.errors import FailureClass, http_error, raise_for_service_result
+from app.services import library
 from app.core.logging import logger
 from app.core.rate_limit import limit
 from app.generation.artifacts import generate_lesson_notes, generate_slides, generate_worksheet
@@ -99,6 +100,7 @@ def api_generate_worksheet(
     return dispatch_generation(
         async_job=async_job,
         task_type="worksheet",
+        save_as="worksheet",
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),
@@ -126,6 +128,7 @@ def api_generate_lesson_notes(
     return dispatch_generation(
         async_job=async_job,
         task_type="lesson_notes",
+        save_as="lesson_notes",
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),
@@ -154,6 +157,7 @@ def api_generate_interactive(
     return dispatch_generation(
         async_job=async_job,
         task_type="interactive_coursework",
+        save_as="interactive",
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),
@@ -213,9 +217,10 @@ def api_generate_image(
     user: CurrentUser = Depends(require_teacher),
 ):
     ws = _validated_workspace(workspace_id, session)
-    return dispatch_generation(
+    return library.playable(dispatch_generation(
         async_job=async_job,
         task_type="image",
+        save_as="image",
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),
@@ -225,7 +230,7 @@ def api_generate_image(
             grounding=_visual_grounding(payload.prompt, ws),
         ),
         service_context="image generation",
-    )
+    ))
 
 
 class VideoRequest(BaseModel):
@@ -248,9 +253,10 @@ def api_generate_video(
     # The visual guardrails (palette, no-rendered-text, anti-hallucination) are
     # applied inside the service, not here, so every caller gets them and none
     # can opt out. See app/media/visual_guardrails.py.
-    return dispatch_generation(
+    return library.playable(dispatch_generation(
         async_job=async_job,
         task_type="video",
+        save_as="video",
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),
@@ -261,7 +267,7 @@ def api_generate_video(
             grounding=_visual_grounding(payload.prompt, ws),
         ),
         service_context="video generation",
-    )
+    ))
 
 
 @router.post("/transcribe")
@@ -298,12 +304,21 @@ class NarrationRequest(BaseModel):
 def api_generate_narration(
     request: Request,
     payload: NarrationRequest,
+    session: Dict[str, Any] = Depends(teacher_session),
     user: CurrentUser = Depends(require_teacher),
 ):
     service = CartesiaService() if payload.provider == "cartesia" else ElevenLabsService()
     method = service.generate_speech if payload.provider == "cartesia" else service.generate_narration_audio
-    result = method(payload.script)
-    return raise_for_service_result(result, context="narration")
+    result = raise_for_service_result(method(payload.script), context="narration")
+    if library.worth_saving("narration", result):
+        params = payload.model_dump()
+        item_id = library.save_item(
+            workspace_id=session["workspace_id"], user_id=user.user_id, kind="narration",
+            title=library.title_for("narration", result, params), content=result, params=params,
+        )
+        if item_id:
+            result = {**result, "library_id": item_id}
+    return library.playable(result)
 
 
 class SlidesHtmlRequest(BaseModel):

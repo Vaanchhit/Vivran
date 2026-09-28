@@ -127,7 +127,7 @@ async function apiError(res: Response): Promise<ApiError> {
 }
 
 async function request<T>(
-  method: "GET" | "POST" | "PUT" | "DELETE",
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
   body?: unknown,
   headers: Record<string, string> = {},
@@ -313,25 +313,49 @@ export interface CoursePlan {
 /** A persisted project row as `GET /api/projects` returns it. Only the fields
  * the UI actually reads are typed; `specification_json` is whatever was stored
  * at creation time, so every part of it is optional. */
-export interface Project {
+
+// ── Saved work (backend app/api/library.py) ─────────────────────────────
+export type LibraryKind =
+  | "course_plan" | "slides" | "worksheet" | "lesson_notes" | "interactive"
+  | "assessment" | "narration" | "image" | "video";
+
+export interface LibraryEntry {
   id: string;
-  workspace_id?: string;
-  created_by?: string;
   title: string;
-  type: string;
+  type: LibraryKind;
   status?: string;
   created_at?: string;
   updated_at?: string;
-  specification_json?: {
-    grade?: string;
-    subject?: string;
-    topics?: string[];
-    course_plan?: CoursePlan;
-  } | null;
 }
 
-export async function listProjects(): Promise<Project[]> {
-  return request<Project[]>("GET", "/projects");
+/** A saved item: `content` is the result exactly as the generator returned it. */
+export interface LibraryItem extends LibraryEntry {
+  params: Record<string, unknown>;
+  content: unknown;
+}
+
+export function listLibrary(): Promise<LibraryEntry[]> {
+  return request<LibraryEntry[]>("GET", "/library");
+}
+
+export function getLibraryItem(id: string): Promise<LibraryItem> {
+  return request<LibraryItem>("GET", `/library/${encodeURIComponent(id)}`);
+}
+
+export function renameLibraryItem(id: string, title: string): Promise<{ status: string }> {
+  return request("PATCH", `/library/${encodeURIComponent(id)}`, { title });
+}
+
+export function deleteLibraryItem(id: string): Promise<{ status: string }> {
+  return request("DELETE", `/library/${encodeURIComponent(id)}`);
+}
+
+/** Where a saved item reopens: the page that made it, loading the saved result. */
+export function libraryHref(item: Pick<LibraryEntry, "id" | "type">): string {
+  const id = encodeURIComponent(item.id);
+  if (item.type === "assessment") return `/teacher/assess?item=${id}`;
+  if (item.type === "course_plan") return `/teacher/plan?item=${id}`;
+  return `/teacher/create?type=${item.type}&item=${id}`;
 }
 
 export async function generateCoursePlan(params: {

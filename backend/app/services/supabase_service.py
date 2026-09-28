@@ -114,6 +114,48 @@ def rpc(function_name: str, args: Dict[str, Any]) -> Any:
     return r.json()
 
 
+def signed_url(key: str, expires_in: int = 3600) -> Optional[str]:
+    """A time-limited download link for a stored object key ("bucket/path").
+
+    upload_file returns keys, not links, so a key is what gets saved; this turns
+    it into something a browser can play each time it is shown.
+    """
+    bucket, _, path = key.partition("/")
+    if not bucket or not path:
+        return None
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            r = client.post(
+                f"{_base()}/storage/v1/object/sign/{bucket}/{path}",
+                json={"expiresIn": expires_in},
+                headers={
+                    "apikey": settings.supabase_service_role_key,
+                    "Authorization": f"Bearer {settings.supabase_service_role_key}",
+                },
+            )
+    except httpx.HTTPError:
+        return None
+    if r.status_code != 200:
+        return None
+    signed = r.json().get("signedURL") or r.json().get("signedUrl")
+    return f"{_base()}/storage/v1{signed}" if signed else None
+
+
+def delete_storage_keys(keys: List[str]) -> None:
+    """Deletes stored objects by key ("bucket/path"), grouped per bucket."""
+    by_bucket: Dict[str, List[str]] = {}
+    for key in keys:
+        bucket, _, path = key.partition("/")
+        if bucket and path:
+            by_bucket.setdefault(bucket, []).append(path)
+    headers = {"apikey": settings.supabase_service_role_key, "Authorization": f"Bearer {settings.supabase_service_role_key}"}
+    with httpx.Client(timeout=30.0) as client:
+        for bucket, paths in by_bucket.items():
+            r = client.request("DELETE", f"{_base()}/storage/v1/object/{bucket}", json={"prefixes": paths}, headers=headers)
+            if r.status_code not in (200, 204):
+                raise SupabaseError(f"Storage delete failed ({r.status_code}): {r.text[:300]}")
+
+
 def delete_storage_prefix(bucket: str, prefix: str) -> int:
     """Deletes every object under ``prefix`` in ``bucket``. Returns the count.
 

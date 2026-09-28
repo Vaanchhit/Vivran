@@ -52,6 +52,7 @@ def api_generate_assessment(
     return dispatch_generation(
         async_job=async_job,
         task_type="assessment",
+        save_as="assessment",
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),

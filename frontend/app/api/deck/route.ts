@@ -18,7 +18,7 @@ import { matchDeck } from "@/lib/slidekit/matcher";
 import { outlineToPlan, validateOutline } from "@/lib/slidekit/outline";
 import type { Block } from "@/lib/slidekit/blocks";
 import { buildSourceMaterial, resolveCitations, toSubjectId } from "@/lib/slidekit-bridge";
-import { callModel, fetchGrounding } from "@/lib/deck-server";
+import { callModel, fetchGrounding, saveToLibrary } from "@/lib/deck-server";
 
 export const runtime = "nodejs";
 
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
   const placements = matchDeck(blocks.map(withoutImage), ctx.grade);
   const { cited, invented } = resolveCitations(blocks, tagToChunk);
 
-  return NextResponse.json({
+  const deck = {
     status: "ready",
     placements,
     plan: plan.map(p => p.type),
@@ -135,5 +135,14 @@ export async function POST(req: Request) {
       dropped: placements.flatMap(p => p.dropped),
     },
     ...res.meta,
+  };
+
+  // Saved the moment it exists, so the deck is never lost on a refresh.
+  const libraryId = await saveToLibrary(req, {
+    kind: "slides",
+    title: ctx.topic,
+    content: deck,
+    params: { topic: rest.topic, grade: rest.grade, subject: rest.subject, slideCount: rest.slideCount, language: rest.language },
   });
+  return NextResponse.json({ ...deck, libraryId });
 }

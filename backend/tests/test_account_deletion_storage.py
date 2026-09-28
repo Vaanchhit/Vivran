@@ -67,6 +67,7 @@ def test_stored_files_go_before_any_database_row(monkeypatch, supabase_on):
     order: list = []
     monkeypatch.setattr(provisioning, "table_select", lambda t, p: [{"id": "ws1"}] if t == "workspaces" else [])
     monkeypatch.setattr(provisioning, "delete_storage_prefix", lambda b, p: order.append(("storage", b, p)) or 1)
+    monkeypatch.setattr(provisioning.library, "delete_workspace_media", lambda ws: order.append(("media", ws)) or 0)
     monkeypatch.setattr(provisioning, "table_delete", lambda t, p: order.append(("table", t)))
 
     class _Admin:
@@ -81,6 +82,7 @@ def test_stored_files_go_before_any_database_row(monkeypatch, supabase_on):
     provisioning._delete_account_supabase("user-1")
 
     assert order[0] == ("storage", "materials", "ws1")
+    assert order[1] == ("media", "ws1")
     assert order[-1] == ("auth_user",)
 
 

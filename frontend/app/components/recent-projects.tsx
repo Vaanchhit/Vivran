@@ -2,23 +2,25 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, Clock, FolderKanban } from "lucide-react";
+import { AlertCircle, Check, Clock, FolderKanban, Pencil, Trash2, X } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
-import { listProjects, type Project } from "@/services/api";
+import { deleteLibraryItem, libraryHref, listLibrary, renameLibraryItem, type LibraryEntry } from "@/services/api";
 
-/** Reads the teacher's real saved projects from GET /api/projects. This
- * deliberately renders an empty state rather than sample content: a live
- * product must never show fabricated work back to the person who didn't do
- * it. Shared by the dashboard preview and the full /teacher/recent list so
- * the two can't drift apart again. */
+/** The teacher's saved work, from GET /api/library. Shared by the dashboard
+ * preview and the full /teacher/recent list so the two can't drift apart. It
+ * never shows sample content: a live product must not show fabricated work
+ * back to someone who didn't make it. */
 
-const TYPE_LABELS: Record<string, string> = {
-  course_plan: "Course Plan",
+const KIND_LABELS: Record<string, string> = {
+  course_plan: "Course plan",
   slides: "Slides",
   worksheet: "Worksheet",
-  lesson_notes: "Lesson Notes",
-  assessment: "Test / Quiz Paper",
-  interactive: "Interactive Coursework",
+  lesson_notes: "Lesson notes",
+  assessment: "Exam paper",
+  interactive: "Interactive coursework",
+  narration: "Narration",
+  image: "Image",
+  video: "Video",
 };
 
 function relativeTime(iso?: string): string | null {
@@ -35,30 +37,110 @@ function relativeTime(iso?: string): string | null {
   return new Date(iso).toLocaleDateString();
 }
 
-export function RecentProjects({ limit }: { limit?: number }) {
-  const [projects, setProjects] = useState<Project[] | null>(null);
+function ItemCard({ item, manage, onRenamed, onDeleted }: {
+  item: LibraryEntry;
+  manage: boolean;
+  onRenamed: (title: string) => void;
+  onDeleted: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(item.title);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const when = relativeTime(item.updated_at || item.created_at);
+
+  const saveTitle = async () => {
+    const t = draft.trim();
+    if (!t || t === item.title) { setEditing(false); setDraft(item.title); return; }
+    setBusy(true); setErr(null);
+    try { await renameLibraryItem(item.id, t); onRenamed(t); setEditing(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Could not rename."); }
+    finally { setBusy(false); }
+  };
+
+  const remove = async () => {
+    setBusy(true); setErr(null);
+    try { await deleteLibraryItem(item.id); onDeleted(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Could not delete."); setBusy(false); setConfirming(false); }
+  };
+
+  return (
+    <div className="p-5 rounded-2xl bg-surface border border-border space-y-3 hover:border-border-hi transition-all flex flex-col">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] uppercase font-semibold tracking-wider text-accent bg-accent-soft px-2 py-0.5 rounded-md border border-accent-line">
+          {KIND_LABELS[item.type] ?? item.type}
+        </span>
+        {when && (
+          <span className="text-[11px] text-muted flex items-center gap-1 shrink-0">
+            <Clock className="w-3 h-3" /> {when}
+          </span>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            autoFocus
+            value={draft}
+            maxLength={120}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") saveTitle(); if (e.key === "Escape") { setEditing(false); setDraft(item.title); } }}
+            aria-label="New name"
+            className="flex-1 min-w-0 px-2 py-1 bg-card border border-border rounded-lg text-sm text-foreground focus:outline-none focus:border-accent"
+          />
+          <button type="button" onClick={saveTitle} disabled={busy} aria-label="Save name" className="p-1 text-muted hover:text-foreground"><Check className="w-4 h-4" /></button>
+          <button type="button" onClick={() => { setEditing(false); setDraft(item.title); }} aria-label="Cancel" className="p-1 text-muted hover:text-foreground"><X className="w-4 h-4" /></button>
+        </div>
+      ) : (
+        <Link href={libraryHref(item)} className="font-bold text-sm text-foreground font-display hover:text-accent line-clamp-2">
+          {item.title}
+        </Link>
+      )}
+
+      {err && <div className="text-[11px] text-danger">{err}</div>}
+
+      <div className="flex items-center justify-between gap-2 pt-1 mt-auto">
+        <Link href={libraryHref(item)} className="text-xs font-medium text-accent hover:underline">Open →</Link>
+        {manage && !editing && (
+          confirming ? (
+            <span className="flex items-center gap-2 text-[11px]">
+              <span className="text-muted">Delete for good?</span>
+              <button type="button" onClick={remove} disabled={busy} className="text-danger font-semibold hover:underline">{busy ? "Deleting…" : "Delete"}</button>
+              <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="text-muted hover:text-foreground">Keep</button>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              <button type="button" onClick={() => setEditing(true)} aria-label={`Rename ${item.title}`} className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-card"><Pencil className="w-3.5 h-3.5" /></button>
+              <button type="button" onClick={() => setConfirming(true)} aria-label={`Delete ${item.title}`} className="p-1.5 rounded-lg text-muted hover:text-danger hover:bg-card"><Trash2 className="w-3.5 h-3.5" /></button>
+            </span>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function RecentProjects({ limit, manage = false }: { limit?: number; manage?: boolean }) {
+  const [items, setItems] = useState<LibraryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    listProjects()
-      .then((rows) => {
-        if (!cancelled) setProjects(rows);
-      })
+    listLibrary()
+      .then((rows) => { if (!cancelled) setItems(rows); })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Could not load your projects.");
-        setProjects([]);
+        setError(err instanceof Error ? err.message : "Could not load your saved work.");
+        setItems([]);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  if (projects === null) {
+  if (items === null) {
     return (
       <div className="p-6 rounded-2xl bg-surface border border-border text-sm text-muted flex items-center justify-center gap-2">
-        <BookLoader className="w-4 h-4" /> Loading your projects…
+        <BookLoader className="w-4 h-4" /> Loading your saved work…
       </div>
     );
   }
@@ -71,68 +153,31 @@ export function RecentProjects({ limit }: { limit?: number }) {
     );
   }
 
-  if (projects.length === 0) {
+  if (items.length === 0) {
     return (
       <div className="p-8 rounded-2xl bg-surface border border-dashed border-border text-center text-sm text-muted flex flex-col items-center gap-2">
         <FolderKanban className="w-5 h-5 text-muted" />
-        <div>You haven&rsquo;t saved a project yet.</div>
-        <Link href="/teacher/plan" className="text-accent font-medium hover:underline">
-          Plan your first course →
+        <div>Nothing saved yet. Everything you create is saved here automatically.</div>
+        <Link href="/teacher/create" className="text-accent font-medium hover:underline">
+          Create something →
         </Link>
       </div>
     );
   }
 
-  const shown = limit ? projects.slice(0, limit) : projects;
+  const shown = limit ? items.slice(0, limit) : items;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {shown.map((project) => {
-        const spec = project.specification_json ?? undefined;
-        const topics = spec?.topics ?? [];
-        const when = relativeTime(project.updated_at || project.created_at);
-        const weeks = spec?.course_plan?.duration_weeks;
-        return (
-          <div
-            key={project.id}
-            className="p-5 rounded-2xl bg-surface border border-border space-y-3 hover:border-border-hi transition-all"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[10px] uppercase font-semibold tracking-wider text-accent bg-accent-soft px-2 py-0.5 rounded-md border border-accent-line">
-                {TYPE_LABELS[project.type] ?? project.type}
-              </span>
-              {when && (
-                <span className="text-[11px] text-muted flex items-center gap-1 shrink-0">
-                  <Clock className="w-3 h-3" /> {when}
-                </span>
-              )}
-            </div>
-
-            <div className="font-bold text-sm text-foreground font-display">{project.title}</div>
-
-            {(spec?.grade || spec?.subject) && (
-              <div className="text-[11px] text-muted">
-                {[spec?.grade, spec?.subject].filter(Boolean).join(" · ")}
-              </div>
-            )}
-
-            {(topics.length > 0 || weeks) && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {weeks ? (
-                  <span className="px-2 py-0.5 rounded-md bg-card text-[11px] text-muted border border-border">
-                    {weeks} week{weeks === 1 ? "" : "s"}
-                  </span>
-                ) : null}
-                {topics.map((topic) => (
-                  <span key={topic} className="px-2 py-0.5 rounded-md bg-card text-[11px] text-muted border border-border">
-                    {topic}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
+      {shown.map((item) => (
+        <ItemCard
+          key={item.id}
+          item={item}
+          manage={manage}
+          onRenamed={(title) => setItems((rows) => rows?.map((r) => (r.id === item.id ? { ...r, title } : r)) ?? rows)}
+          onDeleted={() => setItems((rows) => rows?.filter((r) => r.id !== item.id) ?? rows)}
+        />
+      ))}
     </div>
   );
 }

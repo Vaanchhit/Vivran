@@ -1,13 +1,41 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { CalendarRange, BookOpen, Clock, Target, AlertCircle } from "lucide-react";
-import { type CoursePlan } from "@/services/api";
+import { getLibraryItem, type CoursePlan } from "@/services/api";
 import { SmartCreationBox } from "@/app/components/smart-creation-box";
+import { BookLoader } from "@/app/components/book-loader";
 
 export default function PlanPage() {
+  return (
+    <Suspense fallback={null}>
+      <PlanPageInner />
+    </Suspense>
+  );
+}
+
+function PlanPageInner() {
+  const itemParam = useSearchParams().get("item");
   const [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<CoursePlan | null>(null);
+  const [opening, setOpening] = useState(false);
+
+  // Reopening a saved plan: shown through the same display as a fresh one.
+  useEffect(() => {
+    if (!itemParam) return;
+    let cancelled = false;
+    setOpening(true);
+    getLibraryItem(itemParam)
+      .then((item) => {
+        if (cancelled) return;
+        if (item.type !== "course_plan" || !item.content) setError("This item can't be opened here.");
+        else setPlan(item.content as CoursePlan);
+      })
+      .catch((err: unknown) => { if (!cancelled) setError(err instanceof Error ? err.message : "Could not open that plan."); })
+      .finally(() => { if (!cancelled) setOpening(false); });
+    return () => { cancelled = true; };
+  }, [itemParam]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -76,6 +104,12 @@ export default function PlanPage() {
         }}
       />
 
+      {opening && (
+        <div className="p-3 rounded-xl bg-card border border-border flex items-center gap-2 text-xs text-muted">
+          <BookLoader className="w-3.5 h-3.5" /> Opening your saved plan…
+        </div>
+      )}
+
       {error && (
         <div className="p-3 bg-danger-soft border border-danger-line rounded-xl flex items-center gap-2 text-xs text-danger">
           <AlertCircle className="w-4 h-4 shrink-0" /> {error}
@@ -86,7 +120,7 @@ export default function PlanPage() {
         <div className="p-6 rounded-2xl bg-surface border border-border space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
-              <div className="text-xs text-accent font-semibold uppercase tracking-wider">Generated Plan</div>
+              <div className="text-xs text-accent font-semibold uppercase tracking-wider">{itemParam ? "Saved plan" : "Generated Plan"}</div>
               <div className="font-bold text-base text-foreground font-display">{plan.title}</div>
             </div>
             <span className="text-xs text-muted bg-card px-2.5 py-1 rounded-lg">

@@ -15,6 +15,7 @@ from app.core.auth import CurrentUser
 from app.core.logging import logger
 from app.core.rate_limit import limit
 from app.generation.planning import generate_course_plan
+from app.services import library
 from app.services.supabase_service import SupabaseError, is_configured, table_insert, table_select
 
 router = APIRouter(prefix="/projects", tags=["projects"])
@@ -78,6 +79,13 @@ def create_project(
                     },
                 )
                 response["id"] = row["id"]
+                # Same row, not a second one: the plan is listed once and reopens
+                # through the library like everything else.
+                if library.save_item(
+                    workspace_id=workspace_id, user_id=user.user_id, kind="course_plan",
+                    title=payload.title, content=course_plan, project_id=row["id"],
+                ):
+                    response["library_id"] = row["id"]
             except SupabaseError as e:
                 # Previously swallowed. A 200 carrying a project id that no row
                 # matches is the worst outcome: the teacher's generated course

@@ -1,13 +1,15 @@
 "use client";
 
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BookMarked, Download, ExternalLink, FileCheck2, RefreshCw, AlertCircle } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
 import {
   downloadAssessmentPdf,
   exportAssessmentToTally,
+  getLibraryItem,
   regenerateQuestion,
+  type AssessmentGenerateResponse,
   type Source,
 } from "@/services/api";
 import { SmartCreationBox } from "@/app/components/smart-creation-box";
@@ -55,6 +57,7 @@ export default function AssessPage() {
 function AssessPageInner() {
   const searchParams = useSearchParams();
   const modeParam = searchParams.get("mode");
+  const itemParam = searchParams.get("item");
   const mode = modeParam === "quiz" || modeParam === "test" ? MODES[modeParam] : null;
 
   const [grade, setGrade] = useState("");
@@ -153,6 +156,54 @@ function AssessPageInner() {
 
   const q = selected !== null ? questions[selected] : null;
 
+
+  /** One path for a fresh paper and a reopened one, so they can never render differently. */
+  const applyPaper = (data: AssessmentGenerateResponse, params: { grade: string; subject: string; marks: number }) => {
+    setGrade(params.grade);
+    setSubject(params.subject);
+    setTotalMarks(params.marks);
+    const { assessment, validation, grounded_on, question_ids, sources: srcs } = data;
+    setGroundedOn((grounded_on as number) ?? 0);
+    setSources(srcs ?? []);
+    if (!assessment) {
+      setValidationErrors(validation.errors);
+      setQuestions([]);
+      setTitle(null);
+      return;
+    }
+    const a = assessment as { title: string; duration_minutes: number; sections: { name: string; questions: UIQuestion[] }[] };
+    setTitle(a.title);
+    setDurationMinutes(a.duration_minutes);
+    const flatQuestions = a.sections.flatMap((s) => s.questions);
+    setQuestions(flatQuestions);
+    setValidationErrors(validation.errors);
+    // question_ids (if persisted) line up 1:1 with the flattened question order.
+    setQuestionIds(question_ids ?? []);
+    setSelected(flatQuestions.length ? 0 : null);
+  };
+
+  const [openedTitle, setOpenedTitle] = useState<string | null>(null);
+  const [opening, setOpening] = useState(false);
+
+  // Reopening a saved paper: it gets the same editor as a fresh one.
+  useEffect(() => {
+    if (!itemParam) return;
+    let cancelled = false;
+    setOpening(true);
+    getLibraryItem(itemParam)
+      .then((item) => {
+        if (cancelled) return;
+        if (item.type !== "assessment" || !item.content) { setError("This item can't be opened here."); return; }
+        const p = item.params as { grade?: string; subject?: string; total_marks?: number };
+        applyPaper(item.content as AssessmentGenerateResponse, { grade: p.grade ?? "", subject: p.subject ?? "", marks: p.total_marks ?? 0 });
+        setOpenedTitle(item.title);
+      })
+      .catch((err: unknown) => { if (!cancelled) setError(err instanceof Error ? err.message : "Could not open that paper."); })
+      .finally(() => { if (!cancelled) setOpening(false); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemParam]);
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="border-b border-border pb-6">
@@ -181,33 +232,25 @@ function AssessPageInner() {
           if (result.artifactType !== "assessment") return;
           setError(null);
           setValidationErrors([]);
+          setOpenedTitle(null);
           if (!result.ok) {
             setError(result.error);
             return;
           }
-          setGrade(result.params.grade);
-          setSubject(result.params.subject);
-          setTotalMarks(result.params.marks);
-          const { assessment, validation, grounded_on, question_ids, sources: srcs } = result.data;
-          setGroundedOn((grounded_on as number) ?? 0);
-          setSources(srcs ?? []);
-          if (!assessment) {
-            setValidationErrors(validation.errors);
-            setQuestions([]);
-            setTitle(null);
-            return;
-          }
-          const a = assessment as { title: string; duration_minutes: number; sections: { name: string; questions: UIQuestion[] }[] };
-          setTitle(a.title);
-          setDurationMinutes(a.duration_minutes);
-          const flatQuestions = a.sections.flatMap((s) => s.questions);
-          setQuestions(flatQuestions);
-          setValidationErrors(validation.errors);
-          // question_ids (if persisted) line up 1:1 with the flattened question order.
-          setQuestionIds(question_ids ?? []);
-          setSelected(flatQuestions.length ? 0 : null);
+          applyPaper(result.data, result.params);
         }}
       />
+
+      {opening && (
+        <div className="p-3 rounded-xl bg-card border border-border flex items-center gap-2 text-xs text-muted">
+          <BookLoader className="w-3.5 h-3.5" /> Opening your saved paper…
+        </div>
+      )}
+      {openedTitle && title && (
+        <div className="text-xs text-muted">
+          Opened from your saved work: <span className="text-foreground font-medium">{openedTitle}</span>
+        </div>
+      )}
 
       {error && (
         <div className="p-3 bg-danger-soft border border-danger-line rounded-xl flex items-center gap-2 text-xs text-danger">

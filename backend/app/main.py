@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import assessments, auth, content, health, jobs, materials, projects, teacher_workflows
+from app.api import assessments, auth, content, health, jobs, library, materials, projects, teacher_workflows
 from app.api.deps import require_verified_teacher
 from app.core.config import LEGACY_COMMITTED_REFERRAL_CODE, settings
 from app.core.logging import logger
@@ -35,6 +35,7 @@ _beta_gated = [Depends(require_verified_teacher)]
 app.include_router(teacher_workflows.router, prefix="/api", dependencies=_beta_gated)
 app.include_router(assessments.router, prefix="/api", dependencies=_beta_gated)
 app.include_router(projects.router, prefix="/api", dependencies=_beta_gated)
+app.include_router(library.router, prefix="/api", dependencies=_beta_gated)
 app.include_router(materials.router, prefix="/api", dependencies=_beta_gated)
 app.include_router(content.router, prefix="/api", dependencies=_beta_gated)
 # Job status is as gated as the generation that creates jobs — the rows carry

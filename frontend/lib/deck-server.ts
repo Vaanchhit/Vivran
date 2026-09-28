@@ -30,6 +30,20 @@ export async function fetchGrounding(req: Request, ctx: LessonContext, materialI
   return [];
 }
 
+/** Saves a finished deck to the teacher's library. Best effort: returns null on any failure. */
+export async function saveToLibrary(
+  req: Request,
+  item: { kind: "slides"; title: string; content: unknown; params: Record<string, unknown> },
+): Promise<string | null> {
+  try {
+    const r = await fetch(`${API}/library`, { method: "POST", headers: authHeaders(req), body: JSON.stringify(item) });
+    if (!r.ok) return null;
+    return (await r.json()).id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 /** One model call through the Python API. Returns the raw text, or the teacher-safe error. */
 export async function callModel(
   req: Request,

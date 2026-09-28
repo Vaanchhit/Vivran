@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from app.api.deps import require_teacher, require_workspace_id
 from app.core.auth import CurrentUser
 from app.core.errors import raise_for_service_result
-from app.services import jobs
+from app.services import jobs, library
 from app.services.supabase_service import SupabaseError
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -42,8 +42,13 @@ def dispatch_generation(
     service_context: Optional[str] = None,
     model_tier: str = "cheap_cloud",
     model_name: Optional[str] = None,
+    save_as: Optional[str] = None,
 ):
     """Run ``run`` inline (today's contract) or hand it to a background job.
+
+    ``save_as`` names the library kind (app/services/library.py). When set, a
+    successful result is saved to the teacher's library in both modes and
+    comes back carrying ``library_id``.
 
     Why a parameter on the existing routes rather than a parallel ``/async``
     route for each: the auth stack, the beta gate, the rate limit, the request
@@ -58,6 +63,9 @@ def dispatch_generation(
     that envelope through app/core/errors.py, so a teacher gets the same
     sentence either way.
     """
+    if save_as:
+        run = _saving(run, kind=save_as, workspace_id=workspace_id, user_id=user.user_id, params=params)
+
     if not async_job:
         result = run()
         return raise_for_service_result(result, context=service_context) if service_context else result
@@ -82,6 +90,21 @@ def dispatch_generation(
         raise HTTPException(status_code=502, detail=f"Could not start that job: {exc}") from exc
 
     return JSONResponse(status_code=202, content=jobs.public_job(row, include_result=False))
+
+
+def _saving(run: Callable[[], Dict[str, Any]], *, kind: str, workspace_id: str, user_id: str, params: Dict[str, Any]):
+    """Wraps a generator so its result is saved the moment it exists."""
+    def wrapped() -> Dict[str, Any]:
+        result = run()
+        if library.worth_saving(kind, result):
+            item_id = library.save_item(
+                workspace_id=workspace_id, user_id=user_id, kind=kind,
+                title=library.title_for(kind, result, params), content=result, params=params,
+            )
+            if item_id:
+                result = {**result, "library_id": item_id}
+        return result
+    return wrapped
 
 
 # A shared description so the ``?async_job=`` flag documents itself identically
