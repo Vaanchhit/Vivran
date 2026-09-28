@@ -41,13 +41,16 @@ export async function POST(req: Request) {
   const allowed = ctx.allowedBlocks;
 
   const res = await callModel(req, "/content/outline", buildOutlinePrompt(ctx, grounded.plan));
-  const proposed = res.ok ? parseOutline(res.raw, allowed) : null;
+  const parsed = res.ok ? parseOutline(res.raw, allowed) : { slides: null, reason: `planner call failed (${res.status})` };
+  const proposed = parsed.slides;
+  // Logged, not swallowed: a silent fallback to the draft looks like a working planner.
+  if (!proposed) console.warn(`[deck/outline] using the draft outline: ${"reason" in parsed ? parsed.reason : ""}`);
 
   return NextResponse.json({
     status: "outline",
     outline: proposed ?? draftOutline(grounded.plan, ctx),
     // "draft" tells the UI the planning model was unavailable, so this is slidekit's own plan.
-    plannedBy: proposed ? (res.ok ? res.meta.provider : "draft") : "draft",
+    plannedBy: proposed && res.ok ? res.meta.provider : "draft",
     maxSlides: MAX_SLIDES,
     types: allowed.map(t => ({ type: t, label: TYPE_LABELS[t] })),
     context: { topic: ctx.topic, gradeLabel: ctx.gradeLabel, grounded: chunks.length > 0 },

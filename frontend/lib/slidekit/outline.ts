@@ -13,6 +13,7 @@ import type { BlockType, Intent } from "./blocks";
 import { MAX_SLIDES, type LessonContext } from "./intent";
 import type { PlanItem } from "./planner";
 import type { BuiltPrompt } from "./prompt";
+import { trimToBudget } from "./fit";
 import { SUBJECTS } from "./subjects";
 
 export interface OutlineSlide { type: BlockType; title: string; point: string }
@@ -84,17 +85,36 @@ export function buildOutlinePrompt(ctx: LessonContext, draft: PlanItem[]): Built
   return { system, user };
 }
 
-/** The planning model's answer, or null when it is not a usable outline. */
-export function parseOutline(raw: string, allowed: BlockType[]): OutlineSlide[] | null {
+/**
+ * The planning model's answer, repaired like repair.ts repairs blocks: trims,
+ * drops and converts, never invents. Null only when nothing usable is there,
+ * with the reason, so the caller can log why the teacher got the draft.
+ */
+export function parseOutline(raw: string, allowed: BlockType[]): { slides: OutlineSlide[] } | { slides: null; reason: string } {
   let data: unknown;
-  try { data = JSON.parse(raw); } catch { return null; }
-  // Unknown types become explanations rather than failing the whole outline.
-  const slides = (data as { slides?: unknown[] })?.slides;
-  if (Array.isArray(slides))
-    for (const s of slides as { type?: string }[])
-      if (s && typeof s === "object" && !allowed.includes(s.type as BlockType)) s.type = "explanation";
-  const r = outlineSchema(allowed).safeParse(data);
-  return r.success ? r.data.slides : null;
+  try { data = JSON.parse(raw); } catch { return { slides: null, reason: "not JSON" }; }
+  const arr = Array.isArray(data) ? data : (data as { slides?: unknown })?.slides;
+  if (!Array.isArray(arr)) return { slides: null, reason: "no slides array" };
+
+  const text = (v: unknown, max: number) => (typeof v === "string" ? trimToBudget(v.replace(/\s+/g, " ").trim(), max) : "");
+  let slides: OutlineSlide[] = (arr as Record<string, unknown>[])
+    .filter(o => o && typeof o === "object")
+    .map(o => {
+      const title = text(o.title ?? o.heading, 70);
+      const point = text(o.point ?? o.description ?? o.summary ?? o.content, 160);
+      return {
+        // Unknown types become explanations rather than failing the whole outline.
+        type: allowed.includes(o.type as BlockType) ? (o.type as BlockType) : "explanation",
+        title,
+        point: point.length >= 2 ? point : title,
+      };
+    })
+    .filter(s => s.title.length >= 2);
+  // Over the cap: keep the opening and the close (usually the recap), drop from the middle.
+  if (slides.length > MAX_SLIDES) slides = [...slides.slice(0, MAX_SLIDES - 1), slides[slides.length - 1]];
+
+  const r = outlineSchema(allowed).safeParse({ slides });
+  return r.success ? { slides: r.data.slides } : { slides: null, reason: r.error.issues.map(i => `${i.path.join(".")}: ${i.message}`).join("; ") };
 }
 
 /** What the teacher sends back, checked as strictly as the model's output. */
@@ -118,7 +138,11 @@ export function outlineToPlan(slides: OutlineSlide[]): PlanItem[] {
     n: i + 1,
     intent: intentOf(s.type),
     type: s.type,
-    guidance: `Approved by the teacher. Heading: "${s.title}". This slide: ${s.point}`,
+    // A title still equal to its type label is the draft's placeholder, not a heading
+    // anyone chose; passing it on would put "Steps / process" on the slide verbatim.
+    guidance: `Approved by the teacher. ${s.title === TYPE_LABELS[s.type]
+      ? "Write a short, specific heading for this slide."
+      : `Heading: "${s.title}".`} This slide: ${s.point}`,
     fallbackType: NO_FALLBACK.has(s.type) ? undefined : "explanation",
   }));
 }
