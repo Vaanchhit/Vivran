@@ -670,6 +670,34 @@ p{ margin:0; text-wrap:pretty; }
 .why-q{ font-family:var(--disp); font-weight:600; font-size:clamp(1.35rem, 1.15rem + 1vw, 1.95rem); letter-spacing:-0.025em; line-height:1.2; color:var(--vv-ink); text-wrap:balance; }
 .why-q-sub{ margin-top:16px; font-size:clamp(1.05rem, 1rem + 0.35vw, 1.25rem); font-weight:500; letter-spacing:-0.01em; line-height:1.45; color:var(--vv-ink-2); max-width:44ch; }
 .why-close{ margin-top:40px; font-weight:600; font-size:clamp(1.05rem, 1rem + 0.35vw, 1.25rem); color:var(--vv-ink); }
+
+
+/* ============================ ETYMOLOGY CARD ============================ */
+.brand-wrap{ position:relative; }
+.brand-latin{ border-bottom:1px dotted transparent; transition:border-color .25s; }
+.brand-wrap:hover .brand-latin, .brand-wrap:focus-within .brand-latin{ border-bottom-color:var(--vv-rule-hi); }
+.etym{
+  position:absolute; top:calc(100% + 12px); left:-6px; z-index:80; width:min(316px, calc(100vw - 32px));
+  background:color-mix(in srgb, var(--vv-card) 82%, transparent);
+  -webkit-backdrop-filter:blur(14px) saturate(1.1); backdrop-filter:blur(14px) saturate(1.1);
+  border:1px solid var(--vv-rule); border-radius:16px; padding:14px 16px 13px;
+  box-shadow:0 10px 30px -18px rgba(20,16,12,.28);
+  opacity:0; visibility:hidden; transform:translateY(-3px);
+  transition:opacity .25s ease, transform .25s ease, visibility 0s linear .25s;
+}
+.brand-wrap:hover .etym, .brand-wrap:focus-within .etym{
+  opacity:1; visibility:visible; transform:none; transition:opacity .25s ease, transform .25s ease, visibility 0s;
+}
+.etym::before{ content:""; position:absolute; left:0; right:0; top:-14px; height:14px; }
+.etym-word{ display:flex; align-items:baseline; gap:9px; }
+.etym-deva{ font-family:var(--deva); font-weight:600; font-size:1.35rem; color:var(--vv-ink); line-height:1.15; }
+.etym-roman{ font-family:var(--disp); font-size:0.92rem; color:var(--vv-ink-3); }
+.etym-root{ margin-top:6px; font-size:0.8rem; text-wrap:balance; color:var(--vv-ink-3); line-height:1.45; }
+.etym-root i{ font-style:normal; color:var(--vv-ink-2); font-weight:500; }
+.etym-mean{ margin-top:8px; font-size:0.88rem; text-wrap:balance; color:var(--vv-ink); line-height:1.45; }
+[data-theme="dark"] .etym{ box-shadow:0 10px 30px -16px rgba(0,0,0,.6); }
+@media (prefers-reduced-motion:reduce){ .etym{ transition:none; } }
+
 /* ============================ FOOTER ============================ */
 .foot{ background:var(--vv-brand); color:rgba(251,248,243,.6); padding-top:6px; padding-bottom:34px; }
 .foot-in{ border-top:1px solid rgba(251,248,243,.14); padding-top:30px; display:grid; gap:24px; }
@@ -810,10 +838,16 @@ body::after{
 <!-- ============================ NAV ============================ -->
 <nav class="nav" id="nav">
   <div class="wrap nav-in">
-    <a class="brand" href="#top">
-      <span class="brand-latin">Vivran</span>
-      <span class="brand-deva deva">विवरण</span>
-    </a>
+    <div class="brand-wrap">
+      <a class="brand" href="#top" aria-describedby="etym-card">
+        <span class="brand-latin">Vivran</span>
+      </a>
+      <div class="etym" id="etym-card" role="tooltip">
+        <div class="etym-word"><span class="etym-deva">विवरण</span><span class="etym-roman">vivaraṇa</span></div>
+        <p class="etym-root">Sanskrit, from <i>vi-</i>&nbsp;“open” + <i>vṛ</i>&nbsp;“to&nbsp;cover”</p>
+        <p class="etym-mean">to uncover; to explain until it is clear</p>
+      </div>
+    </div>
     <div class="nav-links">
       <a href="#ledger">Problem</a>
       <a href="#makes">Features</a>
@@ -1324,7 +1358,6 @@ body::after{
       <div>
         <a class="brand" href="#top">
           <span class="brand-latin">Vivran</span>
-          <span class="brand-deva deva">विवरण</span>
         </a>
         <p class="foot-tag">From a teacher&rsquo;s own material to an education that understands itself.</p>
       </div>
