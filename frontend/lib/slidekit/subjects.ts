@@ -177,7 +177,7 @@ export type SubjectId = keyof typeof SUBJECTS;
 const CORE: BlockType[] = [
   "title", "section", "objectives", "definition", "vocabulary", "explanation", "process", "comparison",
   "cause_effect", "hierarchy", "key_fact", "misconception", "real_world", "quiz_mcq", "activity",
-  "discussion", "recap", "concept_map",
+  "discussion", "recap", "concept_map", "flowchart",
 ];
 const EXTRA: Record<Family, BlockType[]> = {
   quant: ["formula", "worked_example"],
@@ -203,7 +203,7 @@ export const GRADE_BLOCK_EXCLUDES: Record<GradeBand, BlockType[]> = {
 /** Which block types express each shape, in order of preference. */
 export const SHAPE_BLOCKS: Record<Shape, BlockType[]> = {
   conceptual: ["definition", "explanation", "real_world", "concept_map"],
-  process: ["process", "explanation", "real_world"],
+  process: ["process", "explanation", "flowchart", "real_world"],
   chronological: ["timeline", "explanation", "key_fact"],
   causal: ["cause_effect", "explanation", "concept_map"],
   quantitative: ["formula", "worked_example", "definition"],
@@ -211,8 +211,8 @@ export const SHAPE_BLOCKS: Record<Shape, BlockType[]> = {
   classificatory: ["hierarchy", "comparison", "vocabulary"],
   structural: ["hierarchy", "explanation", "vocabulary"],
   literary: ["explanation", "concept_map", "key_fact", "discussion"],
-  computational: ["code_example", "process", "worked_example"],
-  skill: ["process", "worked_example", "explanation"],
+  computational: ["code_example", "process", "flowchart", "worked_example"],
+  skill: ["process", "worked_example", "flowchart", "explanation"],
 };
 
 /** Topic keywords per shape. Kept as plain lists so non-engineers can edit them. */

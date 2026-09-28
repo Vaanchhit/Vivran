@@ -48,7 +48,7 @@ export interface MediaSlot extends SlotBase { kind: "image" | "icon"; bind: stri
 export interface FormulaSlot extends SlotBase { kind: "formula"; bind: string }
 export interface CodeSlot extends SlotBase { kind: "code"; bind: string; maxLines: number }
 export interface DiagramSlot extends SlotBase {
-  kind: "diagram"; diagram: "tree" | "venn" | "fishbone" | "chain" | "mindmap"; binds: string[];
+  kind: "diagram"; diagram: "tree" | "venn" | "fishbone" | "chain" | "mindmap" | "flow"; binds: string[];
   /**
    * Characters this diagram is verified to hold, by block path ("rows[].values[]").
    * A diagram's regions are lunes and ribs, not rectangles, so some hold much less
@@ -579,6 +579,27 @@ export const LAYOUTS: LayoutSpec[] = [
     id: "cmap_mindmap", accepts: "concept_map", family: "diagram", density: "medium", gradeFit: NOT_PRIMARY,
     capacity: { nodes: [3, 6] }, description: "Left-to-right mind map, auto-laid out.",
     slots: [heading(), { kind: "diagram", id: "mindmap", diagram: "mindmap", binds: ["center", "nodes"], area: A(0, 12, 1, 7) }],
+  },
+
+  // FLOWCHART ───────────────────────────────────────────────
+  {
+    id: "flow_chart", accepts: "flowchart", family: "diagram", density: "medium", gradeFit: NOT_PRIMARY,
+    capacity: { steps: [1, 2] }, description: "Decision flowchart: steps into a yes/no question, Yes to the right, No below.",
+    // The question sits in the diamond's inscribed rectangle, half the cell each way,
+    // so it holds far less than the schema's 60. Longer flows go to flow_list.
+    slots: [heading(), { kind: "diagram", id: "flow", diagram: "flow", binds: ["steps", "question", "yes", "no"], area: A(0, 12, 1, 7),
+      budget: { "question": 40, "steps[]": 36 } }],
+  },
+  {
+    id: "flow_list", accepts: "flowchart", family: "list", density: "medium", gradeFit: ALL,
+    capacity: { steps: [1, 3] }, fallback: true, description: "Numbered steps, then the question and both outcomes as cards.",
+    slots: [
+      heading(),
+      rep("steps", "steps", A(0, 5, 1, 7), "column", [f(".", "body", 40, 2)], { marker: "number" }),
+      text("question", "question", "heading", A(6, 6, 1, 2), 60, 2, { card: true, tone: "accent", label: "Decision" }),
+      text("yes", "yes", "body", A(6, 6, 3, 2), 60, 2, { card: true, tone: "positive", label: "If yes" }),
+      text("no", "no", "body", A(6, 6, 5, 3), 60, 2, { card: true, tone: "negative", label: "If no" }),
+    ],
   },
 ];
 

@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, X, Plus } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
+import { OutlineEditor } from "@/app/components/outline-editor";
 import { useAuth } from "@/lib/auth-context";
 import {
   parseTeacherIntent,
@@ -11,6 +12,7 @@ import {
   generateAssessmentPaper,
   generateCoursePlan,
   generateDeck,
+  generateOutline,
   generateWorksheet,
   generateLessonNotes,
   generateInteractiveCoursework,
@@ -20,6 +22,9 @@ import {
   type CoursePlan,
   type AssessmentGenerateResponse,
   type DeckReady,
+  type DeckOutline,
+  type DeckParams,
+  type OutlineSlide,
   type WorksheetResult,
   type LessonNotesResult,
   type InteractiveResult,
@@ -104,7 +109,7 @@ const COUNT_DEFAULTS = {
   marks: 40,
   durationWeeks: 3,
   durationMinutes: 15,
-  slideCount: 12,
+  slideCount: 8,
   questionCount: 10,
   difficulty: "medium",
 } as const;
@@ -306,6 +311,10 @@ export function SmartCreationBox({
   const [degraded, setDegraded] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateResult, setGenerateResult] = useState<{ ok: boolean; message: string; href?: string } | null>(null);
+  // Slides are planned, approved, then produced: the outline waits here for the teacher.
+  const [outline, setOutline] = useState<DeckOutline | null>(null);
+  const [deckParams, setDeckParams] = useState<DeckParams | null>(null);
+  const [building, setBuilding] = useState(false);
   const [listening, setListening] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [micSupported, setMicSupported] = useState(true);
@@ -532,15 +541,16 @@ export function SmartCreationBox({
           break;
         }
         case "slides": {
-          const resolved = slideCount ?? COUNT_DEFAULTS.slideCount;
-          const data = await generateDeck({
+          // PLAN only. Nothing is written until the teacher approves the outline (buildDeck).
+          const params: DeckParams = {
             topic: baseTopicStr,
             grade,
             subject,
-            slideCount: resolved,
+            slideCount: slideCount ?? COUNT_DEFAULTS.slideCount,
             language: language || undefined,
             materialId: materialId || undefined,
-          });
+          };
+          const data = await generateOutline(params);
           if (data.status === "needs_input") {
             const asks = data.questions.filter((q) => q.blocking).map((q) => q.ask);
             const message = `Before building this deck: ${(asks.length ? asks : data.questions.map((q) => q.ask)).join(" ")}`;
@@ -548,8 +558,8 @@ export function SmartCreationBox({
             onGenerated?.({ artifactType: "slides", ok: false, error: message });
             break;
           }
-          setGenerateResult({ ok: true, message: `Slide deck "${data.context.topic}" (${data.placements.length} slides) generated.`, href: "/teacher/create?type=slides" });
-          onGenerated?.({ artifactType: "slides", ok: true, data, params: { grade, subject, topic: baseTopicStr, slideCount: resolved } });
+          setDeckParams(params);
+          setOutline(data);
           break;
         }
         case "worksheet": {
@@ -601,6 +611,36 @@ export function SmartCreationBox({
       onGenerated?.({ artifactType: (artifactType || "course_plan") as SmartCreationArtifactType, ok: false, error: message });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  /** PRODUCE: write the deck the teacher approved. */
+  const buildDeck = async (slides: OutlineSlide[]) => {
+    if (!deckParams) return;
+    setBuilding(true);
+    setGenerateResult(null);
+    try {
+      const data = await generateDeck({ ...deckParams, outline: slides });
+      if (data.status === "needs_input") {
+        const message = `Before building this deck: ${data.questions.map((q) => q.ask).join(" ")}`;
+        setGenerateResult({ ok: false, message });
+        onGenerated?.({ artifactType: "slides", ok: false, error: message });
+        return;
+      }
+      setOutline(null);
+      setGenerateResult({ ok: true, message: `Slide deck "${data.context.topic}" (${data.placements.length} slides) generated.`, href: "/teacher/create?type=slides" });
+      onGenerated?.({
+        artifactType: "slides",
+        ok: true,
+        data,
+        params: { grade: deckParams.grade ?? "", subject: deckParams.subject ?? "", topic: deckParams.topic, slideCount: slides.length },
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Generation failed.";
+      setGenerateResult({ ok: false, message });
+      onGenerated?.({ artifactType: "slides", ok: false, error: message });
+    } finally {
+      setBuilding(false);
     }
   };
 
@@ -971,19 +1011,31 @@ export function SmartCreationBox({
             </div>
           )}
 
-          {/* Confirm & Generate trigger */}
-          <div className="flex justify-end pt-2">
-            <button
-              type="button"
-              onClick={handleConfirmAndGenerate}
-              disabled={generating || !readyToGenerate}
-              title={!readyToGenerate ? `Pick ${missingFields.join(" and ")} first` : undefined}
-              className="btn-primary px-6 py-2.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
-            >
-              {generating ? "Generating..." : "Confirm & Generate Outputs"}{" "}
-              {generating ? <BookLoader className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+          {outline ? (
+            <OutlineEditor
+              key={outline.outline.map((s) => s.title).join("|")}
+              outline={outline}
+              building={building}
+              onBuild={buildDeck}
+              onCancel={() => setOutline(null)}
+            />
+          ) : (
+            /* Confirm & Generate trigger. For slides this plans an outline first. */
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={handleConfirmAndGenerate}
+                disabled={generating || !readyToGenerate}
+                title={!readyToGenerate ? `Pick ${missingFields.join(" and ")} first` : undefined}
+                className="btn-primary px-6 py-2.5 text-xs font-semibold rounded-xl transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {generating
+                  ? artifactType === "slides" ? "Planning the deck..." : "Generating..."
+                  : artifactType === "slides" ? "Plan the deck" : "Confirm & Generate Outputs"}{" "}
+                {generating ? <BookLoader className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

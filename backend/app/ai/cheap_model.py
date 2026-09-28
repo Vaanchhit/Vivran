@@ -242,6 +242,37 @@ def generate_slm(
     )
 
 
+def generate_planner(prompt: str, *, system_prompt: str, task: str = "planning") -> Dict[str, Any]:
+    """The plan-before-produce call: decides structure, which the teacher then approves.
+
+    Groq's gpt-oss-120b first (settings.planner_model). Unlike the failover
+    above, ANY Groq failure except a refusal falls back to the Gemini authoring
+    model: a plan is cheap, the teacher reviews it before anything is produced,
+    and Groq's free-tier limit is per minute, so a 429 here is a busy signal,
+    not a spent allowance worth surfacing. A refusal reproduces on any model.
+    """
+    if groq_client.is_configured():
+        with usage_scope() as usage:
+            try:
+                completion = groq_client.generate_text(
+                    prompt, system_prompt=system_prompt, model=settings.planner_model,
+                    json_mode=True, temperature=0.3,
+                )
+                record(completion.usage)
+                return _envelope(
+                    success=True, tier=ModelTier.CHEAP_CLOUD, model_name=completion.model,
+                    provider="groq", task=task, content=completion.text, usage=usage,
+                )
+            except groq_client.GroqError as e:
+                if e.failure is FailureClass.CONTENT_BLOCKED:
+                    return _envelope(
+                        success=False, tier=ModelTier.CHEAP_CLOUD, model_name=settings.planner_model,
+                        provider="groq", task=task, usage=usage, error=str(e), failure=e.failure,
+                    )
+                logger.warning("Planner on Groq failed (%s); planning on Gemini instead: %s", e.failure.value, e)
+    return generate_cloud(prompt, tier=ModelTier.CHEAP_CLOUD, task=task, system_prompt=system_prompt, json_mode=True, temperature=0.3)
+
+
 def generate_assessment_cloud(
     prompt: str, task: str = "assessment_creation", system_prompt: str = "", json_mode: bool = False
 ) -> Dict[str, Any]:

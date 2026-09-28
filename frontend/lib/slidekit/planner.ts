@@ -28,6 +28,7 @@ const SPLIT: Record<LessonContext["goal"], { teach: number; apply: number; check
 const CAP: Partial<Record<BlockType, number>> = {
   definition: 3, vocabulary: 1, concept_map: 1, formula: 2, timeline: 2, comparison: 2, hierarchy: 2,
   cause_effect: 2, process: 3, key_fact: 2, misconception: 2, real_world: 2, code_example: 3, discussion: 2, activity: 2,
+  flowchart: 1,
 };
 
 const GUIDE: Partial<Record<BlockType, string>> = {
@@ -48,6 +49,7 @@ const GUIDE: Partial<Record<BlockType, string>> = {
   discussion: "Open questions that make students think, not recall.",
   concept_map: "How the main ideas of the topic connect to one central idea.",
   code_example: "A short, runnable example (≤14 lines) that shows the idea.",
+  flowchart: "A decision flowchart: 1–3 steps leading to one yes/no question, and what each answer leads to. Only if the topic really involves a decision.",
 };
 
 export function plan(ctx: LessonContext): PlanItem[] {

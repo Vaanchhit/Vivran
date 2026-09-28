@@ -92,6 +92,12 @@ class Settings(BaseSettings):
     # for why the other failure classes must not fail over.
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
+    # The planning step (slide outlines, later image/video storyboards): the call
+    # that decides STRUCTURE before anything is produced. Runs on Groq first,
+    # because gpt-oss-120b is the strongest model reliably reachable on free
+    # tiers and a plan is a few hundred tokens, so its per-minute limit matters
+    # less here than for authoring. Falls back to the authoring model.
+    planner_model: str = "openai/gpt-oss-120b"
 
     # Media Services per Spec §31
     cartesia_api_key: str = ""

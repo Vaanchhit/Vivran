@@ -15,12 +15,15 @@ import type { GradeBand } from "./tokens";
 export const GOALS = ["introduce", "revise", "practice", "assess"] as const;
 export type Goal = (typeof GOALS)[number];
 
+/** Hard cap on deck length: short decks are what a class actually gets through. */
+export const MAX_SLIDES = 8;
+
 export const TeacherInput = z.object({
   topic: z.string().trim().min(2).max(200),
   subject: z.string().trim().max(60).optional(),
   grade: z.union([z.string().trim().max(80), z.number().int().min(1).max(20)]).optional(),
   goal: z.enum(GOALS).default("introduce"),
-  slideCount: z.number().int().min(5).max(30).optional(),
+  slideCount: z.number().int().min(5).max(MAX_SLIDES).optional(),
   durationMin: z.number().int().min(10).max(180).optional(),
   board: z.string().trim().max(40).optional(),
   objectives: z.array(z.string().trim().min(3).max(200)).max(6).optional(),
@@ -147,7 +150,7 @@ export function scoreShapes(text: string, subject: SubjectId): { shape: Shape; s
 }
 
 // ── defaults ────────────────────────────────────────────────
-const DEFAULT_SLIDES: Record<Goal, number> = { introduce: 12, revise: 10, practice: 10, assess: 10 };
+const DEFAULT_SLIDES: Record<Goal, number> = { introduce: 8, revise: 7, practice: 7, assess: 6 };
 
 function defaultInclude(goal: Goal, grade: GradeBand, subject: SubjectId): Include {
   const fam = SUBJECTS[subject].family;
@@ -215,7 +218,7 @@ export function understand(rawInput: TeacherInput): LessonContext {
   // size
   let slideCount = input.slideCount
     ?? (input.durationMin ? Math.round(input.durationMin / 3.5) : DEFAULT_SLIDES[input.goal]);
-  slideCount = Math.max(5, Math.min(grade === "primary" ? 14 : 30, slideCount));
+  slideCount = Math.max(5, Math.min(MAX_SLIDES, slideCount));
 
   // grounding
   const grounding = srcC.text && srcC.text.length >= 200 ? "strict" : "open";

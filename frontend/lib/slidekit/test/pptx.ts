@@ -32,10 +32,10 @@ function diagramShapes(pres: pptxgen, s: pptxgen.Slide, gm: DiagramGeom) {
       continue;
     }
     const fill = diaFill(sp.fill), stroke = diaLine(sp.stroke);
-    s.addShape(sp.s === "ellipse" ? pres.ShapeType.ellipse : pres.ShapeType.roundRect, {
+    s.addShape(sp.s === "ellipse" ? pres.ShapeType.ellipse : sp.s === "diamond" ? pres.ShapeType.diamond : pres.ShapeType.roundRect, {
       ...at(sp.x, sp.y, sp.w, sp.h),
       ...(sp.s === "rect" ? { rectRadius: 0.12 } : {}),
-      fill: fill ? { color: fill, ...(sp.transparency ? { transparency: sp.transparency } : {}) } : { type: "none" },
+      fill: fill ? { color: fill, ...(sp.s !== "diamond" && sp.transparency ? { transparency: sp.transparency } : {}) } : { type: "none" },
       line: stroke ? { color: stroke, width: 1.5 } : { type: "none" },
     });
   }

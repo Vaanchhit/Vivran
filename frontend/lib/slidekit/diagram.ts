@@ -23,7 +23,7 @@ import type { Tone } from "./layouts";
 import type { Overflow } from "./matcher";
 import { GRADE_PROFILES, LABEL_H, LINE_HEIGHT, type Box, type GradeBand, type TypeRole } from "./tokens";
 
-export type DiagramKind = "tree" | "venn" | "fishbone" | "chain" | "mindmap";
+export type DiagramKind = "tree" | "venn" | "fishbone" | "chain" | "mindmap" | "flow";
 
 /** Semantic fills. Each renderer maps these onto its own theme; no colour values live here. */
 export type DiaFill = "none" | "card" | "accent" | "positive" | "header";
@@ -33,6 +33,8 @@ export type DiaShape =
   /** `transparency` is a percentage, so a Venn's two circles show their overlap. */
   | { s: "ellipse"; x: number; y: number; w: number; h: number; fill: DiaFill; stroke: DiaStroke; transparency?: number }
   | { s: "rect"; x: number; y: number; w: number; h: number; r: number; fill: DiaFill; stroke: DiaStroke; transparency?: number }
+  /** A rhombus touching the midpoints of its box: the flowchart decision symbol. */
+  | { s: "diamond"; x: number; y: number; w: number; h: number; fill: DiaFill; stroke: DiaStroke; transparency?: number }
   | { s: "line"; x1: number; y1: number; x2: number; y2: number; arrow: boolean; dash: boolean };
 
 /** One run of text. Pre-wrapped, because SVG <text> does not wrap and PowerPoint must not re-wrap. */
@@ -61,6 +63,7 @@ export interface FishboneData { causes: string[]; event: string; effects: string
 export interface TreeData { root: string; children: { label: string; items?: string[] }[] }
 export interface VennData { subjects: string[]; rows: { attribute: string; values: string[] }[]; similarities: string[] }
 export interface MindmapData { center: string; nodes: { label: string; relation: string }[] }
+export interface FlowData { steps: string[]; question: string; yes: string; no: string }
 
 // ── spacing ─────────────────────────────────────────────────
 const GAP = 24;            // between sibling nodes
@@ -104,6 +107,10 @@ class Sheet {
 
   rect(b: Box, fill: DiaFill, stroke: DiaStroke = "none", r = RADIUS) {
     this.shapes.push({ s: "rect", x: r2(b.x), y: r2(b.y), w: r2(b.w), h: r2(b.h), r, fill, stroke });
+    return b;
+  }
+  diamond(b: Box, fill: DiaFill, stroke: DiaStroke = "none") {
+    this.shapes.push({ s: "diamond", x: r2(b.x), y: r2(b.y), w: r2(b.w), h: r2(b.h), fill, stroke });
     return b;
   }
   ellipse(b: Box, fill: DiaFill, stroke: DiaStroke = "none", transparency?: number) {
@@ -422,6 +429,54 @@ function fishbone(d: FishboneData, box: Box, sh: Sheet) {
   }));
 }
 
+// ── flow: steps → decision, Yes to the right, No below ──────
+// One row: the steps, then the decision diamond, then the Yes outcome.
+// The No outcome sits directly under the diamond. Every edge is a single
+// horizontal or vertical run between fixed cells, so nothing is routed and
+// nothing can cross. The diamond's text goes in its inscribed rectangle
+// (half its width and height), which is why it gets a wider cell.
+const FLOW_GUTTER = 84;               // arrow run between cells; also holds the "Yes" caption
+const FLOW_VGAP = 100;                // drop from the diamond to the No outcome
+const FLOW_H = 230;                   // cell height, so a short flow is not a slab
+const FLOW_DIAMOND = 1.6, FLOW_OUT = 1.25; // cell widths relative to a step
+
+function flow(d: FlowData, box: Box, sh: Sheet) {
+  const n = d.steps.length;
+  const unit = (box.w - FLOW_GUTTER * (n + 1)) / (n + FLOW_DIAMOND + FLOW_OUT);
+  const dW = unit * FLOW_DIAMOND, oW = unit * FLOW_OUT;
+  const h = Math.min(FLOW_H, (box.h - FLOW_VGAP) / 2);
+  const y0 = box.y + (box.h - (2 * h + FLOW_VGAP)) / 2;
+  const cy = y0 + h / 2;
+
+  const steps: Box[] = d.steps.map((_, i) => ({ x: box.x + i * (unit + FLOW_GUTTER), y: y0, w: unit, h }));
+  const dia: Box = { x: box.x + n * (unit + FLOW_GUTTER), y: y0, w: dW, h };
+  const yes: Box = { x: dia.x + dW + FLOW_GUTTER, y: y0, w: oW, h };
+  const no: Box = { x: dia.x, y: y0 + h + FLOW_VGAP, w: dW, h };
+
+  steps.forEach((b, i) => {
+    sh.rect(b, "card", "neutral");
+    const next = i + 1 < n ? steps[i + 1].x : dia.x;
+    sh.line(b.x + b.w + CLEAR, cy, next - CLEAR, cy, true);
+  });
+  sh.diamond(dia, "accent", "accent");
+  sh.rect(yes, "positive", "positive");
+  sh.rect(no, "card", "negative");
+
+  sh.line(dia.x + dW + CLEAR, cy, yes.x - CLEAR, cy, true);
+  sh.caption("Yes", dia.x + dW, cy - LABEL_H - 10, FLOW_GUTTER);
+  const mx = dia.x + dW / 2;
+  sh.line(mx, y0 + h + CLEAR, mx, no.y - CLEAR, true);
+  sh.caption("No", mx + 14, y0 + h + (FLOW_VGAP - LABEL_H) / 2, 70, "start");
+
+  const inner: Box = { x: dia.x + dW / 4 + 4, y: y0 + h / 4 + 2, w: dW / 2 - 8, h: h / 2 - 4 };
+  sh.one({ path: "question", text: d.question, role: "body", tone: "accent" }, inner);
+  sh.group(steps.map((b, i) => ({ entries: [{ path: `steps[${i}]`, text: d.steps[i], role: "body" as TypeRole }], inner: inset(b) })));
+  sh.group([
+    { entries: [{ path: "yes", text: d.yes, role: "body", tone: "positive" }], inner: inset(yes) },
+    { entries: [{ path: "no", text: d.no, role: "body" }], inner: inset(no) },
+  ]);
+}
+
 // ── public API ──────────────────────────────────────────────
 /**
  * Lay one diagram out inside `box`. Throws for a kind it does not draw;
@@ -436,6 +491,7 @@ export function layoutDiagram(kind: string, data: Record<string, unknown>, box: 
     case "mindmap": mindmap(data as unknown as MindmapData, box, sh); break;
     case "venn": venn(data as unknown as VennData, box, sh); break;
     case "fishbone": fishbone(data as unknown as FishboneData, box, sh); break;
+    case "flow": flow(data as unknown as FlowData, box, sh); break;
     default: throw new Error(`no native layout for "${kind}" diagrams`);
   }
   return sh.done();
@@ -449,6 +505,7 @@ export const KIND_PATHS: Record<DiagramKind, string[]> = {
   tree: ["root", "children[].label", "children[].items[]"],
   venn: ["subjects[]", "rows[].attribute", "rows[].values[]", "similarities[]"],
   mindmap: ["center", "nodes[].label", "nodes[].relation"],
+  flow: ["steps[]", "question", "yes", "no"],
 };
 
 const FILLER = ("Measurable characterisation of the applied pressure gradient between adjacent layers because energy"
@@ -487,5 +544,7 @@ export function worstCaseData(kind: DiagramKind, w: WorstCase): Record<string, u
       };
     case "mindmap":
       return { center: s("center"), nodes: arr("nodes", () => ({ label: s("nodes[].label"), relation: s("nodes[].relation") })) };
+    case "flow":
+      return { steps: arr("steps", () => s("steps[]")), question: s("question"), yes: s("yes"), no: s("no") };
   }
 }

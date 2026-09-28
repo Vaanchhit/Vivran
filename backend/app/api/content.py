@@ -6,7 +6,7 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
-from app.ai.cheap_model import generate_cheap_cloud
+from app.ai.cheap_model import generate_cheap_cloud, generate_planner
 from app.api.deps import require_teacher, teacher_session
 from app.api.jobs import ASYNC_JOB_QUERY, dispatch_generation
 from app.core.auth import CurrentUser
@@ -419,6 +419,36 @@ def api_fill_blocks(
     # NOTE: the model tiers return {"success": ...}, not the media services'
     # {"status": "ready"} envelope — raise_for_service_result is for the latter
     # and silently treats every generation result as a failure.
+    if not result.get("success"):
+        raise http_error(
+            result.get("failure") or FailureClass.UPSTREAM_ERROR,
+            context="slides",
+            detail=str(result.get("error", "")),
+        )
+    return {
+        "content": result.get("content", ""),
+        "provider": result.get("provider"),
+        "model_name": result.get("model_name"),
+        "usage": result.get("usage"),
+    }
+
+
+@router.post("/outline")
+@limit(_TEXT_GEN_LIMIT)
+def api_plan_outline(
+    request: Request,
+    payload: BlockFillRequest,
+    workspace_id: Optional[str] = Header(None, alias="Workspace-Id"),
+    session: Dict[str, Any] = Depends(teacher_session),
+    user: CurrentUser = Depends(require_teacher),
+):
+    """Runs a slidekit-prepared outline prompt on the planning model.
+
+    Thin for the same reason as /blocks: slidekit validates the outline, and the
+    teacher approves it before anything is written.
+    """
+    _validated_workspace(workspace_id, session)
+    result = generate_planner(payload.user_prompt, system_prompt=payload.system_prompt, task="slide_outline")
     if not result.get("success"):
         raise http_error(
             result.get("failure") or FailureClass.UPSTREAM_ERROR,

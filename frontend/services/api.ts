@@ -373,31 +373,53 @@ export interface DeckNeedsInput {
 
 export type DeckResult = DeckReady | DeckNeedsInput;
 
-export async function generateDeck(params: {
+export interface OutlineSlide { type: string; title: string; point: string }
+
+/** The PLAN step: a proposed outline for the teacher to edit and approve. */
+export interface DeckOutline {
+  status: "outline";
+  outline: OutlineSlide[];
+  /** "groq" | "gemini" when a model planned it; "draft" when slidekit's own plan was used. */
+  plannedBy: string;
+  maxSlides: number;
+  types: { type: string; label: string }[];
+  context: { topic: string; gradeLabel: string; grounded: boolean };
+}
+
+export interface DeckParams {
   topic: string;
   grade?: string;
   subject?: string;
   slideCount?: number;
   language?: string;
   materialId?: string;
-}): Promise<DeckResult> {
-  // Same-origin Next route (app/api/deck), not the Python API: it runs the
-  // deterministic slidekit pipeline and calls the backend with these headers.
-  const res = await fetch("/api/deck", {
-    method: "POST",
-    headers: buildHeaders(),
-    body: JSON.stringify({
-      topic: params.topic.slice(0, 200),
-      grade: params.grade || undefined,
-      subject: params.subject || undefined,
-      slideCount: params.slideCount ? Math.min(30, Math.max(5, params.slideCount)) : undefined,
-      language: params.language || undefined,
-      materialId: params.materialId || undefined,
-    }),
-  });
+}
+
+const deckBody = (p: DeckParams) => ({
+  topic: p.topic.slice(0, 200),
+  grade: p.grade || undefined,
+  subject: p.subject || undefined,
+  slideCount: p.slideCount ? Math.min(8, Math.max(5, p.slideCount)) : undefined,
+  language: p.language || undefined,
+  materialId: p.materialId || undefined,
+});
+
+// Same-origin Next routes (app/api/deck*), not the Python API: they run the
+// deterministic slidekit pipeline and call the backend with these headers.
+async function deckRequest<T>(path: string, body: unknown, fallback: string): Promise<T> {
+  const res = await fetch(path, { method: "POST", headers: buildHeaders(), body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(res.status, data?.error || "Could not generate that deck.");
-  return data as DeckResult;
+  if (!res.ok) throw new ApiError(res.status, data?.error || fallback);
+  return data as T;
+}
+
+export function generateOutline(params: DeckParams): Promise<DeckOutline | DeckNeedsInput> {
+  return deckRequest("/api/deck/outline", deckBody(params), "Could not plan that deck.");
+}
+
+/** The PRODUCE step. With `outline`, only the teacher-approved structure is written. */
+export function generateDeck(params: DeckParams & { outline?: OutlineSlide[] }): Promise<DeckResult> {
+  return deckRequest("/api/deck", { ...deckBody(params), outline: params.outline }, "Could not generate that deck.");
 }
 
 export interface WorksheetResult {

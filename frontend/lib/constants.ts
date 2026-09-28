@@ -87,6 +87,6 @@ export const ARTIFACT_TYPE_OPTIONS: { value: string; label: string }[] = [
 
 export const DURATION_WEEKS_OPTIONS = [1, 2, 3, 4, 6, 8];
 export const DURATION_MINUTES_OPTIONS = [15, 20, 30, 45, 60, 90];
-export const SLIDE_COUNT_OPTIONS = [6, 8, 10, 12, 16, 20];
+export const SLIDE_COUNT_OPTIONS = [5, 6, 7, 8];
 export const WORKSHEET_QUESTION_COUNT_OPTIONS = [5, 10, 15, 20];
 export const TOTAL_MARKS_OPTIONS = [10, 20, 25, 30, 40, 50, 60, 80, 100];
