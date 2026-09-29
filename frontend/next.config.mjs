@@ -7,6 +7,11 @@ const nextConfig = {
       { source: "/home.html", destination: "/", permanent: true },
     ];
   },
+  async headers() {
+    // Everything under /landing has a content hash in its file name, so a
+    // changed file is a new URL and browsers can keep these for a year.
+    return [{ source: "/landing/:path*", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] }];
+  },
   async rewrites() {
     // The landing page is a self-contained document (its own theme script,
     // GSAP scenes and page-wide styles), served as-is so none of it can leak
