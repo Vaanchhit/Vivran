@@ -5,6 +5,8 @@ const nextConfig = {
     return [
       { source: "/landing", destination: "/", permanent: false },
       { source: "/home.html", destination: "/", permanent: true },
+      // Saved work used to be listed under Recent; it is all in Library now.
+      { source: "/teacher/recent", destination: "/teacher/library", permanent: true },
     ];
   },
   async headers() {

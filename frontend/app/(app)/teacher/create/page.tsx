@@ -1,22 +1,25 @@
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { Sparkles, Presentation, FileSpreadsheet, BookOpenCheck, Mic, MessageSquare, Image as ImageIcon, Video as VideoIcon, AlertCircle, Wand2, RotateCcw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpenCheck, AlertCircle, Wand2, RotateCcw } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
 import {
   enhancePrompt,
   generateImage,
   getLibraryItem,
   generateVideo,
+  libraryHref,
   type EnhancedPrompt,
   type InteractiveResult,
   type LessonNotesResult,
   type DeckReady,
-  type WorksheetResult,
 } from "@/services/api";
 import { SmartCreationBox, type SmartCreationArtifactType } from "@/app/components/smart-creation-box";
 import { DeckView } from "@/app/components/deck-view";
+import { FeatureExplainer } from "@/app/components/feature-explainer";
+import { getLiveValue, noticeIfAway, setLiveValue, setTabValue, useLiveState, useOnScreen, useTabState } from "@/lib/tab-state";
+import { stage } from "@/lib/catalog";
 
 const VIDEO_THEMES = [
   { label: "Whiteboard Explainer", modifier: "as a hand-drawn whiteboard-style explainer animation" },
@@ -32,23 +35,15 @@ const IMAGE_THEMES = [
   { label: "Photo-realistic", modifier: "as a photo-realistic real-world scene" },
 ];
 
-type ArtifactKey = "slides" | "worksheet" | "lesson_notes" | "narration" | "image" | "video" | "interactive";
+type ArtifactKey = "slides" | "lesson_notes" | "narration" | "image" | "video" | "interactive";
 
-const ARTIFACTS: { key: ArtifactKey; title: string; icon: typeof Presentation; color: string; desc: string }[] = [
-  { key: "slides", title: "Presentation Slides", icon: Presentation, color: "text-tint-bronze", desc: "Editable slide deck outline, key hooks, and speaker notes." },
-  { key: "worksheet", title: "Worksheets", icon: FileSpreadsheet, color: "text-tint-olive", desc: "Practice questions with an answer key." },
-  { key: "lesson_notes", title: "Lesson Notes", icon: BookOpenCheck, color: "text-chrome", desc: "Structured teaching notes with real-life examples & a recap." },
-  { key: "narration", title: "Narration Audio", icon: Mic, color: "text-tint-umber", desc: "Real narrated audio for a lesson script." },
-  { key: "image", title: "AI Image", icon: ImageIcon, color: "text-tint-clay", desc: "Generate a diagram or illustration from a prompt. Review labels before use — AI-generated text in images can be inaccurate." },
-  { key: "video", title: "AI Video", icon: VideoIcon, color: "text-tint-bronze", desc: "Generate a short educational video clip from a prompt (takes 1-3 minutes)." },
-  { key: "interactive", title: "Classroom Activities", icon: MessageSquare, color: "text-tint-rose", desc: "Interactive lesson blocks: activities, scenarios & quick checks." },
-];
+const ARTIFACTS = stage("teach").items as ((ReturnType<typeof stage>)["items"][number] & { key: ArtifactKey })[];
 
-// The 5 content types below are unified onto the shared SmartCreationBox
+// The 4 content types below are unified onto the shared SmartCreationBox
 // (free text + mic + customization dropdowns + editable topics).
 // Image and video keep their own separate, previously-approved
 // enhance-prompt + theme-preset flow.
-const SMART_CREATION_TYPES = new Set<ArtifactKey>(["slides", "worksheet", "lesson_notes", "narration", "interactive"]);
+const SMART_CREATION_TYPES = new Set<ArtifactKey>(["slides", "lesson_notes", "narration", "interactive"]);
 
 const ARTIFACT_KEYS = new Set<string>(ARTIFACTS.map((a) => a.key));
 
@@ -61,7 +56,6 @@ const TYPE_PARAM_ALIASES: Record<string, ArtifactKey> = {
   video: "video",
   image: "image",
   slides: "slides",
-  worksheet: "worksheet",
   narration: "narration",
   audio: "narration",
   interactive: "interactive",
@@ -117,40 +111,49 @@ export default function CreatePage() {
   );
 }
 
+type TeachResult = DeckReady | LessonNotesResult | InteractiveResult | { media_url: string; library_id?: string };
+
 function CreatePageInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const typeParam = searchParams.get("type");
   const itemParam = searchParams.get("item");
 
-  // Pre-selecting the card the teacher explicitly clicked on the dashboard is
-  // their own choice carried across a navigation, not a guess about content.
-  const [active, setActive] = useState<ArtifactKey | null>(() => resolveTypeParam(typeParam));
-  const [imagePrompt, setImagePrompt] = useState("");
-  const [videoPrompt, setVideoPrompt] = useState("");
-  const [videoDuration, setVideoDuration] = useState<4 | 6 | 8>(8);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<DeckReady | WorksheetResult | LessonNotesResult | InteractiveResult | { media_url: string } | null>(null);
+  // Everything below is kept per browser tab, and results per card, so
+  // switching cards or leaving the page never clears what was on screen.
+  const [active, setActive] = useTabState<ArtifactKey | null>("create:active", resolveTypeParam(typeParam));
+  const scope = `create:${active ?? "none"}`;
+  const [imagePrompt, setImagePrompt] = useTabState("create:image:prompt", "");
+  const [videoPrompt, setVideoPrompt] = useTabState("create:video:prompt", "");
+  const [videoDuration, setVideoDuration] = useTabState<4 | 6 | 8>("create:video:duration", 8);
+  const [loading] = useLiveState(`${scope}:running`, false);
+  const [error, setError] = useTabState<string | null>(`${scope}:error`, null);
+  const [result, setResult] = useTabState<TeachResult | null>(`${scope}:result`, null);
   const [enhancing, setEnhancing] = useState(false);
-  const [enhancement, setEnhancement] = useState<EnhancedPrompt | null>(null);
+  const [enhancement, setEnhancement] = useTabState<EnhancedPrompt | null>(`${scope}:enhancement`, null);
   /** Keeps the teacher's own wording alongside the AI's rewrite so both are
    * one click away. The live textarea is always the version that generates. */
-  const [enhanceState, setEnhanceState] = useState<{ original: string; enhanced: string } | null>(null);
+  const [enhanceState, setEnhanceState] = useTabState<{ original: string; enhanced: string } | null>(`${scope}:enhanceState`, null);
   /** Set when this page was opened from saved work rather than a fresh generation. */
-  const [openedTitle, setOpenedTitle] = useState<string | null>(null);
+  const [openedTitle, setOpenedTitle] = useTabState<string | null>(`${scope}:opened`, null);
   const [openingItem, setOpeningItem] = useState(false);
+  useOnScreen(scope);
 
   useEffect(() => {
+    // Worksheets moved to Assess; old links still land in the right place.
+    if (typeParam === "worksheet") {
+      router.replace(`/teacher/assess?mode=worksheet${itemParam ? `&item=${encodeURIComponent(itemParam)}` : ""}`);
+      return;
+    }
     const resolved = resolveTypeParam(typeParam);
     if (resolved) setActive(resolved);
-  }, [typeParam]);
+  }, [typeParam, itemParam, router, setActive]);
 
   // Reopening saved work: the saved result goes through the same display as a fresh one.
   useEffect(() => {
-    if (!itemParam) return;
+    if (!itemParam || typeParam === "worksheet") return;
     let cancelled = false;
     setOpeningItem(true);
-    setError(null);
     getLibraryItem(itemParam)
       .then((item) => {
         if (cancelled) return;
@@ -159,9 +162,13 @@ function CreatePageInner() {
           setError("This item can't be opened here.");
           return;
         }
+        // Written under the opened item's own card, whatever card was showing.
+        const at = (name: string) => `create:${kind}:${name}`;
+        setTabValue(at("result"), item.content as TeachResult, null);
+        setTabValue(at("opened"), item.title, null);
+        setTabValue(at("error"), null, null);
         setActive(kind);
-        setResult(item.content as typeof result);
-        setOpenedTitle(item.title);
+        router.replace(`/teacher/create?type=${kind}`);
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Could not open that item.");
@@ -172,6 +179,7 @@ function CreatePageInner() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemParam]);
 
   const currentPrompt = active === "video" ? videoPrompt : imagePrompt;
@@ -215,20 +223,30 @@ function CreatePageInner() {
         ? "enhanced"
         : "edited";
 
-  // Only image/video still run through this direct call — the other 5 types
+  // Only image/video still run through this direct call — the other types
   // generate via the embedded SmartCreationBox's own Confirm & Generate.
+  // Written through the store under the card it started on, so leaving the
+  // page mid-run still lands the result there.
   const run = async () => {
-    setLoading(true);
+    const kind = active;
+    if ((kind !== "image" && kind !== "video") || getLiveValue(`${scope}:running`, false)) return;
+    const at = (name: string) => `${scope}:${name}`;
+    const label = kind === "video" ? "video" : "image";
+    setLiveValue(at("running"), true, false);
     setError(null);
     setResult(null);
     setOpenedTitle(null);
     try {
-      if (active === "image") setResult(await generateImage(imagePrompt));
-      else if (active === "video") setResult(await generateVideo(videoPrompt, "16:9", videoDuration));
+      const data = kind === "image" ? await generateImage(imagePrompt) : await generateVideo(videoPrompt, "16:9", videoDuration);
+      setTabValue<TeachResult | null>(at("result"), data, null);
+      const href = data.library_id ? libraryHref({ id: data.library_id, type: kind }) : `/teacher/create?type=${kind}`;
+      noticeIfAway(scope, { tone: "success", message: `Your ${label} is ready. It's saved in your library.`, href, linkLabel: "Open it" });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Generation failed.");
+      const message = err instanceof Error ? err.message : "Generation failed.";
+      setTabValue<string | null>(at("error"), message, null);
+      noticeIfAway(scope, { tone: "error", message: `Your ${label} could not be made: ${message}`, href: `/teacher/create?type=${kind}`, linkLabel: "Go back" });
     } finally {
-      setLoading(false);
+      setLiveValue(at("running"), false, false);
     }
   };
 
@@ -238,10 +256,10 @@ function CreatePageInner() {
     <div className="max-w-6xl mx-auto space-y-8">
       <div className="border-b border-border pb-6">
         <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
-          <Sparkles className="w-6 h-6 text-accent" /> Pillar 2 — Classroom Content Creation
+          <BookOpenCheck className="w-6 h-6 text-accent" /> Teach
         </h1>
         <p className="text-sm text-muted mt-1">
-          Generate classroom-ready teaching artifacts directly from your teacher intent and source material.
+          {stage("teach").blurb}: notes, slides, activities and media, grounded in your own material when you add it.
         </p>
       </div>
 
@@ -250,30 +268,27 @@ function CreatePageInner() {
           const Icon = art.icon;
           const isActive = active === art.key;
           return (
-            <button
-              key={art.key}
-              type="button"
-              onClick={() => {
-                setActive(art.key);
-                setResult(null);
-                setOpenedTitle(null);
-                setError(null);
-                setEnhancement(null);
-                setEnhanceState(null);
-              }}
-              className={`text-left p-5 rounded-2xl bg-surface border space-y-3 transition-all cursor-pointer group ${
-                isActive ? "border-accent" : "border-border hover:border-accent-line"
-              }`}
-            >
-              <div className={`p-2.5 rounded-xl bg-card w-fit ${art.color}`}>
-                <Icon className="w-5 h-5" />
-              </div>
-              <div className="font-bold text-base text-foreground font-display flex items-center justify-between">
-                {art.title}
-                <span className="text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity">Create →</span>
-              </div>
-              <p className="text-xs text-muted leading-relaxed">{art.desc}</p>
-            </button>
+            <FeatureExplainer key={art.key} title={art.title} text={art.explain}>
+              {(describedBy) => (
+                <button
+                  type="button"
+                  aria-describedby={describedBy}
+                  onClick={() => setActive(art.key)}
+                  className={`w-full h-full text-left p-5 rounded-2xl bg-surface border space-y-3 transition-all cursor-pointer group ${
+                    isActive ? "border-accent" : "border-border hover:border-accent-line"
+                  }`}
+                >
+                  <div className={`p-2.5 rounded-xl bg-card w-fit ${art.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div className="font-bold text-base text-foreground font-display flex items-center justify-between">
+                    {art.title}
+                    <span className="text-xs text-accent opacity-0 group-hover:opacity-100 transition-opacity">Create →</span>
+                  </div>
+                  <p className="text-xs text-muted leading-relaxed">{art.desc}</p>
+                </button>
+              )}
+            </FeatureExplainer>
           );
         })}
       </div>
@@ -401,12 +416,14 @@ function CreatePageInner() {
             </div>
           ) : active && SMART_CREATION_TYPES.has(active) ? (
             // Shared free text + mic + customization dropdowns + editable
-            // topics pattern, locked to whichever card was clicked. `key`
-            // forces a fresh box (and clears its state) when switching cards.
+            // topics pattern, locked to whichever card was clicked. Each card
+            // keeps its own draft under its own scope.
             // Results feed the per-type displays below via onGenerated
             // instead of this component rendering its own.
             <SmartCreationBox
               key={active}
+              scope={scope}
+              scopeHref={`/teacher/create?type=${active}`}
               lockedArtifactType={active as SmartCreationArtifactType}
               showInlineResult={false}
               heading={`Describe the ${activeMeta?.title.toLowerCase()} you want`}
@@ -420,7 +437,6 @@ function CreatePageInner() {
                 }
                 switch (r.artifactType) {
                   case "slides":
-                  case "worksheet":
                   case "lesson_notes":
                   case "interactive":
                   case "narration":
@@ -461,18 +477,6 @@ function CreatePageInner() {
           )}
 
           {result && active === "slides" && "placements" in result && <DeckView deck={result} />}
-
-          {result && active === "worksheet" && (
-            <div className="space-y-2 pt-2 border-t border-border">
-              <div className="text-xs text-muted">{(result as WorksheetResult).instructions}</div>
-              {(result as WorksheetResult).questions?.map((q, i) => (
-                <div key={i} className="p-3 rounded-lg bg-card border border-border text-xs">
-                  <div className="text-foreground">{i + 1}. {q.question_text}</div>
-                  <div className="text-muted mt-1">Answer: {q.answer}</div>
-                </div>
-              ))}
-            </div>
-          )}
 
           {result && active === "lesson_notes" && (
             <div className="space-y-2 pt-2 border-t border-border">

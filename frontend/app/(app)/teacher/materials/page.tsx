@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { FolderOpen, Upload, FileText, CheckCircle2, XCircle } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
 import { listMaterials, uploadMaterial, type Material } from "@/services/api";
+import { getLiveValue, noticeIfAway, setLiveValue, useLeaveWarning, useLiveState, useOnScreen } from "@/lib/tab-state";
 
 function inferType(filename: string): Material["type"] | null {
   const ext = filename.split(".").pop()?.toLowerCase();
@@ -13,13 +14,23 @@ function inferType(filename: string): Material["type"] | null {
   return null;
 }
 
+const UPLOADING = "materials:uploading";
+const VERSION = "materials:version";
+
 export default function MaterialsPage() {
   const [materials, setMaterials] = useState<Material[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
+  // An upload keeps going when the teacher moves to another page, so its
+  // progress lives outside this component: coming back still shows it, and
+  // the list reloads when it lands (the `version` bump).
+  const [uploading] = useLiveState<string | null>(UPLOADING, null);
+  const [uploadError, setUploadError] = useLiveState<string | null>("materials:uploadError", null);
+  const [version] = useLiveState(VERSION, 0);
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  useOnScreen("materials");
+  // A refresh or closed tab would cut the upload off, so that one is worth a warning.
+  useLeaveWarning(!!uploading, "Your file is still uploading. Leaving now will stop it.", { links: false });
 
   const refresh = useCallback(() => {
     listMaterials()
@@ -29,7 +40,26 @@ export default function MaterialsPage() {
 
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, version]);
+
+  const ingest = async (name: string, run: () => Promise<unknown>, failure: string) => {
+    if (getLiveValue(UPLOADING, null)) return;
+    setLiveValue<string | null>(UPLOADING, name, null);
+    setUploadError(null);
+    try {
+      await run();
+      setLiveValue(VERSION, (v: number) => v + 1, 0);
+      noticeIfAway("materials", { tone: "success", message: `"${name}" was added to your materials.`, href: "/teacher/materials", linkLabel: "See materials" });
+      return true;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : failure;
+      setUploadError(message);
+      noticeIfAway("materials", { tone: "error", message: `"${name}" could not be added: ${message}`, href: "/teacher/materials", linkLabel: "Go back" });
+      return false;
+    } finally {
+      setLiveValue<string | null>(UPLOADING, null, null);
+    }
+  };
 
   const doUpload = async (file: File) => {
     const type = inferType(file.name);
@@ -37,30 +67,14 @@ export default function MaterialsPage() {
       setUploadError(`Unsupported file type: ${file.name}. Use PDF, DOCX, or PPTX.`);
       return;
     }
-    setUploading(true);
-    setUploadError(null);
-    try {
-      await uploadMaterial({ title: file.name, type, file });
-      refresh();
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Upload failed.");
-    } finally {
-      setUploading(false);
-    }
+    await ingest(file.name, () => uploadMaterial({ title: file.name, type, file }), "Upload failed.");
   };
 
   const submitYoutube = async () => {
-    if (!youtubeUrl.trim()) return;
-    setUploading(true);
-    setUploadError(null);
-    try {
-      await uploadMaterial({ title: youtubeUrl, type: "youtube", externalUrl: youtubeUrl.trim() });
+    const url = youtubeUrl.trim();
+    if (!url) return;
+    if (await ingest(url, () => uploadMaterial({ title: url, type: "youtube", externalUrl: url }), "Transcript ingestion failed.")) {
       setYoutubeUrl("");
-      refresh();
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : "Transcript ingestion failed.");
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -96,7 +110,7 @@ export default function MaterialsPage() {
           {uploading ? <BookLoader className="w-6 h-6" /> : <Upload className="w-6 h-6" />}
         </div>
         <div className="text-sm font-semibold text-foreground">
-          {uploading ? "Processing material..." : "Drag and drop a PDF, DOCX, or PPTX here"}
+          {uploading ? `Adding "${uploading}"… you can keep working elsewhere meanwhile.` : "Drag and drop a PDF, DOCX, or PPTX here"}
         </div>
         <label className="text-xs text-accent cursor-pointer hover:underline">
           or click to browse
@@ -104,7 +118,7 @@ export default function MaterialsPage() {
             type="file"
             accept=".pdf,.docx,.pptx"
             className="hidden"
-            disabled={uploading}
+            disabled={!!uploading}
             onChange={(e) => {
               const file = e.target.files?.[0];
               if (file) doUpload(file);
@@ -124,7 +138,7 @@ export default function MaterialsPage() {
           <button
             type="button"
             onClick={submitYoutube}
-            disabled={uploading || !youtubeUrl.trim()}
+            disabled={!!uploading || !youtubeUrl.trim()}
             className="px-3 py-2 btn-primary text-xs font-semibold rounded-lg disabled:opacity-50"
           >
             Add

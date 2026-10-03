@@ -14,6 +14,7 @@ import {
   type PreferencesPayload,
 } from "@/services/api";
 import type { UserSession } from "@/types";
+import { clearTabState } from "@/lib/tab-state";
 
 export interface SignUpResult {
   ok: boolean;
@@ -173,6 +174,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (supabase) await supabase.auth.signOut();
     setUser(null);
     clearApiAuth();
+    // Drafts and results kept per tab belong to this account, not the next one.
+    clearTabState();
   };
 
   const completeOnboarding = async (prefs: PreferencesPayload): Promise<boolean> => {

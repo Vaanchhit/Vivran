@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useTabState } from "@/lib/tab-state";
 import { ArrowDown, ArrowUp, Plus, Trash2, Wand2 } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
 import type { DeckOutline, OutlineSlide } from "@/services/api";
@@ -13,13 +13,21 @@ export function OutlineEditor({
   building,
   onBuild,
   onCancel,
+  storageKey,
 }: {
   outline: DeckOutline;
+  /** Where the teacher's edits are kept, so leaving the page doesn't undo them. */
+  storageKey: string;
   building: boolean;
   onBuild: (slides: OutlineSlide[]) => void;
   onCancel: () => void;
 }) {
-  const [slides, setSlides] = useState<OutlineSlide[]>(outline.outline);
+  // Edits are tied to the outline they were made on; a new outline starts clean.
+  const base = outline.outline.map((s) => s.title).join("|");
+  const [saved, setSaved] = useTabState<{ base: string; slides: OutlineSlide[] } | null>(storageKey, null);
+  const slides = saved?.base === base ? saved.slides : outline.outline;
+  const setSlides = (fn: (s: OutlineSlide[]) => OutlineSlide[]) =>
+    setSaved((prev) => ({ base, slides: fn(prev?.base === base ? prev.slides : outline.outline) }));
   const max = outline.maxSlides;
 
   const update = (i: number, patch: Partial<OutlineSlide>) => setSlides((s) => s.map((x, k) => (k === i ? { ...x, ...patch } : x)));

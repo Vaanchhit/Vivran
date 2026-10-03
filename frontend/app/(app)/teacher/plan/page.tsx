@@ -1,11 +1,13 @@
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { CalendarRange, BookOpen, Clock, Target, AlertCircle } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { CalendarRange, AlertCircle } from "lucide-react";
 import { getLibraryItem, type CoursePlan } from "@/services/api";
 import { SmartCreationBox } from "@/app/components/smart-creation-box";
 import { BookLoader } from "@/app/components/book-loader";
+import { useTabState } from "@/lib/tab-state";
+import { stage } from "@/lib/catalog";
 
 export default function PlanPage() {
   return (
@@ -16,10 +18,14 @@ export default function PlanPage() {
 }
 
 function PlanPageInner() {
+  const router = useRouter();
   const itemParam = useSearchParams().get("item");
-  const [error, setError] = useState<string | null>(null);
-  const [plan, setPlan] = useState<CoursePlan | null>(null);
+  // Kept per browser tab, so leaving this page doesn't clear the plan on screen.
+  const [error, setError] = useTabState<string | null>("plan:error", null);
+  const [plan, setPlan] = useTabState<CoursePlan | null>("plan:result", null);
+  const [openedTitle, setOpenedTitle] = useTabState<string | null>("plan:opened", null);
   const [opening, setOpening] = useState(false);
+  const meta = stage("plan");
 
   // Reopening a saved plan: shown through the same display as a fresh one.
   useEffect(() => {
@@ -29,64 +35,36 @@ function PlanPageInner() {
     getLibraryItem(itemParam)
       .then((item) => {
         if (cancelled) return;
-        if (item.type !== "course_plan" || !item.content) setError("This item can't be opened here.");
-        else setPlan(item.content as CoursePlan);
+        if (item.type !== "course_plan" || !item.content) {
+          setError("This item can't be opened here.");
+          return;
+        }
+        setError(null);
+        setPlan(item.content as CoursePlan);
+        setOpenedTitle(item.title);
+        // The plan now lives in this tab's state; dropping ?item keeps a later
+        // visit from reloading it over whatever the teacher does next.
+        router.replace("/teacher/plan");
       })
       .catch((err: unknown) => { if (!cancelled) setError(err instanceof Error ? err.message : "Could not open that plan."); })
       .finally(() => { if (!cancelled) setOpening(false); });
     return () => { cancelled = true; };
-  }, [itemParam]);
+  }, [itemParam, router, setError, setPlan, setOpenedTitle]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
-      <div className="flex items-center justify-between border-b border-border pb-6">
-        <div>
-          <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
-            <CalendarRange className="w-6 h-6 text-accent" /> Pillar 1 — Course & Lesson Planning
-          </h1>
-          <p className="text-sm text-muted mt-1">
-            Help teachers plan coursework, units, weekly structures, lesson sequences, and objectives.
-          </p>
-        </div>
+      <div className="border-b border-border pb-6">
+        <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
+          <CalendarRange className="w-6 h-6 text-accent" /> Plan
+        </h1>
+        <p className="text-sm text-muted mt-1">
+          {meta.blurb}: topics in order, lessons for each week, and what students should be able to do by the end.
+        </p>
       </div>
 
-      {/* Plan Capabilities Showcase */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-surface border border-border space-y-2">
-          <div className="p-2 rounded-lg bg-accent-soft text-accent w-fit">
-            <BookOpen className="w-4 h-4" />
-          </div>
-          <div className="font-bold text-sm text-foreground font-display">Course Planning</div>
-          <p className="text-xs text-muted leading-relaxed">
-            Multi-week syllabus breakdown, topic sequencing, and high-level milestones.
-          </p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-surface border border-border space-y-2">
-          <div className="p-2 rounded-lg bg-chrome-soft text-chrome w-fit">
-            <Clock className="w-4 h-4" />
-          </div>
-          <div className="font-bold text-sm text-foreground font-display">Unit & Lesson Sequencing</div>
-          <p className="text-xs text-muted leading-relaxed">
-            Time allocations per topic, classroom activities, revision windows, and homework.
-          </p>
-        </div>
-
-        <div className="p-5 rounded-2xl bg-surface border border-border space-y-2">
-          <div className="p-2 rounded-lg bg-success-soft text-success w-fit">
-            <Target className="w-4 h-4" />
-          </div>
-          <div className="font-bold text-sm text-foreground font-display">Learning Objectives</div>
-          <p className="text-xs text-muted leading-relaxed">
-            Bloom&apos;s taxonomy aligned objectives, suggested classroom artifacts, and assessments.
-          </p>
-        </div>
-      </div>
-
-      {/* Smart Prompt Box, locked to course_plan — same free-text + mic +
-          customization dropdowns + editable topics pattern as the dashboard,
-          feeding this page's own weekly-plan display below. */}
       <SmartCreationBox
+        scope="plan"
+        scopeHref="/teacher/plan"
         lockedArtifactType="course_plan"
         showInlineResult={false}
         heading="What course would you like to plan?"
@@ -94,6 +72,7 @@ function PlanPageInner() {
         onGenerated={(result) => {
           if (result.artifactType !== "course_plan") return;
           setError(null);
+          setOpenedTitle(null);
           if (!result.ok) {
             setError(result.error);
             setPlan(null);
@@ -120,7 +99,7 @@ function PlanPageInner() {
         <div className="p-6 rounded-2xl bg-surface border border-border space-y-4">
           <div className="flex items-center justify-between border-b border-border pb-3">
             <div>
-              <div className="text-xs text-accent font-semibold uppercase tracking-wider">{itemParam ? "Saved plan" : "Generated Plan"}</div>
+              <div className="text-xs text-accent font-semibold uppercase tracking-wider">{openedTitle ? "Saved plan" : "Generated Plan"}</div>
               <div className="font-bold text-base text-foreground font-display">{plan.title}</div>
             </div>
             <span className="text-xs text-muted bg-card px-2.5 py-1 rounded-lg">

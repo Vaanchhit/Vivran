@@ -9,11 +9,11 @@ import {
   Plus,
   Home,
   CalendarRange,
-  Sparkles,
+  BookOpenCheck,
   FileCheck2,
   FolderOpen,
   Library,
-  Clock,
+  PenLine,
   Settings,
   User,
   LogOut,
@@ -29,14 +29,16 @@ export function TeacherSidebar() {
     router.push("/login");
   };
 
+  // Plan, Teach and Assess follow a teacher's own cycle, and are named the
+  // same here as on the dashboard and on each page (lib/catalog.ts).
   const navItems = [
     { label: "Home", href: "/teacher", icon: Home },
     { label: "Plan", href: "/teacher/plan", icon: CalendarRange },
-    { label: "Create", href: "/teacher/create", icon: Sparkles },
+    { label: "Teach", href: "/teacher/create", icon: BookOpenCheck },
     { label: "Assess", href: "/teacher/assess", icon: FileCheck2 },
     { label: "My Materials", href: "/teacher/materials", icon: FolderOpen },
+    { label: "Teaching style", href: "/teacher/memory", icon: PenLine },
     { label: "Library", href: "/teacher/library", icon: Library },
-    { label: "Recent", href: "/teacher/recent", icon: Clock },
     { label: "Settings", href: "/teacher/settings", icon: Settings },
   ];
 
@@ -62,11 +64,12 @@ export function TeacherSidebar() {
 
       {/* Quick Action Button */}
       <div className="p-4">
+        {/* The dashboard's prompt box makes any type, so "create" starts there. */}
         <Link
-          href="/teacher/create"
+          href="/teacher"
           className="w-full h-10 btn-primary font-medium text-sm rounded-xl flex items-center justify-center gap-2"
         >
-          <Plus className="w-4 h-4" /> Create Content
+          <Plus className="w-4 h-4" /> Create anything
         </Link>
       </div>
 

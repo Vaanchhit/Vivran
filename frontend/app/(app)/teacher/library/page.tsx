@@ -2,25 +2,22 @@
 
 import React from "react";
 import { Library } from "lucide-react";
-import { EmptyState } from "@/app/components/empty-state";
+import { RecentProjects } from "@/app/components/recent-projects";
 
 export default function LibraryPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="border-b border-border pb-6">
         <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
-          <Library className="w-6 h-6 text-accent" /> Library & Curriculum Repository
+          <Library className="w-6 h-6 text-accent" /> Library
         </h1>
         <p className="text-sm text-muted mt-1">
-          Browse saved course templates, standardized syllabus structures, and shared educational material.
+          Everything you create is saved here automatically. Filter by type, then open, rename or delete it any time.
         </p>
       </div>
 
-      <EmptyState
-        icon={Library}
-        title="Your library is empty for now"
-        description="Saved course templates and shared curriculum material will show up here once you've built a few. Uploaded materials already live under Materials — this is for reusable templates across courses, coming soon."
-      />
+      {/* Same component the dashboard preview uses, so the two lists can never disagree. */}
+      <RecentProjects manage />
     </div>
   );
 }

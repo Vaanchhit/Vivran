@@ -12,5 +12,5 @@ import { SmartCreationBox } from "@/app/components/smart-creation-box";
  * plan/assess/create pages also use, locked to a single artifact type.
  */
 export function SmartPromptBox() {
-  return <SmartCreationBox />;
+  return <SmartCreationBox scope="home" scopeHref="/teacher" />;
 }

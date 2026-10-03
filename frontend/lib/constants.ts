@@ -77,12 +77,12 @@ export const DIFFICULTY_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const ARTIFACT_TYPE_OPTIONS: { value: string; label: string }[] = [
-  { value: "course_plan", label: "Course Plan" },
+  { value: "course_plan", label: "Course plan" },
+  { value: "lesson_notes", label: "Lesson notes" },
   { value: "slides", label: "Slides" },
+  { value: "interactive", label: "Class activities" },
+  { value: "assessment", label: "Quiz or test" },
   { value: "worksheet", label: "Worksheet" },
-  { value: "lesson_notes", label: "Lesson Notes" },
-  { value: "assessment", label: "Test / Quiz Paper" },
-  { value: "interactive", label: "Interactive Coursework" },
 ];
 
 export const DURATION_WEEKS_OPTIONS = [1, 2, 3, 4, 6, 8];

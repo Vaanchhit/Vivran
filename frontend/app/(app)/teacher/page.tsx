@@ -4,36 +4,13 @@ import React from "react";
 import Link from "next/link";
 import { SmartPromptBox } from "@/app/components/smart-prompt-box";
 import { RecentProjects } from "@/app/components/recent-projects";
+import { FeatureExplainer } from "@/app/components/feature-explainer";
 import { useAuth } from "@/lib/auth-context";
-import {
-  CalendarRange,
-  BookOpenCheck,
-  Presentation,
-  Video,
-  FileSpreadsheet,
-  HelpCircle,
-  FileCheck,
-  FolderKanban,
-  Sparkles,
-  ArrowRight,
-} from "lucide-react";
+import { STAGES } from "@/lib/catalog";
+import { FolderKanban, Sparkles, ArrowRight } from "lucide-react";
 
 export default function TeacherDashboard() {
   const { user } = useAuth();
-
-  // Each shortcut deep-links to the page that actually does the job, with the
-  // artifact type the teacher clicked already selected. That's their explicit
-  // choice travelling across a navigation — nothing about their content
-  // (grade, subject, topic, length) is pre-filled by it.
-  const suggestedActions = [
-    { title: "Plan a Course", desc: "Sequence topics, units & weekly objectives", href: "/teacher/plan", icon: CalendarRange, color: "text-accent" },
-    { title: "Create Lesson", desc: "Draft full lesson plan with notes & activities", href: "/teacher/create?type=lesson_notes", icon: BookOpenCheck, color: "text-chrome" },
-    { title: "Create Slides", desc: "Generate presentation slides structure", href: "/teacher/create?type=slides", icon: Presentation, color: "text-tint-bronze" },
-    { title: "Create Video", desc: "Script and generate educational video", href: "/teacher/create?type=video", icon: Video, color: "text-tint-umber" },
-    { title: "Create Worksheet", desc: "Generate practice problems & answer keys", href: "/teacher/create?type=worksheet", icon: FileSpreadsheet, color: "text-tint-olive" },
-    { title: "Create Quiz", desc: "Short exit tickets, MCQs & quick checks", href: "/teacher/assess?mode=quiz", icon: HelpCircle, color: "text-tint-rose" },
-    { title: "Create Test", desc: "Full structured exam paper with rubrics", href: "/teacher/assess?mode=test", icon: FileCheck, color: "text-tint-olive" },
-  ];
 
   return (
     <div className="max-w-6xl mx-auto space-y-10">
@@ -57,39 +34,46 @@ export default function TeacherDashboard() {
         <SmartPromptBox />
       </section>
 
-      {/* Suggested Actions Grid */}
+      {/* Shortcuts, grouped the same way as the sidebar: Plan, Teach, Assess.
+          Each deep-links to the card of the same name on that page. That's the
+          teacher's explicit choice travelling across a navigation; nothing
+          about their content is pre-filled by it. */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold font-display text-foreground tracking-tight">
-            Suggested Actions & Shortcuts
-          </h2>
-          <span className="text-xs text-muted">Pillar Shortcuts</span>
-        </div>
+        <h2 className="text-lg font-bold font-display text-foreground tracking-tight">Or start from a shortcut</h2>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {suggestedActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.title}
-                href={action.href}
-                className="p-4 rounded-2xl bg-surface border border-border hover:border-accent-line hover:bg-card transition-all group relative overflow-hidden hover:-translate-y-0.5"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`p-2.5 rounded-xl bg-card ${action.color}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-muted opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+        {/* One row per stage: the stage on the left, its items as compact tiles
+            on the right. Stages have 1, 6 and 3 items, so columns left big gaps. */}
+        <div className="rounded-2xl bg-surface border border-border divide-y divide-border">
+          {STAGES.map((st) => (
+            <div key={st.key} className="p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
+              <Link href={st.href} className="md:w-44 shrink-0 group">
+                <div className="font-bold text-sm text-foreground font-display flex items-center gap-1.5">
+                  {st.label}
+                  <ArrowRight className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-all" />
                 </div>
-                <div className="font-semibold text-sm text-foreground font-display">
-                  {action.title}
-                </div>
-                <div className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">
-                  {action.desc}
-                </div>
+                <div className="text-[11px] text-muted mt-0.5 leading-snug">{st.blurb}</div>
               </Link>
-            );
-          })}
+              <div className="flex-1 flex flex-wrap gap-2">
+                {st.items.map((it) => {
+                  const Icon = it.icon;
+                  return (
+                    <FeatureExplainer key={it.key} title={it.title} text={it.explain}>
+                      {(describedBy) => (
+                        <Link
+                          href={it.href}
+                          aria-describedby={describedBy}
+                          className="flex items-center gap-2.5 px-3 py-2.5 [@media(hover:none)]:pr-9 rounded-xl bg-card border border-border hover:border-accent-line hover:-translate-y-0.5 transition-all"
+                        >
+                          <Icon className={`w-4 h-4 shrink-0 ${it.color}`} />
+                          <span className="text-[13px] font-semibold text-foreground whitespace-nowrap">{it.title}</span>
+                        </Link>
+                      )}
+                    </FeatureExplainer>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -98,13 +82,13 @@ export default function TeacherDashboard() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-bold font-display text-foreground tracking-tight flex items-center gap-2">
             <FolderKanban className="w-5 h-5 text-accent" />
-            Recent Teaching Projects
+            Recent work
           </h2>
           <Link
-            href="/teacher/recent"
+            href="/teacher/library"
             className="text-xs font-medium text-accent hover:underline"
           >
-            View all projects →
+            Open library →
           </Link>
         </div>
 

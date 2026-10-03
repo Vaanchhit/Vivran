@@ -55,6 +55,9 @@ export interface AssessmentGenerateResponse {
   sources?: Source[];
   assessment_id?: string;
   question_ids?: string[];
+  library_id?: string;
+  /** The teacher's accepted style traits that shaped this paper (empty when none). */
+  style_applied?: { key: string; summary: string }[];
 }
 
 export interface ProvisionResponse {
@@ -224,6 +227,7 @@ export async function generateAssessmentPaper(
   totalMarks: number = 40,
   difficulty: string = "medium",
   materialId?: string,
+  useStyle: boolean = true,
 ): Promise<AssessmentGenerateResponse> {
   return request<AssessmentGenerateResponse>("POST", "/assessments/generate", {
     grade,
@@ -232,6 +236,7 @@ export async function generateAssessmentPaper(
     total_marks: totalMarks,
     difficulty,
     material_id: materialId,
+    use_style: useStyle,
   });
 }
 
@@ -299,6 +304,79 @@ export async function uploadMaterial(params: {
   return requestForm<Material>("/materials", form);
 }
 
+// ---------------------------------------------------------------------------
+// Teaching style (backend app/memory): past files -> traits the teacher decides on.
+// ---------------------------------------------------------------------------
+
+export type HistoryKind = "exam_paper" | "worksheet" | "slides" | "lesson_plan" | "notes";
+
+export interface HistoryDocument {
+  id: string;
+  title: string;
+  file_type: string;
+  kind: HistoryKind;
+  kind_label: string;
+  subject: string;
+  grade?: string | null;
+  authored_by_me: boolean;
+  status: "ready" | "needs_review";
+  status_reason?: string | null;
+  question_count?: number | null;
+  total_marks?: number | null;
+  duration_minutes?: number | null;
+  slide_count?: number | null;
+  created_at?: string;
+}
+
+export interface StyleTrait {
+  id: string;
+  subject: string;
+  kind: string;
+  key: string;
+  summary: string;
+  status: "suggested" | "active" | "dismissed" | "stale";
+  n_evidence: number;
+  n_documents: number;
+  evidence: { document_id: string; title: string }[];
+  /** What newer files say, when it differs from an accepted trait. Offered, never applied. */
+  update?: string | null;
+}
+
+export async function getTeachingMemory(): Promise<{ documents: HistoryDocument[]; traits: StyleTrait[] }> {
+  return request("GET", "/memory");
+}
+
+export async function uploadHistoryDocument(params: {
+  file: File;
+  subject?: string;
+  grade?: string;
+  kind?: HistoryKind | "auto";
+  authoredByMe: boolean;
+  confirmNoStudentData: boolean;
+}): Promise<HistoryDocument> {
+  const form = new FormData();
+  form.append("file", params.file);
+  form.append("title", params.file.name.replace(/\.(pdf|docx|pptx)$/i, ""));
+  form.append("kind", params.kind ?? "auto");
+  form.append("authored_by_me", String(params.authoredByMe));
+  form.append("confirm_no_student_data", String(params.confirmNoStudentData));
+  if (params.subject) form.append("subject", params.subject);
+  if (params.grade) form.append("grade", params.grade);
+  return requestForm<HistoryDocument>("/memory/documents", form);
+}
+
+export async function deleteHistoryDocument(id: string): Promise<void> {
+  await request("DELETE", `/memory/documents/${encodeURIComponent(id)}`);
+}
+
+export async function decideStyleTrait(id: string, action: "use" | "dismiss"): Promise<StyleTrait> {
+  return request("POST", `/memory/traits/${encodeURIComponent(id)}`, { action });
+}
+
+export async function forgetTeachingMemory(): Promise<void> {
+  await request("DELETE", "/memory");
+}
+
 export interface CoursePlan {
   title: string;
   grade: string;
@@ -355,6 +433,7 @@ export function libraryHref(item: Pick<LibraryEntry, "id" | "type">): string {
   const id = encodeURIComponent(item.id);
   if (item.type === "assessment") return `/teacher/assess?item=${id}`;
   if (item.type === "course_plan") return `/teacher/plan?item=${id}`;
+  if (item.type === "worksheet") return `/teacher/assess?mode=worksheet&item=${id}`;
   return `/teacher/create?type=${item.type}&item=${id}`;
 }
 
@@ -364,7 +443,7 @@ export async function generateCoursePlan(params: {
   subject: string;
   topics: string[];
   durationWeeks?: number;
-}): Promise<{ id: string; course_plan: CoursePlan }> {
+}): Promise<{ id: string; course_plan: CoursePlan; library_id?: string }> {
   return request("POST", "/projects", {
     title: params.title,
     type: "course_plan",
@@ -387,6 +466,8 @@ export interface DeckReady {
   quality: { slides: number; repaired: string[]; unrecoverable: number; copyFit: string[]; trimmed: unknown[]; dropped: unknown[] };
   provider?: string;
   model?: string;
+  /** Set when the deck was saved to the library. */
+  libraryId?: string | null;
 }
 
 /** slidekit asks instead of guessing when the request is too thin to plan from. */
@@ -453,6 +534,8 @@ export interface WorksheetResult {
   questions: { question_text: string; answer: string }[];
   grounded_on?: number;
   sources?: Source[];
+  /** Set when the result was saved to the library. */
+  library_id?: string;
   error?: string;
 }
 
@@ -467,6 +550,8 @@ export interface LessonNotesResult {
   recap: string;
   grounded_on?: number;
   sources?: Source[];
+  /** Set when the result was saved to the library. */
+  library_id?: string;
   error?: string;
 }
 
@@ -480,6 +565,8 @@ export interface InteractiveResult {
   blocks: { type: string; position: number; content: Record<string, unknown> }[];
   grounded_on?: number;
   sources?: Source[];
+  /** Set when the result was saved to the library. */
+  library_id?: string;
   error?: string;
 }
 
@@ -488,7 +575,7 @@ export async function generateInteractiveCoursework(topic: string, durationMinut
 }
 
 export async function generateNarration(script: string, provider: "elevenlabs" | "cartesia" = "cartesia") {
-  return request<{ provider: string; status: string; media_url: string }>("POST", "/content/narration", { script, provider });
+  return request<{ provider: string; status: string; media_url: string; library_id?: string }>("POST", "/content/narration", { script, provider });
 }
 
 export async function transcribeAudio(audio: Blob): Promise<string> {
@@ -511,11 +598,11 @@ export async function enhancePrompt(prompt: string, artifactType: string): Promi
 }
 
 export async function generateImage(prompt: string, aspectRatio: string = "1:1") {
-  return request<{ provider: string; status: string; media_url: string }>("POST", "/content/image", { prompt, aspect_ratio: aspectRatio });
+  return request<{ provider: string; status: string; media_url: string; library_id?: string }>("POST", "/content/image", { prompt, aspect_ratio: aspectRatio });
 }
 
 export async function generateVideo(prompt: string, aspectRatio: string = "16:9", durationSecs: 4 | 6 | 8 = 8) {
-  return request<{ provider: string; status: string; media_url: string }>("POST", "/content/video", {
+  return request<{ provider: string; status: string; media_url: string; library_id?: string }>("POST", "/content/video", {
     prompt,
     aspect_ratio: aspectRatio,
     duration_secs: durationSecs,

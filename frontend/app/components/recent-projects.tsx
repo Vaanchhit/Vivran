@@ -5,23 +5,13 @@ import Link from "next/link";
 import { AlertCircle, Check, Clock, FolderKanban, Pencil, Trash2, X } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
 import { deleteLibraryItem, libraryHref, listLibrary, renameLibraryItem, type LibraryEntry } from "@/services/api";
+import { KIND_LABELS, LIBRARY_KINDS } from "@/lib/catalog";
+import { useTabState } from "@/lib/tab-state";
 
 /** The teacher's saved work, from GET /api/library. Shared by the dashboard
- * preview and the full /teacher/recent list so the two can't drift apart. It
+ * preview and the full /teacher/library list so the two can't drift apart. It
  * never shows sample content: a live product must not show fabricated work
  * back to someone who didn't make it. */
-
-const KIND_LABELS: Record<string, string> = {
-  course_plan: "Course plan",
-  slides: "Slides",
-  worksheet: "Worksheet",
-  lesson_notes: "Lesson notes",
-  assessment: "Exam paper",
-  interactive: "Interactive coursework",
-  narration: "Narration",
-  image: "Image",
-  video: "Video",
-};
 
 function relativeTime(iso?: string): string | null {
   if (!iso) return null;
@@ -124,6 +114,7 @@ function ItemCard({ item, manage, onRenamed, onDeleted }: {
 export function RecentProjects({ limit, manage = false }: { limit?: number; manage?: boolean }) {
   const [items, setItems] = useState<LibraryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [kind, setKind] = useTabState<string>("library:kind", "");
 
   useEffect(() => {
     let cancelled = false;
@@ -158,16 +149,43 @@ export function RecentProjects({ limit, manage = false }: { limit?: number; mana
       <div className="p-8 rounded-2xl bg-surface border border-dashed border-border text-center text-sm text-muted flex flex-col items-center gap-2">
         <FolderKanban className="w-5 h-5 text-muted" />
         <div>Nothing saved yet. Everything you create is saved here automatically.</div>
-        <Link href="/teacher/create" className="text-accent font-medium hover:underline">
+        <Link href="/teacher" className="text-accent font-medium hover:underline">
           Create something →
         </Link>
       </div>
     );
   }
 
-  const shown = limit ? items.slice(0, limit) : items;
+  // The filter only offers kinds the teacher actually has, with a count each.
+  const counts = new Map<string, number>();
+  items.forEach((i) => counts.set(i.type, (counts.get(i.type) ?? 0) + 1));
+  const kinds = LIBRARY_KINDS.filter((k) => counts.has(k.kind));
+  const activeKind = manage && counts.has(kind) ? kind : "";
+  const filtered = activeKind ? items.filter((i) => i.type === activeKind) : items;
+  const shown = limit ? filtered.slice(0, limit) : filtered;
+
+  const chip = (value: string, label: string, count: number) => (
+    <button
+      key={value || "all"}
+      type="button"
+      onClick={() => setKind(value)}
+      aria-pressed={activeKind === value}
+      className={`px-3 py-1.5 rounded-lg border text-xs transition-colors ${
+        activeKind === value ? "border-accent bg-accent-soft text-accent font-semibold" : "border-border bg-card text-muted hover:text-foreground"
+      }`}
+    >
+      {label} <span className="opacity-60">{count}</span>
+    </button>
+  );
 
   return (
+    <div className="space-y-4">
+      {manage && kinds.length > 1 && (
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
+          {chip("", "All", items.length)}
+          {kinds.map((k) => chip(k.kind, k.label, counts.get(k.kind) ?? 0))}
+        </div>
+      )}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {shown.map((item) => (
         <ItemCard
@@ -178,6 +196,7 @@ export function RecentProjects({ limit, manage = false }: { limit?: number; mana
           onDeleted={() => setItems((rows) => rows?.filter((r) => r.id !== item.id) ?? rows)}
         />
       ))}
+    </div>
     </div>
   );
 }

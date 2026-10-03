@@ -6,6 +6,7 @@ import { AlertTriangle, Check, LogOut, Moon, Plus, Sun, X, ExternalLink } from "
 import { BookLoader } from "@/app/components/book-loader";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
+import { useLeaveWarning } from "@/lib/tab-state";
 import { DIFFICULTY_OPTIONS, GRADE_LEVEL_OPTIONS, LANGUAGE_OPTIONS, SUBJECT_OPTIONS, WAITLIST_EMAIL } from "@/lib/constants";
 
 function Section({ title, description, children, tone }: { title: string; description?: string; children: React.ReactNode; tone?: "danger" }) {
@@ -114,6 +115,10 @@ export default function SettingsPage() {
     language !== (user?.preferredLanguage ?? "English") ||
     difficulty !== (user?.preferredDifficulty ?? "medium");
 
+  // Sign-out and account deletion leave on purpose, so they don't ask twice.
+  const [leaving, setLeaving] = useState(false);
+  useLeaveWarning(dirty && !saving && !leaving, "You have unsaved changes to your teaching preferences. Leave without saving?");
+
   const savePreferences = async () => {
     setSaving(true);
     setSaveState("idle");
@@ -128,6 +133,7 @@ export default function SettingsPage() {
   };
 
   const signOut = async () => {
+    setLeaving(true);
     setSigningOut(true);
     await logout();
     window.location.href = "/";
@@ -143,6 +149,7 @@ export default function SettingsPage() {
       setDeleteError(`Could not delete your account. Check your connection and try again, or contact ${WAITLIST_EMAIL}.`);
       return;
     }
+    setLeaving(true);
     await logout();
     // A hard navigation: clearing the session also trips TeacherLayout's own
     // redirect to /login, and racing that against a client-side push is
@@ -212,6 +219,7 @@ export default function SettingsPage() {
             {saveState === "saved" && !dirty && <span className="text-xs text-success flex items-center gap-1"><Check className="w-3.5 h-3.5" /> Saved</span>}
             {saveState === "error" && <span className="text-xs text-danger">Could not save. Please try again.</span>}
             {(!subjects.length || !grades.length) && <span className="text-xs text-muted">Pick at least one subject and grade.</span>}
+            {dirty && !saving && subjects.length > 0 && grades.length > 0 && <span className="text-xs text-warning">Unsaved changes</span>}
           </div>
         </div>
       </Section>
