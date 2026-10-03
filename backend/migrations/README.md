@@ -26,6 +26,10 @@ Apply to a Supabase/Postgres database in order. Two options:
    `authenticated` roles, so the anon key shipped to browsers can no longer
    read tables directly or flip `referral_verified` on its own profile. The
    backend's service-role key is unaffected. Safe to re-run.
+9. Paste `0008_teaching_memory.sql` → Run (adds `history_documents` and
+   `style_traits` for the Teaching style page; until it is applied that page
+   reports that it isn't set up yet and paper generation ignores it). Safe to
+   re-run.
 
 ## Option B — psql / Supabase CLI
 

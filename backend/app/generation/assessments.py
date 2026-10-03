@@ -11,6 +11,8 @@ from app.ai.validators import validate_assessment
 from app.core.config import settings
 from app.core.errors import FailureClass, mask
 from app.core.logging import logger
+from app.memory import store as memory_store
+from app.memory import style as memory_style
 from app.retrieval.search import search_knowledge_base
 from app.services.supabase_service import SupabaseError, is_configured, table_insert, table_insert_many, table_select
 
@@ -90,7 +92,17 @@ def _apply_blueprint_marks(data: Dict[str, Any], blueprint: List[Tuple[str, str,
     data["total_marks"] = total_marks
 
 
-def _build_prompt(grade: str, subject: str, topics: List[str], total_marks: int, difficulty: str, context: List[Dict[str, Any]]) -> str:
+def _build_prompt(
+    grade: str,
+    subject: str,
+    topics: List[str],
+    total_marks: int,
+    difficulty: str,
+    context: List[Dict[str, Any]],
+    blueprint: Optional[List[Tuple[str, str, int, int]]] = None,
+    case_section_names: Optional[List[str]] = None,
+    style_lines: Optional[List[str]] = None,
+) -> str:
     lines = [
         f"Grade: {grade}",
         f"Subject: {subject}",
@@ -99,13 +111,39 @@ def _build_prompt(grade: str, subject: str, topics: List[str], total_marks: int,
         f"Overall difficulty: {difficulty}",
         "\nPaper structure (fixed — use exactly these sections, question counts and marks):",
     ]
-    for name, qtype, count, each in marks_blueprint(total_marks, difficulty):
-        lines.append(f"- {name}: {count} {qtype} question(s) x {each} mark(s) = {count * each} marks")
+    for name, qtype, count, each in blueprint or marks_blueprint(total_marks, difficulty):
+        case = " (case-based)" if name in (case_section_names or []) else ""
+        lines.append(f"- {name}: {count} {qtype} question(s) x {each} mark(s) = {count * each} marks{case}")
     if context:
         lines.append("\nGround the questions in these excerpts from the teacher's own uploaded materials. Cite by their tag (S1, S2, ...) in \"source_ids\":")
         for i, c in enumerate(context, start=1):
             lines.append(f"[S{i}] ({c.get('source_material', 'source')}) {c['content'][:600]}")
+    lines.extend(style_lines or [])
     return "\n".join(lines)
+
+
+def _teacher_style(workspace_id: Optional[str], subject: str, total_marks: int) -> Dict[str, Any]:
+    """The teacher's accepted style for papers in this subject, ready to use.
+
+    Empty (and the default paper) when they have accepted nothing, have no
+    workspace, or turned it off for this paper.
+    """
+    if not workspace_id:
+        return {"blueprint": None, "case_sections": [], "lines": [], "applied": []}
+    traits = memory_store.active_traits(workspace_id, subject, "exam_paper")
+    blueprint = None
+    case_names: List[str] = []
+    structure = (traits.get("structure") or {}).get("value")
+    if structure:
+        blueprint = memory_style.blueprint_from_structure(total_marks, structure["sections"])
+        if blueprint:
+            case_names = [blueprint[i][0] for i in memory_style.case_sections(structure["sections"])]
+    return {
+        "blueprint": blueprint,
+        "case_sections": case_names,
+        "lines": memory_style.prompt_lines(traits, total_marks),
+        "applied": memory_style.applied(traits, used_structure=blueprint is not None),
+    }
 
 
 def generate_assessment(
@@ -117,7 +155,10 @@ def generate_assessment(
     created_by: str = "system",
     workspace_id: Optional[str] = None,
     material_id: Optional[str] = None,
+    use_style: bool = True,
 ) -> Dict[str, Any]:
+    style = _teacher_style(workspace_id if use_style else None, subject, total_marks)
+    blueprint = style["blueprint"] or marks_blueprint(total_marks, difficulty)
     context: List[Dict[str, Any]] = []
     if workspace_id:
         try:
@@ -125,7 +166,10 @@ def generate_assessment(
         except Exception as e:
             logger.warning("Retrieval for assessment generation failed (continuing ungrounded): %s", e)
 
-    prompt = _build_prompt(grade, subject, topics, total_marks, difficulty, context)
+    prompt = _build_prompt(
+        grade, subject, topics, total_marks, difficulty, context,
+        blueprint=blueprint, case_section_names=style["case_sections"], style_lines=style["lines"],
+    )
     # Gated OFF by default (settings.premium_tier_enabled).
     #
     # This condition — hard, or 60+ marks — describes most real exam papers, and
@@ -177,7 +221,7 @@ def generate_assessment(
             import json
 
             data = json.loads(result["content"])
-            _apply_blueprint_marks(data, marks_blueprint(total_marks, difficulty), total_marks)
+            _apply_blueprint_marks(data, blueprint, total_marks)
             data["created_by"] = created_by
             data["workspace_id"] = workspace_id
             assessment = AssessmentSchema(**data)
@@ -215,6 +259,7 @@ def generate_assessment(
         "assessment": assessment.model_dump(),
         "validation": validation.to_dict(),
         "grounded_on": len(context),
+        "style_applied": style["applied"],
         "sources": [
             {
                 "chunk_id": c["chunk_id"],

@@ -30,6 +30,9 @@ class AssessmentGenerateRequest(BaseModel):
     total_marks: int = 40
     difficulty: str = "medium"
     material_id: Optional[str] = None
+    # The teacher's accepted teaching style (app/memory). Off for one paper
+    # when they want Vivran's default shape instead.
+    use_style: bool = True
 
 
 @router.post("/assessments/generate")
@@ -70,6 +73,7 @@ def api_generate_assessment(
             created_by=user.user_id,
             workspace_id=workspace_id,
             material_id=payload.material_id,
+            use_style=payload.use_style,
         ),
     )
 

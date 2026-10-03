@@ -1,4 +1,5 @@
 """Renders a generated assessment as a printable PDF question paper."""
+import re
 from io import BytesIO
 from typing import Any, Dict
 
@@ -17,6 +18,9 @@ _QUESTION = ParagraphStyle("VivranQuestion", parent=_STYLES["Normal"], fontSize=
 _OPTION = ParagraphStyle("VivranOption", parent=_STYLES["Normal"], fontSize=10, leftIndent=14, spaceAfter=1)
 _ANSWER = ParagraphStyle("VivranAnswer", parent=_STYLES["Normal"], fontSize=10, textColor=colors.HexColor("#2E7D32"), spaceBefore=2)
 _SOLUTION = ParagraphStyle("VivranSolution", parent=_STYLES["Normal"], fontSize=9, textColor=colors.grey, spaceAfter=4)
+
+
+_LABELLED = re.compile(r"^\s*\(?[A-Ha-h1-8][).:]\s")
 
 
 def _esc(text: str) -> str:
@@ -55,8 +59,11 @@ def render_assessment_pdf(assessment: Dict[str, Any], include_answer_key: bool =
                 f"<i>[{q.get('marks')} mark{'s' if q.get('marks', 1) != 1 else ''}]</i>",
                 _QUESTION,
             ))
-            for opt in q.get("options") or []:
-                story.append(Paragraph(_esc(opt), _OPTION))
+            for i, opt in enumerate(q.get("options") or []):
+                # Students answer "(b)", so every option needs its letter. The
+                # model sometimes writes it already ("B) Gamma"); don't double it.
+                label = "" if _LABELLED.match(opt or "") else f"({chr(ord('a') + i)}) "
+                story.append(Paragraph(label + _esc(opt), _OPTION))
 
     if include_answer_key:
         story.append(PageBreak())
