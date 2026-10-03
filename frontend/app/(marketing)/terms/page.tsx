@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Terms & conditions | Vivran" };
 
 export default function TermsPage() {
   return (
-    <LegalPage title="Terms & conditions" updated="27 September 2026">
+    <LegalPage title="Terms & conditions" updated="3 October 2026">
       <p>
         These terms govern your use of Vivran. By creating an account or using the service you agree to them. If you
         do not agree, please do not use Vivran.
@@ -37,6 +37,31 @@ export default function TermsPage() {
         You confirm that you have the right to upload the material you provide — for example, that it is your own work,
         your institution&rsquo;s material you are allowed to use, or otherwise permitted — and that it does not include
         other people&rsquo;s personal information without a lawful basis.
+      </p>
+
+      <h2>Student work and student information</h2>
+      <p>
+        Vivran is built from what teachers prepare, not from what students submit. When you upload teaching material,
+        including past lesson plans, slides, worksheets, question papers and answer keys you have used before:
+      </p>
+      <ul>
+        <li>
+          <strong>Do not upload work submitted by students</strong>, such as answer scripts, marked worksheets,
+          assignments or projects. Vivran may decline files that appear to be student-submitted work.
+        </li>
+        <li>
+          Remove students&rsquo; names, roll numbers, marks and other details that identify a student before you
+          upload. Vivran may remove students&rsquo; names it detects in an upload before the material is processed
+          or stored.
+        </li>
+        <li>
+          Blank question papers, answer keys and marking schemes that you or your institution wrote are fine to upload.
+        </li>
+      </ul>
+      <p>
+        These checks are a safeguard, not a guarantee. By uploading, you confirm that the material contains no
+        student&rsquo;s personal information, or that you have a lawful basis to share it. You agree to indemnify
+        Vivran against claims, losses and costs arising from material you upload in breach of this section.
       </p>
 
       <h2>AI-generated content</h2>

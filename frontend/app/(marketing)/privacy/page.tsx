@@ -6,7 +6,7 @@ export const metadata: Metadata = { title: "Privacy policy | Vivran" };
 
 export default function PrivacyPage() {
   return (
-    <LegalPage title="Privacy policy" updated="27 September 2026">
+    <LegalPage title="Privacy policy" updated="3 October 2026">
       <p>
         Vivran helps teachers turn their own material into course plans, slides, notes and exam papers. This policy
         explains what information we collect to do that, who processes it, how long we keep it, and the choices you
@@ -18,6 +18,12 @@ export default function PrivacyPage() {
         <li><strong>Account details</strong> — your name and email address, and a sign-in credential managed by our authentication provider (a password, or your Google account if you sign in with Google).</li>
         <li><strong>Teaching preferences</strong> — the subjects, grade levels, language and default difficulty you choose.</li>
         <li><strong>Material you upload</strong> — PDF, Word and PowerPoint files and YouTube links, the text we extract from them (including YouTube transcripts), and search indexes built from that text so generated work can cite it.</li>
+        <li><strong>Your teaching style</strong> — when you add past papers or slides on the Teaching style page, we read
+          them on our own server and keep only what we read: their structure, marks, timing and short question excerpts,
+          with student names and roll numbers redacted, plus the patterns you accept or decline. The files themselves are
+          not stored, and neither they nor the excerpts are sent to an AI provider. When you use a pattern, only its
+          description (for example, a paper&rsquo;s sections and marks) is included in the request for a new paper.
+          You can remove any file, or all of it, from that page.</li>
         <li><strong>What you create</strong> — the prompts you write and the plans, slides, notes, worksheets, papers, audio and media Vivran generates for you.</li>
         <li><strong>Technical data</strong> — server logs, your IP address (used to limit request rates and prevent abuse) and records of generation requests, including how much AI processing each used.</li>
       </ul>
