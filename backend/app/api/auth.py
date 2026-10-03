@@ -12,10 +12,11 @@ from pydantic import BaseModel, Field
 from app.api.deps import get_current_user, require_teacher
 from app.core.auth import CurrentUser
 from app.core.config import settings
-from app.core.rate_limit import limit
+from app.core.rate_limit import limit, referral_failures
 from app.services.provisioning import (
     delete_teacher_account,
     provision_teacher_full,
+    referral_code_matches,
     save_teacher_preferences,
     verify_and_mark_referral,
 )
@@ -24,7 +25,17 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 class ReferralCodeCheck(BaseModel):
-    code: str
+    code: str = Field(max_length=200)
+
+
+def _refuse_if_budget_spent() -> None:
+    """Both referral endpoints share one global budget of wrong guesses (see
+    FailureBudget) — the per-IP limit alone is bypassed by a spoofed header."""
+    if referral_failures.exhausted():
+        raise HTTPException(
+            status_code=429,
+            detail="Too many incorrect codes have been tried recently. Please wait a few minutes and try again.",
+        )
 
 
 @router.post("/verify-referral")
@@ -42,10 +53,11 @@ def verify_referral(request: Request, payload: ReferralCodeCheck) -> dict:
     machine in minutes. The budget is generous enough that a teacher
     fat-fingering the code they were emailed never notices.
     """
-    # An empty submitted code can never pass — see verify_and_mark_referral()
-    # for why (a cleared REFERRAL_CODE must close the gate, not open it).
-    code = payload.code.strip()
-    return {"valid": bool(code) and code == settings.referral_code}
+    _refuse_if_budget_spent()
+    valid = referral_code_matches(payload.code)
+    if not valid:
+        referral_failures.record_failure()
+    return {"valid": valid}
 
 
 @router.post("/verify-referral-account")
@@ -64,8 +76,11 @@ def verify_referral_account(
     there's no "before signup" moment to intercept for that flow. This is
     the one gate that can't be bypassed by switching sign-in methods.
     """
+    _refuse_if_budget_spent()
     try:
         valid = verify_and_mark_referral(user, payload.code)
+        if not valid:
+            referral_failures.record_failure()
     except RuntimeError as exc:
         # The code was right but we could not persist that. Reporting valid=true
         # here would let the teacher in for one session and re-gate them on the

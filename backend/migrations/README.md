@@ -21,6 +21,11 @@ Apply to a Supabase/Postgres database in order. Two options:
    (`app/services/jobs.py`, `GET /api/jobs`) is correct without it; this just
    makes the per-workspace job lookups that the UI polls index-served instead
    of sequential scans. Safe to re-run.
+8. Paste `0007_lock_public_api.sql` → Run. **Security fix — apply now.** Turns
+   on RLS for every table and removes all access for the `anon` and
+   `authenticated` roles, so the anon key shipped to browsers can no longer
+   read tables directly or flip `referral_verified` on its own profile. The
+   backend's service-role key is unaffected. Safe to re-run.
 
 ## Option B — psql / Supabase CLI
 
@@ -48,9 +53,9 @@ done
 
 - `teacher_profiles.user_id` and `workspaces.owner_id` are FK-locked to the
   Supabase `auth.users` table — this prevents fake teacher rows.
-- RLS is enabled for `teacher_profiles` and `workspaces` (self-scoped).
-- Multi-tenant child tables (`projects`, `materials`, …) are scoped through
-  the workspace; the policy template is in `0002_auth_rls.sql`.
+- After `0007`, RLS is on for every table and the browser roles (`anon`,
+  `authenticated`) have no table access at all: the frontend uses Supabase for
+  sign-in only. Don't add a client-side table read without a policy for it.
 - The backend talks to PostgREST with the **service-role key**, which bypasses
   RLS entirely. RLS is defence in depth for direct client access; tenancy for
   anything the API reads or writes is enforced in application code by filtering

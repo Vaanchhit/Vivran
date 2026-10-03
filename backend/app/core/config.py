@@ -1,13 +1,5 @@
 from pydantic_settings import BaseSettings
 
-# The beta code as originally committed. It is PUBLIC — it has been in this
-# repo's git history since the gate shipped, so anyone with repo access (or a
-# copy of an old checkout) knows it. It stays as the default purely so the
-# live gate keeps working until REFERRAL_CODE is set on the host; rotating it
-# there retires this value without a redeploy. app/main.py logs a warning at
-# startup whenever production is still running on it.
-LEGACY_COMMITTED_REFERRAL_CODE = "632006"
-
 # Model pins, from scripts/bench_models.py run on this key on 2026-09-27
 # (production prompts and validators, one raw attempt per call, no retries):
 #
@@ -126,11 +118,11 @@ class Settings(BaseSettings):
     # bundle, readable via view-source. Overridable via REFERRAL_CODE env
     # var so it can be rotated without a code change/redeploy.
     #
-    # The default is the already-public committed code (see above). It is
-    # NOT blanked out here on purpose: an empty default would take the live
-    # gate down the moment this deploys, before REFERRAL_CODE exists on the
-    # host. Set REFERRAL_CODE, then this literal is dead weight.
-    referral_code: str = LEGACY_COMMITTED_REFERRAL_CODE
+    # No default. This repository is public, so any code written here is a
+    # published code. Unset, the gate refuses every code (an empty code never
+    # matches; see referral_code_matches()), which closes signups rather than
+    # opening them. Use a long random value: the gate is a shared secret.
+    referral_code: str = ""
 
     # --- Background generation jobs (app/services/jobs.py) ------------------
     # How many generations may run off-request at once. Deliberately small:

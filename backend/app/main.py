@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import assessments, auth, content, health, jobs, library, materials, projects, teacher_workflows
 from app.api.deps import require_verified_teacher
-from app.core.config import LEGACY_COMMITTED_REFERRAL_CODE, settings
+from app.core.config import settings
 from app.core.logging import logger
 from app.core.rate_limit import install_rate_limiting
 
@@ -42,11 +42,10 @@ app.include_router(content.router, prefix="/api", dependencies=_beta_gated)
 # the teacher's own generated content.
 app.include_router(jobs.router, prefix="/api", dependencies=_beta_gated)
 
-if settings.app_env == "production" and settings.referral_code == LEGACY_COMMITTED_REFERRAL_CODE:
-    logger.warning(
-        "REFERRAL_CODE is not set — falling back to the value committed in "
-        "app/core/config.py, which is public in the git history. Set "
-        "REFERRAL_CODE to a fresh, longer code in the Render dashboard."
+if settings.app_env == "production" and not settings.referral_code:
+    logger.error(
+        "REFERRAL_CODE is not set: the beta gate refuses every code, so no new "
+        "teacher can get in. Set REFERRAL_CODE in the Render dashboard."
     )
 
 

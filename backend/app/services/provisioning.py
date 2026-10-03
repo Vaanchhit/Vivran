@@ -10,6 +10,7 @@ testable offline.
 """
 from __future__ import annotations
 
+import hmac
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -278,6 +279,21 @@ def _save_preferences_local(
     return dict(profile)
 
 
+def referral_code_matches(code: str) -> bool:
+    """The one comparison both referral endpoints use.
+
+    An empty code never passes, and neither does anything while REFERRAL_CODE
+    is unset: clearing the env var must close the gate, not turn it into a
+    no-op that reports "valid". Compared in constant time so response timing
+    says nothing about how much of a guess was right.
+    """
+    submitted = code.strip()
+    expected = settings.referral_code.strip()
+    if not submitted or not expected:
+        return False
+    return hmac.compare_digest(submitted.encode(), expected.encode())
+
+
 def verify_and_mark_referral(user: CurrentUser, code: str) -> bool:
     """Authenticated counterpart to the pre-signup /auth/verify-referral check.
 
@@ -287,11 +303,7 @@ def verify_and_mark_referral(user: CurrentUser, code: str) -> bool:
     Supabase creates the auth.users row automatically on the OAuth callback,
     well before the app has any chance to ask for a code up front.
     """
-    # An empty submitted code can never pass, even if REFERRAL_CODE is
-    # accidentally set to "" on the host — otherwise clearing the env var
-    # would silently turn the beta gate into a no-op that still reports
-    # "valid", which is worse than a gate that refuses everyone.
-    if not code.strip() or code.strip() != settings.referral_code:
+    if not referral_code_matches(code):
         return False
 
     if settings.supabase_url and settings.supabase_service_role_key:

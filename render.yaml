@@ -32,8 +32,9 @@ services:
       # this service actually reads — these were previously set only in the
       # dashboard and invisible from the repo. `sync: false` tells Render to
       # keep whatever is already configured there; it does not blank them.
-      # REFERRAL_CODE in particular MUST be set: without it the beta gate falls
-      # back to the code committed in app/core/config.py, which is public.
+      # REFERRAL_CODE in particular MUST be set: without it the beta gate
+      # refuses every code and no new teacher can get in. Use a long random
+      # value; the old six-digit code is public in this repo's history.
       - key: REFERRAL_CODE
         sync: false
       - key: ELEVENLABS_API_KEY

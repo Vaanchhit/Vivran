@@ -26,7 +26,10 @@ Key Value / Redis backend slowapi already supports.
 """
 from __future__ import annotations
 
-from typing import Any, Callable
+import threading
+import time
+from collections import deque
+from typing import Any, Callable, Deque
 
 from fastapi import FastAPI, Request
 
@@ -56,6 +59,50 @@ def _client_key(request: Request) -> str:
     if forwarded:
         return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
+
+
+class FailureBudget:
+    """A cap on failed attempts across ALL clients, for guessable secrets.
+
+    The per-IP limit above is keyed on a header the client writes, so someone
+    sending a fresh X-Forwarded-For with every request is never throttled by
+    it. This budget doesn't care who is asking: once ``max_failures`` wrong
+    guesses land inside ``window_seconds``, every check is refused until the
+    window drains. During an attack that briefly locks out real teachers too,
+    which is the right trade for an invite gate: it turns guessing a six-digit
+    code from hours into years.
+
+    In-process, like the limiter: accurate on today's single instance.
+    """
+
+    def __init__(self, max_failures: int, window_seconds: float) -> None:
+        self.max_failures = max_failures
+        self.window_seconds = window_seconds
+        self._failures: Deque[float] = deque()
+        self._lock = threading.Lock()
+
+    def _drain(self, now: float) -> None:
+        while self._failures and now - self._failures[0] > self.window_seconds:
+            self._failures.popleft()
+
+    def exhausted(self) -> bool:
+        with self._lock:
+            self._drain(time.monotonic())
+            return len(self._failures) >= self.max_failures
+
+    def record_failure(self) -> None:
+        with self._lock:
+            now = time.monotonic()
+            self._drain(now)
+            self._failures.append(now)
+
+    def reset(self) -> None:
+        with self._lock:
+            self._failures.clear()
+
+
+# 30 wrong referral codes per 10 minutes, from everyone combined.
+referral_failures = FailureBudget(max_failures=30, window_seconds=600)
 
 
 if _SLOWAPI_AVAILABLE:

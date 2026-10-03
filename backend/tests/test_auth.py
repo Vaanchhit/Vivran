@@ -160,3 +160,27 @@ def test_verify_referral_rejects_empty_code(client):
 
 def test_verify_referral_accepts_the_configured_code(client):
     assert client.post("/api/auth/verify-referral", json={"code": settings.referral_code}).json()["valid"] is True
+
+
+def test_unset_referral_code_refuses_everything(client, monkeypatch):
+    """No default code: an unset REFERRAL_CODE closes the gate, it never opens it."""
+    monkeypatch.setattr(settings, "referral_code", "")
+    assert client.post("/api/auth/verify-referral", json={"code": ""}).json()["valid"] is False
+    assert client.post("/api/auth/verify-referral", json={"code": "632006"}).json()["valid"] is False
+
+
+def test_wrong_guesses_from_every_client_share_one_budget(client):
+    """A fresh X-Forwarded-For per request dodges the per-IP limit, so wrong
+    guesses are also capped globally, whoever sends them."""
+    from app.core.rate_limit import referral_failures
+
+    for i in range(referral_failures.max_failures):
+        resp = client.post(
+            "/api/auth/verify-referral", json={"code": f"guess-{i}"}, headers={"X-Forwarded-For": f"10.0.0.{i}"}
+        )
+        assert resp.json()["valid"] is False
+
+    blocked = client.post(
+        "/api/auth/verify-referral", json={"code": settings.referral_code}, headers={"X-Forwarded-For": "10.9.9.9"}
+    )
+    assert blocked.status_code == 429

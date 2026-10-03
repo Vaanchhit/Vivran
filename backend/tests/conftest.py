@@ -41,10 +41,22 @@ os.environ["GEMINI_RATE_LIMIT_ENABLED"] = "false"
 # left to the .env file, for the same reason the Supabase keys above are.
 os.environ["GROQ_API_KEY"] = ""
 
+# The gate has no default code (the repo is public), so the suite brings its own.
+os.environ["REFERRAL_CODE"] = "test-referral-code"
+
 import jwt  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.core.config import settings  # noqa: E402
+from app.core.rate_limit import referral_failures  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _fresh_referral_budget():
+    """Wrong-code tests would otherwise spend the global budget for later ones."""
+    referral_failures.reset()
+    yield
+    referral_failures.reset()
 
 
 @pytest.fixture(scope="session")
