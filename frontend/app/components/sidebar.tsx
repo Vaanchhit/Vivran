@@ -13,6 +13,7 @@ import {
   FileCheck2,
   FolderOpen,
   Library,
+  LifeBuoy,
   PenLine,
   Settings,
   User,
@@ -40,6 +41,7 @@ export function TeacherSidebar() {
     { label: "Teaching style", href: "/teacher/memory", icon: PenLine },
     { label: "Library", href: "/teacher/library", icon: Library },
     { label: "Settings", href: "/teacher/settings", icon: Settings },
+    { label: "Help", href: "/teacher/help", icon: LifeBuoy },
   ];
 
   return (
