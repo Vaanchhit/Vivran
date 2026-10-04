@@ -1,8 +1,8 @@
 """Assessments API (§47) & Questions API for single-item regeneration."""
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 from app.api.deps import require_teacher, require_workspace_id, teacher_session
 from app.api.jobs import ASYNC_JOB_QUERY, dispatch_generation
@@ -10,7 +10,7 @@ from app.core.auth import CurrentUser
 from app.core.config import settings
 from app.core.errors import raise_for_service_result
 from app.core.rate_limit import limit
-from app.generation.assessments import generate_assessment, regenerate_single_question
+from app.generation.assessments import QUESTION_TYPES, generate_assessment, regenerate_single_question
 from app.generation.pdf_export import render_assessment_pdf
 from app.media.tally import TallyService
 from app.services.supabase_service import SupabaseError
@@ -23,6 +23,21 @@ router = APIRouter(tags=["assessments"])
 _GEN_LIMIT = "30/minute;300/hour"
 
 
+QuestionType = Literal["mcq", "true_false", "fill_blank", "short_answer", "long_answer", "numerical", "case_based"]
+
+# Ceilings for a teacher-chosen paper. They bound what one request can cost:
+# the model writes exactly these questions and no more.
+MAX_PER_TYPE = 30
+MAX_QUESTIONS = 60
+MAX_MARKS = 200
+
+
+class QuestionPlanItem(BaseModel):
+    type: QuestionType
+    count: int = Field(ge=1, le=MAX_PER_TYPE)
+    marks_each: Optional[int] = Field(default=None, ge=1, le=20)
+
+
 class AssessmentGenerateRequest(BaseModel):
     grade: str
     subject: str
@@ -33,6 +48,20 @@ class AssessmentGenerateRequest(BaseModel):
     # The teacher's accepted teaching style (app/memory). Off for one paper
     # when they want Vivran's default shape instead.
     use_style: bool = True
+    # The question types and how many of each, picked by the teacher. When
+    # given, it IS the paper's structure and total_marks is computed from it.
+    question_plan: Optional[List[QuestionPlanItem]] = None
+
+    @model_validator(mode="after")
+    def _plan_within_limits(self):
+        plan = self.question_plan or []
+        if len({p.type for p in plan}) != len(plan):
+            raise ValueError("Each question type can appear only once in question_plan.")
+        if sum(p.count for p in plan) > MAX_QUESTIONS:
+            raise ValueError(f"A paper can have at most {MAX_QUESTIONS} questions.")
+        if sum(p.count * (p.marks_each or QUESTION_TYPES[p.type][1]) for p in plan) > MAX_MARKS:
+            raise ValueError(f"A paper can carry at most {MAX_MARKS} marks.")
+        return self
 
 
 @router.post("/assessments/generate")
@@ -74,6 +103,7 @@ def api_generate_assessment(
             workspace_id=workspace_id,
             material_id=payload.material_id,
             use_style=payload.use_style,
+            question_plan=[p.model_dump() for p in payload.question_plan] if payload.question_plan else None,
         ),
     )
 

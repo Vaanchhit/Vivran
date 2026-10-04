@@ -11,8 +11,35 @@ app/generation/slide_html.py). Deliberately deterministic and cheap: these are
 things a model gets wrong often and a regex can catch perfectly, so there is no
 reason to pay a model to judge them.
 """
-from typing import Dict, Any, List
+import re
+from typing import Any, Dict, List, Optional, Tuple
+
 from app.ai.schemas import AssessmentSchema
+
+_BLANK = re.compile(r"_{3,}")
+
+
+def _shape_errors(assessment: AssessmentSchema, blueprint: List[Tuple[str, str, int, int]]) -> List[str]:
+    """The paper must have exactly the sections and question counts it was asked for.
+
+    Marks and type labels are stamped from the plan before this runs (see
+    _apply_blueprint_marks), so what's left to check is what stamping can't
+    fix: a section with too many or too few questions, an MCQ without real
+    options, a fill-in-the-blank with no blank.
+    """
+    errors: List[str] = []
+    if len(assessment.sections) != len(blueprint):
+        return [f"The paper must have exactly {len(blueprint)} sections ({', '.join(n for n, _, _, _ in blueprint)}); it has {len(assessment.sections)}."]
+    for sec, (name, qtype, count, _) in zip(assessment.sections, blueprint):
+        if len(sec.questions) != count:
+            errors.append(f"{name} must have exactly {count} {qtype} question(s); it has {len(sec.questions)}.")
+            continue
+        for q in sec.questions:
+            if qtype == "mcq" and len([o for o in (q.options or []) if str(o).strip()]) < 3:
+                errors.append(f"Question {q.question_number} is multiple choice but has fewer than 3 options.")
+            if qtype == "fill_blank" and not _BLANK.search(q.question_text):
+                errors.append(f"Question {q.question_number} is fill-in-the-blank but has no blank (____).")
+    return errors
 
 
 class ValidationResult:
@@ -24,8 +51,12 @@ class ValidationResult:
         return {"valid": self.valid, "errors": self.errors}
 
 
-def validate_assessment(assessment: AssessmentSchema, target_marks: int) -> ValidationResult:
-    errors = []
+def validate_assessment(
+    assessment: AssessmentSchema,
+    target_marks: int,
+    blueprint: Optional[List[Tuple[str, str, int, int]]] = None,
+) -> ValidationResult:
+    errors = _shape_errors(assessment, blueprint) if blueprint else []
 
     # Calculate actual total marks across all sections & questions
     actual_marks = 0

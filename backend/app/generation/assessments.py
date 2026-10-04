@@ -27,7 +27,7 @@ Produce a complete question paper as JSON matching exactly this shape:
       "questions": [
         {
           "question_number": integer, "section": string,
-          "question_type": "mcq" | "true_false" | "short_answer" | "long_answer" | "numerical",
+          "question_type": "mcq" | "true_false" | "fill_blank" | "short_answer" | "long_answer" | "numerical" | "case_based",
           "question_text": string, "marks": integer,
           "difficulty": "easy" | "medium" | "hard", "bloom_level": string,
           "options": string[] or null (required for mcq, null otherwise),
@@ -41,7 +41,9 @@ Produce a complete question paper as JSON matching exactly this shape:
 The sum of every question's "marks" across all sections MUST equal the requested total_marks exactly.
 Ground questions in the provided source excerpts when given, and cite them via "source_ids"; otherwise use
 sound subject-matter knowledge and leave "source_ids" empty — never fabricate a citation.
-Every question needs a correct, non-empty "answer". Do not repeat a question. Return JSON only.
+Every question needs a correct, non-empty "answer". Do not repeat a question.
+Keep "solution" brief: one sentence for objective questions, at most three short marking points otherwise.
+Return JSON only.
 """ + LEVEL_INSTRUCTION
 
 
@@ -72,12 +74,53 @@ def marks_blueprint(total_marks: int, difficulty: str) -> List[Tuple[str, str, i
     return plan
 
 
-def _apply_blueprint_marks(data: Dict[str, Any], blueprint: List[Tuple[str, str, int, int]], total_marks: int) -> None:
-    """Stamps each question's marks from the plan when the model kept its shape.
+# Question types a teacher can ask for, in the order a paper presents them,
+# with the marks each carries when the teacher doesn't say. Objective types
+# first, then the written ones, then the long and case-based ones.
+QUESTION_TYPES: Dict[str, Tuple[str, int]] = {
+    "mcq": ("Multiple choice", 1),
+    "true_false": ("True or false", 1),
+    "fill_blank": ("Fill in the blank", 1),
+    "short_answer": ("Short answer", 2),
+    "numerical": ("Numerical", 3),
+    "long_answer": ("Long answer", 5),
+    "case_based": ("Case-based", 4),
+}
 
-    The slot a question fills defines its marks, so a model that wrote the
-    right questions but mislabelled one is corrected rather than regenerated.
-    A paper with a different shape is left alone for the validator to reject.
+# What each type needs from the model beyond the shared JSON shape. Only the
+# lines for types in the paper are sent.
+_TYPE_RULES = {
+    "mcq": 'mcq: exactly 4 "options"; "answer" is the text of the correct option.',
+    "true_false": 'true_false: a statement to judge; "options" ["True", "False"]; "answer" is "True" or "False".',
+    "fill_blank": 'fill_blank: "question_text" contains exactly one blank written as ____ ; "answer" is only the missing word or phrase.',
+    "short_answer": "short_answer: answerable in two to four sentences.",
+    "numerical": 'numerical: gives every value needed; "answer" is the final value with its unit.',
+    "long_answer": "long_answer: needs a developed answer; \"solution\" lists the marking points.",
+    "case_based": "case_based: open with a short case or data set (3-5 sentences) built only from the excerpts or the topic, then ask about it.",
+}
+
+
+def blueprint_from_plan(plan: List[Dict[str, Any]]) -> List[Tuple[str, str, int, int]]:
+    """A teacher's chosen question types and counts -> the paper's fixed structure.
+
+    One section per type, in QUESTION_TYPES order whatever order they were
+    picked in, so the paper reads objective-first like a set paper does.
+    """
+    order = list(QUESTION_TYPES)
+    items = sorted((p for p in plan if p["type"] in QUESTION_TYPES and p["count"] > 0), key=lambda p: order.index(p["type"]))
+    return [
+        (f"Section {chr(ord('A') + i)}", p["type"], int(p["count"]), int(p.get("marks_each") or QUESTION_TYPES[p["type"]][1]))
+        for i, p in enumerate(items)
+    ]
+
+
+def _apply_blueprint_marks(data: Dict[str, Any], blueprint: List[Tuple[str, str, int, int]], total_marks: int) -> None:
+    """Stamps each question's marks, type, section and number from its slot.
+
+    The slot a question fills defines all four, so a model that wrote the
+    right questions but mislabelled one is corrected here rather than paid to
+    write the paper again. A paper with a different shape (a section short, a
+    question extra) is left alone for the shape check to reject.
     """
     sections = data.get("sections")
     if not isinstance(sections, list) or len(sections) != len(blueprint):
@@ -85,10 +128,18 @@ def _apply_blueprint_marks(data: Dict[str, Any], blueprint: List[Tuple[str, str,
     for sec, (_, _, count, each) in zip(sections, blueprint):
         if not isinstance(sec, dict) or len(sec.get("questions") or []) != count:
             return
-    for sec, (_, _, _, each) in zip(sections, blueprint):
+    number = 0
+    for sec, (name, qtype, _, each) in zip(sections, blueprint):
+        sec["name"] = name
         for q in sec["questions"]:
-            if isinstance(q, dict):
-                q["marks"] = each
+            if not isinstance(q, dict):
+                continue
+            number += 1
+            q.update(marks=each, question_type=qtype, section=name, question_number=number)
+            if qtype == "true_false":
+                q["options"] = ["True", "False"]
+            elif qtype != "mcq":
+                q["options"] = None
     data["total_marks"] = total_marks
 
 
@@ -118,21 +169,29 @@ def _build_prompt(
         lines.append("\nGround the questions in these excerpts from the teacher's own uploaded materials. Cite by their tag (S1, S2, ...) in \"source_ids\":")
         for i, c in enumerate(context, start=1):
             lines.append(f"[S{i}] ({c.get('source_material', 'source')}) {c['content'][:600]}")
+    types = [t for t in QUESTION_TYPES if any(qtype == t for _, qtype, _, _ in (blueprint or marks_blueprint(total_marks, difficulty)))]
+    lines.append("\nRules for the question types in this paper:")
+    lines.extend(f"- {_TYPE_RULES[t]}" for t in types)
     lines.extend(style_lines or [])
     return "\n".join(lines)
 
 
-def _teacher_style(workspace_id: Optional[str], subject: str, total_marks: int) -> Dict[str, Any]:
+def _teacher_style(workspace_id: Optional[str], subject: str, total_marks: int, shape_chosen: bool = False) -> Dict[str, Any]:
     """The teacher's accepted style for papers in this subject, ready to use.
 
     Empty (and the default paper) when they have accepted nothing, have no
-    workspace, or turned it off for this paper.
+    workspace, or turned it off for this paper. When they chose this paper's
+    question types themselves (``shape_chosen``), that choice wins: their
+    usual structure and case-based share are set aside, and only the
+    phrasing traits (thinking balance, command words, timing) still apply.
     """
     if not workspace_id:
         return {"blueprint": None, "case_sections": [], "lines": [], "applied": []}
     traits = memory_store.active_traits(workspace_id, subject, "exam_paper")
     blueprint = None
     case_names: List[str] = []
+    if shape_chosen:
+        traits = {k: v for k, v in traits.items() if k not in ("structure", "case_based")}
     structure = (traits.get("structure") or {}).get("value")
     if structure:
         blueprint = memory_style.blueprint_from_structure(total_marks, structure["sections"])
@@ -156,9 +215,17 @@ def generate_assessment(
     workspace_id: Optional[str] = None,
     material_id: Optional[str] = None,
     use_style: bool = True,
+    question_plan: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
-    style = _teacher_style(workspace_id if use_style else None, subject, total_marks)
-    blueprint = style["blueprint"] or marks_blueprint(total_marks, difficulty)
+    # The teacher's own choice of question types and counts is the paper's
+    # shape, ahead of their saved style and of Vivran's default; the total
+    # then follows from it rather than being asked for separately.
+    chosen = blueprint_from_plan(question_plan) if question_plan else None
+    if chosen:
+        total_marks = sum(count * each for _, _, count, each in chosen)
+    style = _teacher_style(workspace_id if use_style else None, subject, total_marks, shape_chosen=bool(chosen))
+    blueprint = chosen or style["blueprint"] or marks_blueprint(total_marks, difficulty)
+    enforced_shape = chosen or style["blueprint"]
     context: List[Dict[str, Any]] = []
     if workspace_id:
         try:
@@ -229,7 +296,10 @@ def generate_assessment(
             last_error = f"invalid JSON/schema: {e}"
             continue
 
-        validation = validate_assessment(assessment, target_marks=total_marks)
+        # The exact shape is enforced when the teacher chose it (this paper's
+        # question types, or their accepted style). Vivran's own default keeps
+        # the looser total-marks check, so it costs no extra retries.
+        validation = validate_assessment(assessment, target_marks=total_marks, blueprint=enforced_shape)
         if validation.valid:
             break
         last_error = "; ".join(validation.errors)

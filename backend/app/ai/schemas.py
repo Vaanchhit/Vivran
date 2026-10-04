@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 class QuestionSchema(BaseModel):
     question_number: int
     section: Optional[str] = "Section A"
-    question_type: str = Field(..., description="mcq, true_false, short_answer, long_answer, numerical")
+    question_type: str = Field(..., description="mcq, true_false, fill_blank, short_answer, long_answer, numerical, case_based")
     question_text: str
     marks: int
     difficulty: str = "medium"
