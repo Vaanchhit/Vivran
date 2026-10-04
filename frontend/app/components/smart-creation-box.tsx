@@ -23,6 +23,7 @@ import {
   type Material,
   type CoursePlan,
   type AssessmentGenerateResponse,
+  type QuestionPlanItem,
   type DeckReady,
   type DeckOutline,
   type DeckParams,
@@ -43,6 +44,11 @@ import {
   SLIDE_COUNT_OPTIONS,
   WORKSHEET_QUESTION_COUNT_OPTIONS,
   TOTAL_MARKS_OPTIONS,
+  QUESTION_TYPE_OPTIONS,
+  QUESTION_COUNT_PER_TYPE_OPTIONS,
+  MARKS_EACH_OPTIONS,
+  MAX_PAPER_QUESTIONS,
+  MAX_PAPER_MARKS,
 } from "@/lib/constants";
 
 function micApiAvailable(): boolean {
@@ -238,6 +244,98 @@ function NumberSelect({
   );
 }
 
+/** Pick question types; each picked type then asks how many, and how many marks each.
+ * What's picked here is the paper's exact structure (enforced again on the server). */
+function QuestionPlanEditor({
+  plan,
+  onChange,
+  questions,
+  marks,
+  tooBig,
+}: {
+  plan: QuestionPlanItem[];
+  onChange: (plan: QuestionPlanItem[]) => void;
+  questions: number;
+  marks: number;
+  tooBig: boolean;
+}) {
+  const toggle = (type: QuestionPlanItem["type"]) => {
+    const preset = QUESTION_TYPE_OPTIONS.find((o) => o.value === type)!;
+    onChange(
+      plan.some((p) => p.type === type)
+        ? plan.filter((p) => p.type !== type)
+        : [...plan, { type, count: preset.count, marks_each: preset.marks }],
+    );
+  };
+  const update = (type: QuestionPlanItem["type"], patch: Partial<QuestionPlanItem>) =>
+    onChange(plan.map((p) => (p.type === type ? { ...p, ...patch } : p)));
+  // Shown in paper order, whatever order they were picked in.
+  const rows = QUESTION_TYPE_OPTIONS.filter((o) => plan.some((p) => p.type === o.value));
+
+  return (
+    <div className="space-y-2">
+      <FieldLabel note={plan.length ? null : "optional: leave empty and Vivran shapes the paper"}>Question types</FieldLabel>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label="Question types">
+        {QUESTION_TYPE_OPTIONS.map((o) => {
+          const on = plan.some((p) => p.type === o.value);
+          return (
+            <button
+              key={o.value}
+              type="button"
+              aria-pressed={on}
+              onClick={() => toggle(o.value)}
+              className={`px-2.5 py-1.5 rounded-lg border text-xs transition-colors ${
+                on ? "bg-accent-soft border-accent-line text-foreground font-semibold" : "bg-card border-border text-muted hover:text-foreground"
+              }`}
+            >
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {rows.length > 0 && (
+        <div className="rounded-lg border border-border divide-y divide-border bg-card">
+          {rows.map((o) => {
+            const item = plan.find((p) => p.type === o.value)!;
+            return (
+              <div key={o.value} className="grid grid-cols-[minmax(0,1fr)_5.5rem_5.5rem_3.5rem] items-center gap-2 px-2.5 py-2 text-xs">
+                <span className="text-foreground font-medium truncate">{o.label}</span>
+                <select
+                  aria-label={`How many ${o.label.toLowerCase()} questions`}
+                  value={item.count}
+                  onChange={(e) => update(o.value, { count: Number(e.target.value) })}
+                  className={FIELD_CLS}
+                >
+                  {QUESTION_COUNT_PER_TYPE_OPTIONS.map((n) => <option key={n} value={n}>{n} q</option>)}
+                </select>
+                <select
+                  aria-label={`Marks for each ${o.label.toLowerCase()} question`}
+                  value={item.marks_each}
+                  onChange={(e) => update(o.value, { marks_each: Number(e.target.value) })}
+                  className={FIELD_CLS}
+                >
+                  {MARKS_EACH_OPTIONS.map((n) => <option key={n} value={n}>{n} mark{n === 1 ? "" : "s"}</option>)}
+                </select>
+                <span className="text-right text-muted tabular-nums">= {item.count * item.marks_each}</span>
+              </div>
+            );
+          })}
+          <div className={`flex justify-between px-2.5 py-2 text-xs font-semibold ${tooBig ? "text-danger" : "text-foreground"}`}>
+            <span>{questions} questions</span>
+            <span>{marks} marks</span>
+          </div>
+        </div>
+      )}
+      {tooBig && (
+        <div className="text-[11px] text-danger">
+          A paper can have up to {MAX_PAPER_QUESTIONS} questions and {MAX_PAPER_MARKS} marks.
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface Interpretation {
   raw_prompt: string;
   topics: string[];
@@ -250,7 +348,7 @@ interface Interpretation {
  * to re-derive them. */
 export type SmartCreationResult =
   | { artifactType: "course_plan"; ok: true; data: CoursePlan; params: { grade: string; subject: string; topics: string[]; durationWeeks: number } }
-  | { artifactType: "assessment"; ok: true; data: AssessmentGenerateResponse; params: { grade: string; subject: string; topics: string[]; marks: number; difficulty: string; materialId?: string } }
+  | { artifactType: "assessment"; ok: true; data: AssessmentGenerateResponse; params: { grade: string; subject: string; topics: string[]; marks: number; difficulty: string; materialId?: string; questionPlan?: QuestionPlanItem[] } }
   | { artifactType: "slides"; ok: true; data: DeckReady; params: { grade: string; subject: string; topic: string; slideCount: number } }
   | { artifactType: "worksheet"; ok: true; data: WorksheetResult; params: { grade: string; subject: string; topic: string; questionCount: number } }
   | { artifactType: "lesson_notes"; ok: true; data: LessonNotesResult; params: { grade: string; subject: string; topic: string } }
@@ -313,6 +411,13 @@ export function SmartCreationBox({
   const [language, setLanguage] = useTabState(k("language"), "");
   const [difficulty, setDifficulty] = useTabState(k("difficulty"), "");
   const [marks, setMarks] = useTabState<number | null>(k("marks"), null);
+  // The question types picked for a paper and how many of each. Empty means
+  // "let Vivran shape it" (the teacher's accepted style, else the default).
+  // Picked, it IS the paper: the total marks follow from it.
+  const [questionPlan, setQuestionPlan] = useTabState<QuestionPlanItem[]>(k("questionPlan"), []);
+  const planQuestions = questionPlan.reduce((n, p) => n + p.count, 0);
+  const planMarks = questionPlan.reduce((n, p) => n + p.count * p.marks_each, 0);
+  const planTooBig = planQuestions > MAX_PAPER_QUESTIONS || planMarks > MAX_PAPER_MARKS;
   const [durationWeeks, setDurationWeeks] = useTabState<number | null>(k("durationWeeks"), null);
   const [durationMinutes, setDurationMinutes] = useTabState<number | null>(k("durationMinutes"), null);
   const [slideCount, setSlideCount] = useTabState<number | null>(k("slideCount"), null);
@@ -500,6 +605,7 @@ export function SmartCreationBox({
     !artifactType ? "what you want to create" : null,
     requiresGradeSubject && !grade.trim() ? "a grade/year" : null,
     requiresGradeSubject && !subject.trim() ? "a subject" : null,
+    artifactType === "assessment" && planTooBig ? `a smaller paper (up to ${MAX_PAPER_QUESTIONS} questions and ${MAX_PAPER_MARKS} marks)` : null,
   ].filter(Boolean) as string[];
   const readyToGenerate = !!interpretation && missingFields.length === 0;
 
@@ -525,7 +631,17 @@ export function SmartCreationBox({
       add("Grade / Year", grade, "grade");
       add("Subject", subject, "subject");
     }
-    if (artifactType === "assessment") {
+    if (artifactType === "assessment" && questionPlan.length) {
+      rows.push({
+        label: "Questions",
+        value: questionPlan
+          .map((p) => `${p.count} ${QUESTION_TYPE_OPTIONS.find((o) => o.value === p.type)?.label.toLowerCase()} × ${p.marks_each}`)
+          .join(", "),
+        note: null,
+      });
+      rows.push({ label: "Total marks", value: String(planMarks), note: "from your question types" });
+      add("Difficulty", difficulty, "difficulty", COUNT_DEFAULTS.difficulty);
+    } else if (artifactType === "assessment") {
       add("Total marks", marks, "marks", COUNT_DEFAULTS.marks);
       add("Difficulty", difficulty, "difficulty", COUNT_DEFAULTS.difficulty);
     }
@@ -562,13 +678,14 @@ export function SmartCreationBox({
     try {
       switch (artifactType) {
         case "assessment": {
-          const resolvedMarks = marks ?? COUNT_DEFAULTS.marks;
-          const data = await generateAssessmentPaper(grade, subject, topics, resolvedMarks, resolvedDifficulty, materialId || undefined);
+          const plan = questionPlan.length ? questionPlan : undefined;
+          const resolvedMarks = plan ? planMarks : marks ?? COUNT_DEFAULTS.marks;
+          const data = await generateAssessmentPaper(grade, subject, topics, resolvedMarks, resolvedDifficulty, materialId || undefined, true, plan);
           onGenerated?.({
             artifactType: "assessment",
             ok: true,
             data,
-            params: { grade, subject, topics, marks: resolvedMarks, difficulty: resolvedDifficulty, materialId: materialId || undefined },
+            params: { grade, subject, topics, marks: resolvedMarks, difficulty: resolvedDifficulty, materialId: materialId || undefined, questionPlan: plan },
           });
           if (!data.assessment) finish(false, `Generation failed: ${data.validation.errors.join("; ")}`);
           else finish(true, `Your paper "${(data.assessment as { title: string }).title}" is ready.`, hrefFor("assessment", data.library_id));
@@ -799,16 +916,20 @@ export function SmartCreationBox({
             {artifactType === "assessment" && (
               <>
                 <div>
-                  <FieldLabel note={noteFor("marks")}>Total marks</FieldLabel>
-                  <NumberSelect
-                    ariaLabel="Total marks"
-                    value={marks}
-                    onChange={(v) => {
-                      setMarks(v);
-                      markTeacherSet("marks");
-                    }}
-                    options={TOTAL_MARKS_OPTIONS}
-                  />
+                  <FieldLabel note={questionPlan.length ? "from your question types" : noteFor("marks")}>Total marks</FieldLabel>
+                  {questionPlan.length ? (
+                    <div className={`${FIELD_CLS} bg-surface text-muted`} aria-label="Total marks, set by question types">{planMarks}</div>
+                  ) : (
+                    <NumberSelect
+                      ariaLabel="Total marks"
+                      value={marks}
+                      onChange={(v) => {
+                        setMarks(v);
+                        markTeacherSet("marks");
+                      }}
+                      options={TOTAL_MARKS_OPTIONS}
+                    />
+                  )}
                 </div>
                 <div>
                   <FieldLabel note={noteFor("difficulty")}>Difficulty</FieldLabel>
@@ -904,6 +1025,12 @@ export function SmartCreationBox({
                   }}
                   options={LANGUAGE_OPTIONS.filter((l) => l !== "Other")}
                 />
+              </div>
+            )}
+
+            {artifactType === "assessment" && (
+              <div className="col-span-2 lg:col-span-4">
+                <QuestionPlanEditor plan={questionPlan} onChange={setQuestionPlan} questions={planQuestions} marks={planMarks} tooBig={planTooBig} />
               </div>
             )}
 

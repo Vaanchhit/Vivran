@@ -27,9 +27,12 @@ interface FeatureExplainerProps {
   text: string;
   children: (describedBy: string) => React.ReactNode;
   className?: string;
+  /** The (i) button touch screens get. Off for small action buttons, where it
+   * would sit on the label; their result message explains what happened. */
+  touchButton?: boolean;
 }
 
-export function FeatureExplainer({ title, text, children, className = "" }: FeatureExplainerProps) {
+export function FeatureExplainer({ title, text, children, className = "", touchButton = true }: FeatureExplainerProps) {
   const id = useId();
   const panelId = `explain-${id}`;
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -91,7 +94,7 @@ export function FeatureExplainer({ title, text, children, className = "" }: Feat
     >
       {children(panelId)}
 
-      <button
+      {touchButton && <button
         type="button"
         aria-label={`What is ${title}?`}
         aria-expanded={open}
@@ -100,7 +103,7 @@ export function FeatureExplainer({ title, text, children, className = "" }: Feat
         className="hidden [@media(hover:none)]:flex absolute top-1.5 right-1.5 w-8 h-8 items-center justify-center rounded-full text-faint active:text-accent"
       >
         <Info className="w-3.5 h-3.5" />
-      </button>
+      </button>}
 
       <div
         id={panelId}

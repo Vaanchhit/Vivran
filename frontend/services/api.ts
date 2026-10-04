@@ -1,4 +1,5 @@
 import type { Placement } from "@/lib/slidekit/matcher";
+import type { QuestionType } from "@/lib/constants";
 import type { SourceChunk } from "@/lib/slidekit-bridge";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
@@ -220,6 +221,14 @@ export async function parseTeacherIntent(
   });
 }
 
+/** One question type in a teacher-built paper. When sent, it IS the paper's
+ * structure: the backend writes exactly these and works out the total. */
+export interface QuestionPlanItem {
+  type: QuestionType;
+  count: number;
+  marks_each: number;
+}
+
 export async function generateAssessmentPaper(
   grade: string,
   subject: string,
@@ -228,6 +237,7 @@ export async function generateAssessmentPaper(
   difficulty: string = "medium",
   materialId?: string,
   useStyle: boolean = true,
+  questionPlan?: QuestionPlanItem[],
 ): Promise<AssessmentGenerateResponse> {
   return request<AssessmentGenerateResponse>("POST", "/assessments/generate", {
     grade,
@@ -237,6 +247,7 @@ export async function generateAssessmentPaper(
     difficulty,
     material_id: materialId,
     use_style: useStyle,
+    question_plan: questionPlan && questionPlan.length ? questionPlan : undefined,
   });
 }
 

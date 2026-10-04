@@ -4,10 +4,9 @@ import React from "react";
 import Link from "next/link";
 import { SmartPromptBox } from "@/app/components/smart-prompt-box";
 import { RecentProjects } from "@/app/components/recent-projects";
-import { FeatureExplainer } from "@/app/components/feature-explainer";
+import { ShortcutGrid } from "@/app/components/shortcut-grid";
 import { useAuth } from "@/lib/auth-context";
-import { STAGES } from "@/lib/catalog";
-import { FolderKanban, Sparkles, ArrowRight } from "lucide-react";
+import { FolderKanban, Sparkles } from "lucide-react";
 
 export default function TeacherDashboard() {
   const { user } = useAuth();
@@ -41,40 +40,7 @@ export default function TeacherDashboard() {
       <section className="space-y-4">
         <h2 className="text-lg font-bold font-display text-foreground tracking-tight">Or start from a shortcut</h2>
 
-        {/* One row per stage: the stage on the left, its items as compact tiles
-            on the right. Stages have 1, 6 and 3 items, so columns left big gaps. */}
-        <div className="rounded-2xl bg-surface border border-border divide-y divide-border">
-          {STAGES.map((st) => (
-            <div key={st.key} className="p-4 flex flex-col md:flex-row md:items-center gap-3 md:gap-6">
-              <Link href={st.href} className="md:w-44 shrink-0 group">
-                <div className="font-bold text-sm text-foreground font-display flex items-center gap-1.5">
-                  {st.label}
-                  <ArrowRight className="w-3.5 h-3.5 text-muted opacity-0 group-hover:opacity-100 transition-all" />
-                </div>
-                <div className="text-[11px] text-muted mt-0.5 leading-snug">{st.blurb}</div>
-              </Link>
-              <div className="flex-1 flex flex-wrap gap-2">
-                {st.items.map((it) => {
-                  const Icon = it.icon;
-                  return (
-                    <FeatureExplainer key={it.key} title={it.title} text={it.explain}>
-                      {(describedBy) => (
-                        <Link
-                          href={it.href}
-                          aria-describedby={describedBy}
-                          className="flex items-center gap-2.5 px-3 py-2.5 [@media(hover:none)]:pr-9 rounded-xl bg-card border border-border hover:border-accent-line hover:-translate-y-0.5 transition-all"
-                        >
-                          <Icon className={`w-4 h-4 shrink-0 ${it.color}`} />
-                          <span className="text-[13px] font-semibold text-foreground whitespace-nowrap">{it.title}</span>
-                        </Link>
-                      )}
-                    </FeatureExplainer>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
+        <ShortcutGrid />
       </section>
 
       {/* Recent Projects Section (Spec §7 & §10) */}

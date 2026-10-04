@@ -12,6 +12,7 @@ import {
   getLibraryItem,
   regenerateQuestion,
   type AssessmentGenerateResponse,
+  type QuestionPlanItem,
   type Source,
   type WorksheetResult,
 } from "@/services/api";
@@ -19,6 +20,7 @@ import { SmartCreationBox } from "@/app/components/smart-creation-box";
 import { FeatureExplainer } from "@/app/components/feature-explainer";
 import { getLiveValue, setLiveValue, setTabValue, useLiveState, useTabState } from "@/lib/tab-state";
 import { stage } from "@/lib/catalog";
+import { QUESTION_TYPE_OPTIONS } from "@/lib/constants";
 
 interface UIQuestion {
   question_number: number;
@@ -59,6 +61,9 @@ const MODES: Record<Mode, { heading: string; placeholder: string }> = {
   },
 };
 
+const HEADER_PILL = "w-36 h-8 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border text-xs font-semibold";
+const HEADER_BUTTON = "border-border bg-card text-foreground hover:border-accent-line disabled:opacity-50";
+
 /** A paper as shown on screen: kept whole in the tab store so it survives leaving the page. */
 interface Paper {
   grade: string;
@@ -75,19 +80,19 @@ interface Paper {
   /** Accepted teaching-style traits that shaped this paper. */
   styleApplied?: { key: string; summary: string }[];
   /** What was asked for, so the paper can be made again without the teacher's style. */
-  request?: { grade: string; subject: string; topics: string[]; marks: number; difficulty: string; materialId?: string };
+  request?: { grade: string; subject: string; topics: string[]; marks: number; difficulty: string; materialId?: string; questionPlan?: QuestionPlanItem[] };
 }
 
 function toPaper(
   data: AssessmentGenerateResponse,
-  params: { grade: string; subject: string; marks: number; topics?: string[]; difficulty?: string; materialId?: string },
+  params: { grade: string; subject: string; marks: number; topics?: string[]; difficulty?: string; materialId?: string; questionPlan?: QuestionPlanItem[] },
   openedTitle: string | null = null,
 ): Paper {
   const { assessment, validation, grounded_on, question_ids, sources } = data;
   const base = {
     styleApplied: data.style_applied ?? [],
     request: params.topics
-      ? { grade: params.grade, subject: params.subject, topics: params.topics, marks: params.marks, difficulty: params.difficulty ?? "medium", materialId: params.materialId }
+      ? { grade: params.grade, subject: params.subject, topics: params.topics, marks: params.marks, difficulty: params.difficulty ?? "medium", materialId: params.materialId, questionPlan: params.questionPlan }
       : undefined,
     grade: params.grade,
     subject: params.subject,
@@ -155,7 +160,7 @@ function AssessPageInner() {
     setRestyling(true);
     setError(null);
     try {
-      const data = await generateAssessmentPaper(req.grade, req.subject, req.topics, req.marks, req.difficulty, req.materialId, false);
+      const data = await generateAssessmentPaper(req.grade, req.subject, req.topics, req.marks, req.difficulty, req.materialId, false, req.questionPlan);
       const next = toPaper(data, req);
       setPaper(next);
       setSelected(next.questions.length ? 0 : null);
@@ -422,31 +427,33 @@ function AssessPageInner() {
       {mode !== "worksheet" && paper && questions.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold font-display text-foreground">Generated Paper Preview {title ? `(${title})` : ""}</h2>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-chrome font-semibold bg-chrome-soft px-2.5 py-1 rounded-lg border border-chrome-line">
-                  Total: {paper.totalMarks} Marks {paper.groundedOn > 0 ? `· Grounded on ${paper.groundedOn} excerpts` : ""}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h2 className="text-base font-bold font-display text-foreground">Generated Paper Preview {title ? `(${title})` : ""}</h2>
+                {paper.groundedOn > 0 && <div className="text-[11px] text-muted mt-0.5">Grounded on {paper.groundedOn} excerpts from your materials</div>}
+              </div>
+              {/* One size for all three, so the row reads as a set. */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`${HEADER_PILL} text-chrome bg-chrome-soft border-chrome-line`}>
+                  Total: {paper.totalMarks} marks
                 </span>
-                <button
-                  type="button"
-                  onClick={exportPdf}
-                  disabled={exporting}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-accent-line disabled:opacity-50"
-                >
-                  {exporting ? <BookLoader className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
-                  Export PDF
-                </button>
+                <FeatureExplainer title="Export PDF" text="Downloads a printable paper. The answer key comes on its own last page, so you can print the paper without it." touchButton={false}>
+                  {(describedBy) => (
+                    <button type="button" onClick={exportPdf} disabled={exporting} aria-describedby={describedBy} className={`${HEADER_PILL} ${HEADER_BUTTON}`}>
+                      {exporting ? <BookLoader className="w-3.5 h-3.5" /> : <Download className="w-3.5 h-3.5" />}
+                      Export PDF
+                    </button>
+                  )}
+                </FeatureExplainer>
                 {questions.some((q) => q.question_type === "mcq") && (
-                  <button
-                    type="button"
-                    onClick={exportTally}
-                    disabled={exportingTally}
-                    className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border border-border bg-card text-foreground hover:border-accent-line disabled:opacity-50"
-                  >
-                    {exportingTally ? <BookLoader className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
-                    Export to Tally
-                  </button>
+                  <FeatureExplainer title="Export to Tally" text="Turns the multiple-choice questions into an online Tally quiz you can share with students as a link. Other question types are left out." touchButton={false}>
+                    {(describedBy) => (
+                      <button type="button" onClick={exportTally} disabled={exportingTally} aria-describedby={describedBy} className={`${HEADER_PILL} ${HEADER_BUTTON}`}>
+                        {exportingTally ? <BookLoader className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                        Export to Tally
+                      </button>
+                    )}
+                  </FeatureExplainer>
                 )}
               </div>
             </div>
@@ -477,7 +484,7 @@ function AssessPageInner() {
                   <div className="flex items-center justify-between text-xs mb-2">
                     <div className="flex items-center gap-2">
                       <span className="font-bold text-foreground bg-card px-2 py-0.5 rounded">Q{question.question_number}</span>
-                      <span className="text-chrome font-medium">{question.question_type}</span>
+                      <span className="text-chrome font-medium">{QUESTION_TYPE_OPTIONS.find((o) => o.value === question.question_type)?.label ?? question.question_type}</span>
                       <span>({question.marks} Mark{question.marks > 1 ? "s" : ""})</span>
                     </div>
                   </div>
