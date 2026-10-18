@@ -11,6 +11,8 @@ from app.core.config import settings
 from app.core.errors import raise_for_service_result
 from app.core.rate_limit import limit
 from app.generation.assessments import QUESTION_TYPES, generate_assessment, regenerate_single_question
+from app.memory import events as memory_events
+from app.memory import store as memory_store
 from app.generation.pdf_export import render_assessment_pdf
 from app.media.tally import TallyService
 from app.services.supabase_service import SupabaseError
@@ -81,6 +83,7 @@ def api_generate_assessment(
     if workspace_id and workspace_id != session["workspace_id"]:
         raise HTTPException(status_code=403, detail="Workspace access denied")
 
+    memory_events.record_generation(session["workspace_id"], "assessment", payload.subject, payload.grade, payload.model_dump())
     return dispatch_generation(
         async_job=async_job,
         task_type="assessment",
@@ -104,6 +107,7 @@ def api_generate_assessment(
             material_id=payload.material_id,
             use_style=payload.use_style,
             question_plan=[p.model_dump() for p in payload.question_plan] if payload.question_plan else None,
+            habit_lines=memory_store.habit_lines(session["workspace_id"], payload.subject) if payload.use_style else None,
         ),
     )
 
@@ -168,6 +172,7 @@ def api_regenerate_question(
     workspace_id: str = Depends(require_workspace_id),
     user: CurrentUser = Depends(require_teacher),
 ):
+    memory_events.record_regenerate(workspace_id, payload.option)
     try:
         return regenerate_single_question(
             question_id=question_id,

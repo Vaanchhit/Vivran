@@ -15,6 +15,8 @@ from app.core.auth import CurrentUser
 from app.core.logging import logger
 from app.core.rate_limit import limit
 from app.generation.planning import generate_course_plan
+from app.memory import events as memory_events
+from app.memory import store as memory_store
 from app.services import library
 from app.services.supabase_service import SupabaseError, is_configured, table_insert, table_select
 
@@ -45,7 +47,8 @@ def create_project(
 ):
     def _create():
         course_plan = generate_course_plan(
-            payload.grade, payload.subject, payload.topics, payload.duration_weeks, workspace_id=workspace_id
+            payload.grade, payload.subject, payload.topics, payload.duration_weeks, workspace_id=workspace_id,
+            style_lines=memory_store.habit_lines(workspace_id, payload.subject),
         )
 
         project_id = str(uuid.uuid4())
@@ -100,6 +103,7 @@ def create_project(
     # either produces a saved project or fails — it can never hand back a
     # project id that has no row, which is the failure the comment above is
     # about.
+    memory_events.record_generation(workspace_id, "course_plan", payload.subject, payload.grade, payload.model_dump())
     return dispatch_generation(
         async_job=async_job,
         task_type="course_plan",

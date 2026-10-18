@@ -30,6 +30,10 @@ Apply to a Supabase/Postgres database in order. Two options:
    `style_traits` for the Teaching style page; until it is applied that page
    reports that it isn't set up yet and paper generation ignores it). Safe to
    re-run.
+10. Paste `0009_search_and_prompt_memory.sql` → Run (full-text search next to
+   vector search, and the prompt history behind Teaching memory; until it is
+   applied search stays vector-only and prompt history is simply not kept).
+   Safe to re-run.
 
 ## Option B — psql / Supabase CLI
 

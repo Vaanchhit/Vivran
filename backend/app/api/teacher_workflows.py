@@ -1,10 +1,13 @@
+from typing import Any, Dict
+
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from app.ai.router import AIRequest, ModelRouter
 from app.ai.prompt_compiler import compile_teacher_prompt
-from app.api.deps import require_teacher
+from app.api.deps import require_teacher, teacher_session
 from app.core.auth import CurrentUser
+from app.memory import events as memory_events
 
 router = APIRouter(prefix="/workflow", tags=["teacher-workflows"])
 model_router = ModelRouter()
@@ -20,9 +23,13 @@ class TeacherIntentRequest(BaseModel):
 def parse_intent(
     payload: TeacherIntentRequest,
     user: CurrentUser = Depends(require_teacher),
+    session: Dict[str, Any] = Depends(teacher_session),
 ) -> dict:
     prompt = payload.teacher_prompt.strip()
     compiled_intent, degraded = compile_teacher_prompt(prompt)
+    # What they typed, with the intent that was read from it: the raw material
+    # for learning how this teacher asks (capped and redacted before storage).
+    memory_events.record_prompt(session["workspace_id"], prompt, compiled_intent.model_dump())
 
     ai_route = model_router.route(
         AIRequest(

@@ -61,6 +61,22 @@ class Settings(BaseSettings):
     embedding_model: str = "gemini-embedding-001"
     embedding_dimensions: int = 768
 
+    # --- Retrieval (app/retrieval) -------------------------------------------
+    # A chunk is only used when it is close enough to be evidence. Cosine
+    # similarity for gemini-embedding-001 on unrelated text sits well below
+    # relevant text; this floor drops the clearly unrelated, and the relative
+    # cut (a share of the best match) drops the tail that merely happens to be
+    # the nearest of a poor set. Both are TUNABLES, not facts: retune against
+    # tests/test_retrieval.py's cases and a few real materials.
+    retrieval_min_score: float = 0.35
+    retrieval_relative_cut: float = 0.72
+    # Candidates pulled per search before fusing, filtering and capping.
+    retrieval_candidates: int = 24
+    # Most chunks one page can contribute, so six results can't all be page 12.
+    retrieval_per_page_cap: int = 2
+    # Characters of source text a single generation prompt may carry.
+    retrieval_prompt_chars: int = 5000
+
     # --- Client-side pacing (app/ai/rate_limiter.py) ------------------------
     # Measured: the free tier allows 20 generateContent requests per minute, and
     # a full classroom pack fires ~9 of them in ~10s (~54 RPM instantaneous). 18

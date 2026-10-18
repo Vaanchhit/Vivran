@@ -18,6 +18,8 @@ from app.generation.artifacts import generate_lesson_notes, generate_slides, gen
 from app.generation.coursework import generate_interactive_coursework
 from app.generation.prompt_enhancement import enhance_creative_prompt
 from app.generation.slide_html import render_slides_html
+from app.memory import events as memory_events
+from app.memory import store as memory_store
 from app.media.cartesia import CartesiaService
 from app.media.elevenlabs import ElevenLabsService
 from app.retrieval.search import search_knowledge_base
@@ -66,6 +68,7 @@ def api_generate_slides(
     user: CurrentUser = Depends(require_teacher),
 ):
     ws = _validated_workspace(workspace_id, session)
+    memory_events.record_generation(session["workspace_id"], "slides", payload.subject, payload.grade, payload.model_dump())
     return dispatch_generation(
         async_job=async_job,
         task_type="slides",
@@ -97,6 +100,7 @@ def api_generate_worksheet(
     user: CurrentUser = Depends(require_teacher),
 ):
     ws = _validated_workspace(workspace_id, session)
+    memory_events.record_generation(session["workspace_id"], "worksheet", payload.subject, payload.grade, payload.model_dump())
     return dispatch_generation(
         async_job=async_job,
         task_type="worksheet",
@@ -104,7 +108,10 @@ def api_generate_worksheet(
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),
-        run=lambda: generate_worksheet(payload.topic, payload.question_count, payload.grade, payload.subject, ws),
+        run=lambda: generate_worksheet(
+            payload.topic, payload.question_count, payload.grade, payload.subject, ws,
+            style_lines=memory_store.habit_lines(session["workspace_id"], payload.subject),
+        ),
     )
 
 
@@ -125,6 +132,7 @@ def api_generate_lesson_notes(
     user: CurrentUser = Depends(require_teacher),
 ):
     ws = _validated_workspace(workspace_id, session)
+    memory_events.record_generation(session["workspace_id"], "lesson_notes", payload.subject, payload.grade, payload.model_dump())
     return dispatch_generation(
         async_job=async_job,
         task_type="lesson_notes",
@@ -132,7 +140,10 @@ def api_generate_lesson_notes(
         workspace_id=session["workspace_id"],
         user=user,
         params=payload.model_dump(),
-        run=lambda: generate_lesson_notes(payload.topic, payload.grade, payload.subject, ws),
+        run=lambda: generate_lesson_notes(
+            payload.topic, payload.grade, payload.subject, ws,
+            style_lines=memory_store.habit_lines(session["workspace_id"], payload.subject),
+        ),
     )
 
 
@@ -154,6 +165,7 @@ def api_generate_interactive(
     user: CurrentUser = Depends(require_teacher),
 ):
     ws = _validated_workspace(workspace_id, session)
+    memory_events.record_generation(session["workspace_id"], "interactive", payload.subject, payload.grade, payload.model_dump())
     return dispatch_generation(
         async_job=async_job,
         task_type="interactive_coursework",
@@ -162,7 +174,8 @@ def api_generate_interactive(
         user=user,
         params=payload.model_dump(),
         run=lambda: generate_interactive_coursework(
-            payload.topic, payload.duration_minutes, payload.grade, payload.subject, ws
+            payload.topic, payload.duration_minutes, payload.grade, payload.subject, ws,
+            style_lines=memory_store.habit_lines(session["workspace_id"], payload.subject),
         ),
     )
 

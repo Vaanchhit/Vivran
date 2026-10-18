@@ -92,7 +92,9 @@ def test_a_wrong_count_is_sent_back_once_then_reported(monkeypatch):
     monkeypatch.setattr(assessments, "generate_assessment_cloud", writer(calls, drop_one=True))
     result = assessments.generate_assessment("Class 12", "Economics", ["Demand"], question_plan=PLAN)
     assert len(calls) == 2
-    assert "Section A must have exactly 10 mcq question(s); it has 9" in calls[1]
+    # Attempt 2 rewrites only the failing section, not the whole paper.
+    assert "Rewrite ONLY these sections" in calls[1] and "Section A: exactly 10 mcq" in calls[1]
+    assert "Section B: exactly" not in calls[1].split("Rewrite ONLY these sections")[1]
     # Still wrong after the retry: the paper is shown with the problem listed.
     assert result["validation"]["valid"] is False
     assert "Section A must have exactly 10" in result["validation"]["errors"][0]

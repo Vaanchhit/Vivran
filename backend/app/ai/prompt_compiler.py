@@ -68,30 +68,47 @@ def compile_teacher_prompt(raw_prompt: str) -> tuple[StructuredIntent, bool]:
         return _compile_teacher_prompt_heuristic(raw_prompt), True
 
 
+_SUBJECT_WORDS = [
+    ("biology", "Biology"), ("physics", "Physics"), ("chemistry", "Chemistry"), ("mathematics", "Mathematics"),
+    ("maths", "Mathematics"), ("math", "Mathematics"), ("economics", "Economics"), ("accountancy", "Accountancy"),
+    ("accounting", "Accounting & Finance"), ("finance", "Accounting & Finance"), ("marketing", "Marketing"),
+    ("business studies", "Business Studies"), ("business law", "Business Law"), ("statistics", "Statistics"),
+    ("entrepreneurship", "Entrepreneurship"), ("auditing", "Auditing"), ("income tax", "Income Tax Law"),
+    ("history", "History"), ("geography", "Geography"), ("english", "English"), ("computer science", "Computer Science"),
+    ("science", "Science"), ("management", "Business Studies"), ("strategy", "Business Studies"),
+]
+
+# Where a topic phrase ends: the request moves on to the class, marks or format.
+_TOPIC_START = re.compile(r"\b(?:on|about|covering|regarding|topic(?:s)? (?:of|on)|chapter on)\s+(?:the\s+)?", re.IGNORECASE)
+_TOPIC_END = re.compile(
+    r"\s+(?:for|in|of|with|worth|from|to|at)\s+(?:class|grade|year|\d|my|our|the\s+class|first|second|third|final)\b|"
+    r"\s+(?:class|grade)\s*\d|\s+\d+\s*[-\s]?marks?\b|[.;:!?\n]|$",
+    re.IGNORECASE,
+)
+
+
+def _topic_phrases(text: str) -> List[str]:
+    """The topic(s) a request names: "a test on demand and supply for class 11" -> ["demand and supply"]."""
+    m = _TOPIC_START.search(text)
+    if not m:
+        return []
+    rest = text[m.end():]
+    end = _TOPIC_END.search(rest)
+    phrase = rest[: end.start()] if end else rest
+    phrase = phrase.strip(" ,\"'")
+    if not phrase or len(phrase) > 80:
+        return []
+    return [phrase[0].upper() + phrase[1:]]
+
+
 def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
     prompt_lower = raw_prompt.lower()
     
-    # Extract topics
-    topics = []
-    if "tissue" in prompt_lower:
-        topics.append("Tissues")
-    if "food" in prompt_lower:
-        topics.append("Improvement in Food Resources")
-    if "electricity" in prompt_lower:
-        topics.append("Electricity")
-    if "porter" in prompt_lower or "five forces" in prompt_lower:
-        topics.append("Porter's Five Forces")
-    if "demand" in prompt_lower or "supply" in prompt_lower:
-        topics.append("Demand and Supply")
-    if "balance sheet" in prompt_lower or "financial statement" in prompt_lower:
-        topics.append("Financial Statements")
-    if "marketing mix" in prompt_lower or "4ps" in prompt_lower:
-        topics.append("Marketing Mix")
-    if "gdp" in prompt_lower or "national income" in prompt_lower:
-        topics.append("National Income Accounting")
-    # Leave blank rather than fabricate a topic — the frontend already
-    # treats an empty topics list as "nothing confidently extracted" and
-    # lets the teacher add their own (see smart-creation-box.tsx).
+    # Topics: the phrase after "on / about / covering ...", cut where the
+    # request moves on to class, marks or format. Nothing is guessed from
+    # keywords, and an empty list is fine: the frontend lets the teacher add
+    # their own (see smart-creation-box.tsx).
+    topics = _topic_phrases(raw_prompt)
 
     # Extract grade — school class or college year. Left blank ("") rather
     # than defaulted to an unrelated grade when nothing matches: the
@@ -118,19 +135,7 @@ def _compile_teacher_prompt_heuristic(raw_prompt: str) -> StructuredIntent:
                 grade = g.title()
 
     # Extract subject — same "leave blank, don't guess" rule as grade above.
-    subject = ""
-    if "biology" in prompt_lower:
-        subject = "Biology"
-    elif "physics" in prompt_lower:
-        subject = "Physics"
-    elif "economics" in prompt_lower:
-        subject = "Economics"
-    elif "marketing" in prompt_lower:
-        subject = "Marketing"
-    elif "finance" in prompt_lower or "accounting" in prompt_lower or "accountancy" in prompt_lower:
-        subject = "Accounting & Finance"
-    elif "business" in prompt_lower or "management" in prompt_lower or "strategy" in prompt_lower:
-        subject = "Business Studies"
+    subject = next((canonical for word, canonical in _SUBJECT_WORDS if re.search(rf"\b{word}\b", prompt_lower)), "")
 
     # Extract marks
     # Any mark value, not just the three that happened to be literal-matched

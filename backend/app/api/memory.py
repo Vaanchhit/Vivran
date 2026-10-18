@@ -12,12 +12,12 @@ from typing import Any, Dict, Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.api.deps import require_teacher, require_workspace_id
 from app.core.auth import CurrentUser
 from app.core.rate_limit import limit
-from app.memory import store
+from app.memory import events, store
 from app.memory.classify import KINDS
 from app.memory.text import UnreadableFile
 from app.services.supabase_service import SupabaseError
@@ -114,3 +114,53 @@ def decide_trait(
 def forget_everything(workspace_id: str = Depends(require_workspace_id), user: CurrentUser = Depends(require_teacher)):
     _guard(store.forget_all, workspace_id)
     return {"deleted": True}
+
+
+# ---------------------------------------------------------------------------
+# Requests: the prompts and settings Vivran learns habits from
+# ---------------------------------------------------------------------------
+
+@router.get("/prompts")
+def recent_prompts(workspace_id: str = Depends(require_workspace_id), user: CurrentUser = Depends(require_teacher)):
+    return {"prompts": _guard(events.recent_prompts, workspace_id)}
+
+
+@router.delete("/prompts/{event_id}")
+def delete_prompt(event_id: str, workspace_id: str = Depends(require_workspace_id), user: CurrentUser = Depends(require_teacher)):
+    if not _guard(events.delete_prompt, workspace_id, event_id):
+        raise HTTPException(status_code=404, detail="Not found")
+    return {"deleted": True}
+
+
+@router.delete("/prompts")
+def clear_prompts(workspace_id: str = Depends(require_workspace_id), user: CurrentUser = Depends(require_teacher)):
+    _guard(events.clear_all, workspace_id)
+    return {"deleted": True}
+
+
+class ReportedEvent(BaseModel):
+    artifact: Literal["slides", "example", "narration", "image", "video"]
+    subject: Optional[str] = Field(default=None, max_length=80)
+    grade: Optional[str] = Field(default=None, max_length=40)
+    params: Dict[str, Any] = Field(default_factory=dict)
+
+
+@router.post("/events")
+def report_event(
+    payload: ReportedEvent,
+    workspace_id: str = Depends(require_workspace_id),
+    user: CurrentUser = Depends(require_teacher),
+):
+    """For things the browser starts without a backend generate call of its own (slide decks)."""
+    events.record_generation(workspace_id, payload.artifact, payload.subject, payload.grade, payload.params)
+    return {"recorded": True}
+
+
+@router.get("/usual")
+def usual_setup(
+    artifact: str,
+    workspace_id: str = Depends(require_workspace_id),
+    user: CurrentUser = Depends(require_teacher),
+):
+    """The teacher's usual setup for one kind of thing, for a one-tap chip on the form (or null)."""
+    return {"usual": _guard(store.usual, workspace_id, artifact)}

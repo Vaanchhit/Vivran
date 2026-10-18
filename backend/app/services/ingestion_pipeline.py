@@ -35,6 +35,7 @@ from app.ingestion.chunking import chunk_units
 from app.ingestion.docx import parse_docx
 from app.ingestion.pdf import parse_pdf
 from app.ingestion.pptx import parse_pptx
+from app.ingestion.structure import label_units, merge_small_units
 from app.ingestion.youtube import YouTubeIngestionError, parse_youtube
 from app.retrieval.embeddings import generate_embeddings_batch
 from app.services.supabase_service import (
@@ -59,19 +60,30 @@ def _extract_units(material_type: str, file_bytes: Optional[bytes], external_url
         if not file_bytes:
             raise IngestionError("A PDF file is required")
         pages = parse_pdf(file_bytes)["pages"]
-        return [{"text": p["text"], "page_number": p["page_number"]} for p in pages]
+        return label_units([{"text": p["text"], "page_number": p["page_number"]} for p in pages])
 
     if material_type == "docx":
         if not file_bytes:
             raise IngestionError("A DOCX file is required")
-        paragraphs = parse_docx(file_bytes)["paragraphs"]
+        parsed = parse_docx(file_bytes)
+        sections = parsed["sections"]
+        if len(sections) > 1:
+            # Split at the document's own headings, so each passage knows which
+            # section it belongs to.
+            return [
+                {"text": (s["heading"] + "\n" if s["heading"] else "") + s["text"], **({"topic": s["heading"]} if s["heading"] else {})}
+                for s in sections
+            ]
+        paragraphs = parsed["paragraphs"]
         return [{"text": "\n".join(paragraphs)}] if paragraphs else []
 
     if material_type == "pptx":
         if not file_bytes:
             raise IngestionError("A PPTX file is required")
         slides = parse_pptx(file_bytes)["slides"]
-        return [{"text": s["text"], "page_number": s["slide_number"]} for s in slides]
+        return merge_small_units(
+            label_units([{"text": s["text"], "page_number": s["slide_number"]} for s in slides], titles_are_topics=True)
+        )
 
     if material_type == "youtube":
         if not external_url:
@@ -105,6 +117,11 @@ def _generate_summary(units: List[Dict[str, Any]]) -> Optional[str]:
         logger.warning("Material summary generation failed: %s", result.get("error"))
         return None
     return result["content"].strip()
+
+
+def _embedding_text(title: str, chunk: Dict[str, Any]) -> str:
+    header = " · ".join(str(x) for x in (title, chunk.get("chapter"), chunk.get("topic")) if x)
+    return f"{header}\n{chunk['content']}" if header else chunk["content"]
 
 
 def ingest_material(
@@ -141,7 +158,10 @@ def ingest_material(
         if not chunks:
             raise IngestionError("No extractable text was found in this material")
 
-        embedded = generate_embeddings_batch([c["content"] for c in chunks])
+        # What is embedded is the passage with a short header saying where it
+        # sits; what is stored is the passage alone. "Unit 4 · Markets" in the
+        # vector is what lets a query about that unit land on it.
+        embedded = generate_embeddings_batch([_embedding_text(title, c) for c in chunks])
         if embedded.all_failed:
             # Nothing was embedded, so there is nothing to retrieve over and the
             # material would be dead weight. Raising here keeps the existing
@@ -212,6 +232,8 @@ def ingest_material(
                     "content": c["content"],
                     "embedding": c["embedding"],
                     "page_number": c.get("page_number"),
+                    "chapter": c.get("chapter"),
+                    "topic": c.get("topic"),
                     "timestamp_start": c.get("timestamp_start"),
                     "timestamp_end": c.get("timestamp_end"),
                 }

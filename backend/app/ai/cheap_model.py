@@ -12,6 +12,8 @@ THE ENVELOPE
 what we intended to use, so a bad artifact can be traced back to a model months
 later. ``usage`` carries the token counts Google/Groq returned (app/ai/usage.py).
 """
+import threading
+import time
 from typing import Any, Dict, Optional
 
 from app.ai import groq_client
@@ -38,6 +40,51 @@ from app.core.logging import logger
 #   NOT_CONFIGURED    Must NOT fail over. The Gemini key is missing; that is a
 #                     deployment fault to fix, not to route around.
 _FAILOVER_CLASSES = frozenset({FailureClass.UPSTREAM_BUSY})
+
+
+class _Breaker:
+    """Stops asking a model that has just said "busy" several times running.
+
+    Without it every request during a Gemini outage pays the full price of
+    discovering it: the primary (with its retries), then the fallback, then Groq.
+    After ``threshold`` busy answers inside ``window`` seconds the model is
+    skipped for ``cooldown`` seconds and requests go straight to the fallback;
+    one success closes it again. Only "busy" counts: a spent quota or a safety
+    refusal says nothing about whether the model is up.
+    """
+
+    def __init__(self, threshold: int = 3, window: float = 60.0, cooldown: float = 45.0) -> None:
+        self.threshold, self.window, self.cooldown = threshold, window, cooldown
+        self._failures: Dict[str, list] = {}
+        self._open_until: Dict[str, float] = {}
+        self._lock = threading.Lock()
+
+    def is_open(self, key: str) -> bool:
+        with self._lock:
+            return time.monotonic() < self._open_until.get(key, 0.0)
+
+    def record_failure(self, key: str) -> None:
+        with self._lock:
+            now = time.monotonic()
+            recent = [t for t in self._failures.get(key, []) if now - t <= self.window] + [now]
+            self._failures[key] = recent
+            if len(recent) >= self.threshold:
+                self._open_until[key] = now + self.cooldown
+                self._failures[key] = []
+                logger.warning("%s reported busy %s times in %.0fs; skipping it for %.0fs", key, len(recent), self.window, self.cooldown)
+
+    def record_success(self, key: str) -> None:
+        with self._lock:
+            self._failures.pop(key, None)
+            self._open_until.pop(key, None)
+
+    def reset(self) -> None:
+        with self._lock:
+            self._failures.clear()
+            self._open_until.clear()
+
+
+_breaker = _Breaker()
 
 
 def _envelope(
@@ -144,7 +191,13 @@ def generate_cloud(
     # job-level scope (app/services/jobs.py) still gets the sum, and it wraps
     # the failover too so a Groq answer is billed rather than invisible.
     with usage_scope() as usage:
+        # A model that has just been busy several times running is skipped, but
+        # only when there is somewhere else to go: with no fallback the primary
+        # is still the only option, so it is still tried.
+        skip_primary = _breaker.is_open(model_name) and bool(_gemini_fallback_for(model_name) or groq_client.is_configured())
         try:
+            if skip_primary:
+                raise GeminiError("Skipped: this model recently reported busy", failure=FailureClass.UPSTREAM_BUSY)
             content = generate_text(
                 prompt,
                 system_prompt=system_prompt,
@@ -152,6 +205,7 @@ def generate_cloud(
                 json_mode=json_mode,
                 temperature=temperature,
             )
+            _breaker.record_success(model_name)
             return _envelope(
                 success=True,
                 tier=tier,
@@ -163,6 +217,8 @@ def generate_cloud(
             )
         except GeminiError as e:
             first_error = e
+            if not skip_primary and e.failure in _FAILOVER_CLASSES:
+                _breaker.record_failure(model_name)
 
         busy = first_error.failure in _FAILOVER_CLASSES
         if busy:

@@ -32,6 +32,7 @@ from app.memory.lessons import parse_lesson_plan
 from app.memory.papers import parse_paper
 from app.memory.safety import check_student_work
 from app.memory.text import UnreadableFile, extract, file_type_for
+from app.memory.profile import derive_profile_traits, prompt_lines as profile_prompt_lines, usual_setup
 from app.memory.traits import derive_traits
 from app.services import supabase_service as sb
 
@@ -234,8 +235,11 @@ def delete_document(workspace_id: str, document_id: str) -> bool:
 
 
 def forget_all(workspace_id: str) -> None:
+    from app.memory import events
+
     _delete(TRAITS, workspace_id)
     _delete(DOCUMENTS, workspace_id)
+    events.clear_all(workspace_id)
 
 
 # ---------------------------------------------------------------------------
@@ -248,7 +252,17 @@ def _key(t: Dict[str, Any]) -> Tuple[str, str, str]:
 
 def recompute(workspace_id: str) -> None:
     """Re-derive traits from the files and merge, never overriding a decision."""
-    derived = {_key(t): t for t in derive_traits(_select(DOCUMENTS, workspace_id))}
+    # Two sources of habits: what the teacher's past papers show, and what
+    # their requests show. Both flow through the same suggest / accept /
+    # dismiss / stale lifecycle below.
+    from app.memory import events
+
+    try:
+        history = events.recent(workspace_id)
+    except Exception as e:  # noqa: BLE001 - prompt history is optional
+        logger.warning("Could not read prompt history: %s", e)
+        history = []
+    derived = {_key(t): t for t in derive_traits(_select(DOCUMENTS, workspace_id)) + derive_profile_traits(history)}
     existing = {_key(t): t for t in _select(TRAITS, workspace_id)}
 
     for k, d in derived.items():
@@ -339,3 +353,19 @@ def active_traits(workspace_id: str, subject: Optional[str], kind: str) -> Dict[
         if r.get("subject") == wanted and wanted:
             out[r["key"]] = {"value": r["value"], "summary": r["summary"]}
     return out
+
+
+def usual(workspace_id: str, artifact: str) -> Optional[Dict[str, Any]]:
+    """The teacher's usual setup for one kind of thing, for a one-tap chip on the form."""
+    try:
+        rows = [r for r in _select(TRAITS, workspace_id, kind="profile")]
+    except MemoryNotReady:
+        return None
+    return usual_setup(rows, artifact)
+
+
+def habit_lines(workspace_id: Optional[str], subject: Optional[str]) -> List[str]:
+    """Prompt lines from the teacher's ACCEPTED habits. Never raises: see active_traits."""
+    if not workspace_id:
+        return []
+    return profile_prompt_lines(active_traits(workspace_id, subject, "profile"))

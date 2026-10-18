@@ -15,6 +15,9 @@ class QuestionSchema(BaseModel):
     answer: str
     solution: Optional[str] = None
     source_ids: Optional[List[str]] = []
+    # How well the cited passages back this question: none, low, partial or high.
+    # Set after generation by app/retrieval/context.py:support_level.
+    support: Optional[str] = None
 
 
 class SectionSchema(BaseModel):

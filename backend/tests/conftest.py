@@ -52,6 +52,16 @@ from app.core.rate_limit import referral_failures  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
+def _fresh_breaker():
+    """The provider circuit breaker is process-wide; a test that trips it must not slow the next."""
+    from app.ai.cheap_model import _breaker
+
+    _breaker.reset()
+    yield
+    _breaker.reset()
+
+
+@pytest.fixture(autouse=True)
 def _fresh_referral_budget():
     """Wrong-code tests would otherwise spend the global budget for later ones."""
     referral_failures.reset()

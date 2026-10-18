@@ -292,3 +292,89 @@ def repair_slides(deck: Dict[str, Any], requested_slide_count: int) -> Dict[str,
         "slides": repaired,
     }
 
+
+
+
+# ---------------------------------------------------------------------------
+# Worksheets, lesson notes, course plans, interactive lessons.
+#
+# Until now only papers and slides were checked: these four returned whatever
+# the model produced, including a "10 questions" worksheet with seven. Each
+# returns the list of broken rules (empty = fine), phrased so they can be fed
+# straight back to the model.
+# ---------------------------------------------------------------------------
+
+
+def validate_worksheet(data: Dict[str, Any], requested: int) -> List[str]:
+    errors: List[str] = []
+    qs = data.get("questions")
+    if not isinstance(qs, list) or not qs:
+        return ["The worksheet has no questions."]
+    if len(qs) != requested:
+        errors.append(f"Write exactly {requested} questions; there are {len(qs)}.")
+    seen: set = set()
+    for i, q in enumerate(qs, start=1):
+        if not isinstance(q, dict) or not str(q.get("question_text", "")).strip():
+            errors.append(f"Question {i} is empty.")
+            continue
+        if not str(q.get("answer", "")).strip():
+            errors.append(f"Question {i} has no answer.")
+        key = " ".join(str(q["question_text"]).lower().split())
+        if key in seen:
+            errors.append(f"Question {i} repeats an earlier question.")
+        seen.add(key)
+    return errors
+
+
+def validate_lesson_notes(data: Dict[str, Any]) -> List[str]:
+    errors: List[str] = []
+    sections = data.get("sections")
+    if not isinstance(sections, list) or len(sections) < 2:
+        errors.append("Write at least two sections, each with a heading and an explanation.")
+    else:
+        for i, sec in enumerate(sections, start=1):
+            if not isinstance(sec, dict) or not str(sec.get("heading", "")).strip():
+                errors.append(f"Section {i} has no heading.")
+            elif len(str(sec.get("content", "")).strip()) < 40:
+                errors.append(f"Section {i} ('{sec.get('heading')}') has almost no explanation.")
+    if not str(data.get("recap", "")).strip():
+        errors.append("Add a closing recap.")
+    if not data.get("real_life_examples"):
+        errors.append("Add at least one real-life example.")
+    return errors
+
+
+def validate_course_plan(data: Dict[str, Any], weeks: int) -> List[str]:
+    errors: List[str] = []
+    plan = data.get("weekly_structure")
+    if not isinstance(plan, list) or not plan:
+        return ["The plan has no weeks."]
+    if len(plan) != weeks:
+        errors.append(f"The plan must cover exactly {weeks} weeks; it covers {len(plan)}.")
+    for i, w in enumerate(plan, start=1):
+        if not isinstance(w, dict) or not str(w.get("topic", "")).strip():
+            errors.append(f"Week {i} has no topic.")
+            continue
+        if not w.get("lessons"):
+            errors.append(f"Week {i} has no lessons.")
+        if not w.get("objectives"):
+            errors.append(f"Week {i} has no learning objectives.")
+    return errors
+
+
+def validate_coursework(data: Dict[str, Any]) -> List[str]:
+    errors: List[str] = []
+    blocks = data.get("blocks")
+    if not isinstance(blocks, list) or len(blocks) < 3:
+        return ["Write at least three blocks."]
+    kinds = [b.get("type") for b in blocks if isinstance(b, dict)]
+    if kinds[0] != "introduction":
+        errors.append("The first block must be an introduction.")
+    if kinds[-1] != "recap":
+        errors.append("The last block must be a recap.")
+    for i, b in enumerate(blocks, start=1):
+        if isinstance(b, dict) and b.get("type") == "question":
+            content = b.get("content") or {}
+            if not str(content.get("text", "")).strip() or not str(content.get("answer", "")).strip():
+                errors.append(f"Block {i} is a question without both a question and an answer.")
+    return errors
