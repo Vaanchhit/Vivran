@@ -13,7 +13,7 @@
 import type { SearchableEntry } from "./help-search";
 
 export type HelpSectionId =
-  | "start" | "plan" | "teach" | "assess" | "material" | "style" | "library" | "export" | "privacy" | "settings";
+  | "start" | "plan" | "teach" | "examples" | "assess" | "material" | "style" | "library" | "export" | "privacy" | "settings" | "ask";
 
 export interface HelpSection {
   id: HelpSectionId;
@@ -62,6 +62,15 @@ export const HELP_SECTIONS: HelpSection[] = [
     linkLabel: "Go to Teach",
   },
   {
+    id: "examples",
+    title: "Explain simply",
+    intro: "A hard idea, explained with something students already know.",
+    catalogKeys: ["example"],
+    steps: ["Type the concept.", "Optionally choose a setting to compare it to.", "Read the story, the mapping and the numbers, then try another setting if it is not right."],
+    href: "/teacher/examples",
+    linkLabel: "Go to Explain simply",
+  },
+  {
     id: "assess",
     title: "Assess",
     intro: "Quizzes, full tests and practice worksheets, with answers.",
@@ -84,15 +93,15 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     id: "style",
-    title: "Teaching style",
-    intro: "Vivran learns how you usually build papers, and uses it only when you say so.",
+    title: "Teaching memory",
+    intro: "Vivran learns how you work from your past papers and your own requests, and uses it only when you say so.",
     steps: [
       "Add at least two past papers from the same subject.",
       "Read what Vivran noticed and choose Use this or Not for me for each pattern.",
       "New papers in that subject follow the patterns you accepted.",
     ],
     href: "/teacher/memory",
-    linkLabel: "Go to Teaching style",
+    linkLabel: "Go to Teaching memory",
   },
   {
     id: "library",
@@ -111,6 +120,12 @@ export const HELP_SECTIONS: HelpSection[] = [
     id: "privacy",
     title: "Privacy and your data",
     intro: "Your material is yours. Here is what happens to it.",
+  },
+  {
+    id: "ask",
+    title: "Ask Vivran",
+    intro: "A guide that answers from the help and takes you to the right page.",
+    steps: ["Press Ctrl+K (Cmd+K on a Mac), or Ask Vivran in the sidebar.", "Type your question, or pick one of the suggestions.", "Press a button in the answer to go to that page."],
   },
   {
     id: "settings",
@@ -304,6 +319,76 @@ export const HELP_ENTRIES: HelpEntry[] = [
     keywords: ["video", "explainer", "minutes", "long"],
     links: [{ label: "Make a video", href: "/teacher/create?type=video" }],
   },
+
+  // ---- Explain simply -----------------------------------------------------
+  {
+    id: "explain-simply", section: "examples",
+    q: "How do I explain a hard idea with an everyday example?",
+    a: "Use Explain simply: type the concept and get a story, a mapping and a worked example.",
+    steps: [
+      "Open Teach and choose Explain simply (or open it from Home).",
+      "Type the concept, for example \"FCFE\" or \"opportunity cost\".",
+      "Optionally set the grade, subject and a setting to compare it to, such as a tea stall or a kirana shop. Leave it on Surprise me to let Vivran choose.",
+      "Press Explain it simply.",
+      "Read the idea, the story, What is what, the worked example, and Where the comparison breaks.",
+    ],
+    points: [
+      "Every technical term is tied to one thing in the story.",
+      "The story avoids the technical words, so students meet the idea first.",
+      "The numbers are calculated by Vivran, not written by the AI.",
+      "If you have the chapter uploaded, the definition follows your material.",
+    ],
+    keywords: ["example", "analogy", "intuitive", "story"],
+    alt: ["students are not understanding a topic", "give me a real life example", "explain fcfe with a simple story", "make a hard concept easy", "analogy for my class"],
+    links: [{ label: "Go to Explain simply", href: "/teacher/examples" }],
+  },
+  {
+    id: "example-another", section: "examples",
+    q: "The example isn't right. Can I get a different one?",
+    a: "Yes: ask for another setting. The definition stays the same.",
+    steps: [
+      "Under the example, press Another setting, or type a setting you like, for example a bus ticket counter, and press Enter.",
+      "Compare the new story. Settings you have already seen are not repeated.",
+    ],
+    points: ["Only the story is rewritten, so it is quicker than starting again.", "A new version is not saved to your Library unless you copy it out."],
+    keywords: ["another", "different", "again", "retry", "setting"],
+    alt: ["try a different comparison", "i do not like this analogy"],
+  },
+  {
+    id: "example-where-breaks", section: "examples",
+    q: "What does \"Where the comparison breaks\" mean?",
+    a: "Every comparison is imperfect. This says where students might be misled.",
+    points: [
+      "A story helps because it is simple, but real life is not.",
+      "Telling students where it stops being true protects them from a wrong idea.",
+      "A common mistake is shown below it, so you can watch for it.",
+    ],
+    keywords: ["breaks", "limits", "wrong", "mistake", "misconception"],
+  },
+  {
+    id: "example-numbers", section: "examples",
+    q: "Can I trust the numbers in a worked example?",
+    a: "Yes. They are calculated by Vivran, not written by the AI.",
+    points: [
+      "The AI only proposes the inputs and how they combine.",
+      "Vivran does the arithmetic itself, so a wrong sum cannot appear.",
+      "If the steps cannot be checked, the worked example is left out and you are told.",
+    ],
+    keywords: ["numbers", "calculation", "correct", "arithmetic", "trust"],
+    alt: ["is the maths right", "are the calculations checked"],
+  },
+  {
+    id: "example-use", section: "examples",
+    q: "How do I use an example in my class?",
+    a: "Copy it out, or download its diagrams.",
+    steps: [
+      "Press Copy as text to paste the story, mapping and questions into your notes or slides.",
+      "Press Download diagram or Download chart to save a picture (SVG) for a slide.",
+      "Find it again later in Library, under Intuitive examples.",
+    ],
+    keywords: ["copy", "download", "diagram", "svg"],
+    alt: ["save the diagram", "copy the example into my notes"],
+  },
   // ---- Assess -------------------------------------------------------------
   {
     id: "quiz-test-worksheet", section: "assess",
@@ -445,7 +530,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
   // ---- Teaching style -----------------------------------------------------
   {
     id: "what-style", section: "style",
-    q: "What is Teaching style?",
+    q: "What is Teaching memory?",
     a: "Vivran learns how you usually build papers, and uses it only if you say so.",
     points: [
       "It reads past papers you add: sections, marks, the kind of thinking your questions ask for, and timing.",
@@ -454,7 +539,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
       "Patterns stay within the subject they came from.",
     ],
     steps: [
-      "Open Teaching style from the sidebar.",
+      "Open Teaching memory from the sidebar.",
       "Choose the Subject and tick the two confirmations.",
       "Add at least two past papers from that subject.",
       "Under What Vivran noticed, press Use this or Not for me on each pattern.",
@@ -462,7 +547,49 @@ export const HELP_ENTRIES: HelpEntry[] = [
     ],
     keywords: ["style", "past", "habit", "learn", "personal"],
     alt: ["make papers like mine", "use my old papers"],
-    links: [{ label: "Go to Teaching style", href: "/teacher/memory" }],
+    links: [{ label: "Go to Teaching memory", href: "/teacher/memory" }],
+  },
+
+  {
+    id: "memory-habits", section: "style",
+    q: "How does Vivran learn my habits?",
+    a: "From what you ask for and how you change things, and it keeps learning as that changes.",
+    points: [
+      "It notices the class and subject you usually make things for, the marks and difficulty you choose, the question types you pick, and how you change questions.",
+      "A habit needs at least three requests, and most of them agreeing.",
+      "It shows you the count, for example \"6 of your last 8 tests\".",
+      "Nothing is used until you accept it. If your habits change later, you are offered the new one; the old one is never overwritten.",
+    ],
+    keywords: ["learn", "usual", "remember", "preferences"],
+    alt: ["does vivran remember what i ask", "will it remember my settings", "how does it learn from my prompts"],
+    links: [{ label: "Go to Teaching memory", href: "/teacher/memory" }],
+  },
+  {
+    id: "memory-usual", section: "style",
+    q: "What is the \"Your usual\" button on the form?",
+    a: "A shortcut that fills the form with the settings you most often choose.",
+    steps: [
+      "On Home, Plan, Teach or Assess, choose what you want to make.",
+      "If Vivran has noticed your usual setup, a button appears above the options, such as Class 12 · Economics · 40 marks · Medium.",
+      "Press it to fill in the options. Change anything you like before you continue.",
+    ],
+    points: ["It only fills the form when you press it.", "\"You often use\" means you haven't accepted the habit yet; \"Your usual\" means you have."],
+    keywords: ["usual", "defaults", "shortcut", "autofill", "settings"],
+  },
+  {
+    id: "memory-requests", section: "style",
+    q: "Where are my recent requests, and can I reuse one?",
+    a: "On the Teaching memory page, under Your recent requests.",
+    steps: [
+      "Open Teaching memory.",
+      "Find the request under Your recent requests.",
+      "Press Reuse to open Home with it already typed, then press the button to send it.",
+      "Press the bin to remove one, or Remove all to clear them.",
+    ],
+    points: ["Emails, phone numbers and links are removed before a request is kept.", "Only your latest requests are kept."],
+    keywords: ["requests", "prompts", "reuse", "recent", "typed"],
+    alt: ["see what i typed before", "repeat an old prompt", "delete my prompts"],
+    links: [{ label: "Go to Teaching memory", href: "/teacher/memory" }],
   },
   {
     id: "style-stored", section: "style",
@@ -494,11 +621,11 @@ export const HELP_ENTRIES: HelpEntry[] = [
     a: "Do it for one paper, or stop using a pattern for good.",
     steps: [
       "For one paper: under the finished paper, in the Shaped by your teaching style box, press Make it without my style.",
-      "For good: open Teaching style and press Stop using on the pattern.",
+      "For good: open Teaching memory and press Stop using on the pattern.",
       "Or press Manage in that box to jump to the page.",
     ],
     keywords: ["style", "off", "without", "stop", "disable"],
-    alt: ["i dont like how my paper looks", "go back to the default paper", "ignore my old papers"],
+    alt: ["i dont like how my paper looks", "go back to the default paper", "ignore my old papers", "i do not want to use my old pattern", "stop using the pattern"],
   },
   {
     id: "student-work", section: "style",
@@ -606,6 +733,27 @@ export const HELP_ENTRIES: HelpEntry[] = [
     points: ["This removes your profile, workspace, uploaded files and everything you created."],
     keywords: ["delete", "account", "remove", "data"],
     links: [{ label: "Go to Settings", href: "/teacher/settings" }],
+  },
+
+  // ---- Ask Vivran -----------------------------------------------------------
+  {
+    id: "ask-vivran", section: "ask",
+    q: "How do I ask Vivran a question, or get taken to the right page?",
+    a: "Open Ask Vivran from the sidebar or press Ctrl+K (Cmd+K on a Mac).",
+    steps: [
+      "Press Ctrl+K, or Ask Vivran in the sidebar.",
+      "Type your question, or pick one of the suggestions for the page you are on.",
+      "Read the answer. Press a button to go to the page it names.",
+      "Press a suggested follow-up to keep going, or Esc to close.",
+    ],
+    points: [
+      "It answers from Vivran's help and can take you to the right page.",
+      "It can type a request for you on a page, but never sends it: you press the button.",
+      "It can't see your account or your files.",
+      "If it is unavailable, or today's questions are used, the help search still works.",
+    ],
+    keywords: ["ask", "assistant", "chatbot", "guide", "navigate", "shortcut", "ctrl"],
+    alt: ["where is the chatbot", "how do i find a page", "take me to my worksheets", "keyboard shortcut for help"],
   },
   // ---- Settings ----------------------------------------------------------------
   {

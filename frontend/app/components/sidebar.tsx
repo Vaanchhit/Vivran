@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/app/components/theme-toggle";
+import { ASK_EVENT } from "@/app/components/ask-vivran";
 import {
   Plus,
   Home,
@@ -14,6 +15,7 @@ import {
   FolderOpen,
   Library,
   LifeBuoy,
+  Sparkles,
   PenLine,
   Settings,
   User,
@@ -38,7 +40,7 @@ export function TeacherSidebar() {
     { label: "Teach", href: "/teacher/create", icon: BookOpenCheck },
     { label: "Assess", href: "/teacher/assess", icon: FileCheck2 },
     { label: "My Materials", href: "/teacher/materials", icon: FolderOpen },
-    { label: "Teaching style", href: "/teacher/memory", icon: PenLine },
+    { label: "Teaching memory", href: "/teacher/memory", icon: PenLine },
     { label: "Library", href: "/teacher/library", icon: Library },
     { label: "Settings", href: "/teacher/settings", icon: Settings },
     { label: "Help", href: "/teacher/help", icon: LifeBuoy },
@@ -73,6 +75,18 @@ export function TeacherSidebar() {
         >
           <Plus className="w-4 h-4" /> Create anything
         </Link>
+      </div>
+
+      <div className="px-3 pb-2">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event(ASK_EVENT))}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-muted hover:text-foreground hover:bg-card border border-border transition-colors"
+        >
+          <Sparkles className="w-4 h-4 text-accent" />
+          <span className="flex-1 text-left">Ask Vivran</span>
+          <kbd className="text-[10px] px-1.5 py-0.5 rounded border border-border bg-card text-faint font-sans">⌘K</kbd>
+        </button>
       </div>
 
       {/* Primary Navigation */}

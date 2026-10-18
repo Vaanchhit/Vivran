@@ -35,7 +35,7 @@ const IMAGE_THEMES = [
   { label: "Photo-realistic", modifier: "as a photo-realistic real-world scene" },
 ];
 
-type ArtifactKey = "slides" | "lesson_notes" | "narration" | "image" | "video" | "interactive";
+type ArtifactKey = "slides" | "lesson_notes" | "narration" | "image" | "video" | "interactive" | "example";
 
 const ARTIFACTS = stage("teach").items as ((ReturnType<typeof stage>)["items"][number] & { key: ArtifactKey })[];
 
@@ -140,6 +140,11 @@ function CreatePageInner() {
   useOnScreen(scope);
 
   useEffect(() => {
+    // Intuitive examples have their own page.
+    if (typeParam === "example") {
+      router.replace(`/teacher/examples${itemParam ? `?item=${encodeURIComponent(itemParam)}` : ""}`);
+      return;
+    }
     // Worksheets moved to Assess; old links still land in the right place.
     if (typeParam === "worksheet") {
       router.replace(`/teacher/assess?mode=worksheet${itemParam ? `&item=${encodeURIComponent(itemParam)}` : ""}`);
@@ -273,7 +278,7 @@ function CreatePageInner() {
                 <button
                   type="button"
                   aria-describedby={describedBy}
-                  onClick={() => setActive(art.key)}
+                  onClick={() => (art.key === "example" ? router.push("/teacher/examples") : setActive(art.key))}
                   className={`w-full h-full text-left p-5 rounded-2xl bg-surface border space-y-3 transition-all cursor-pointer group ${
                     isActive ? "border-accent" : "border-border hover:border-accent-line"
                   }`}

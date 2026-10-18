@@ -2,18 +2,24 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { AlertCircle, CheckCircle2, FileText, PenLine, Trash2, Upload, XCircle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, CheckCircle2, FileText, PenLine, RotateCcw, Trash2, Upload, XCircle } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
 import {
+  clearRecentPrompts,
   decideStyleTrait,
   deleteHistoryDocument,
+  deleteRecentPrompt,
   forgetTeachingMemory,
+  getRecentPrompts,
   getTeachingMemory,
   uploadHistoryDocument,
   type HistoryDocument,
   type HistoryKind,
+  type RecentPrompt,
   type StyleTrait,
 } from "@/services/api";
+import { PREFILL_KEY } from "@/app/components/ask-vivran";
 import { SUBJECT_OPTIONS } from "@/lib/constants";
 
 const KIND_OPTIONS: { value: HistoryKind | "auto"; label: string }[] = [
@@ -45,6 +51,8 @@ function facts(doc: HistoryDocument) {
 }
 
 export default function TeachingStylePage() {
+  const router = useRouter();
+  const [prompts, setPrompts] = useState<RecentPrompt[]>([]);
   const [documents, setDocuments] = useState<HistoryDocument[] | null>(null);
   const [traits, setTraits] = useState<StyleTrait[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -66,7 +74,28 @@ export default function TeachingStylePage() {
         setLoadError(null);
       })
       .catch((err) => setLoadError(err instanceof Error ? err.message : "Could not load your teaching style."));
+    getRecentPrompts().then((r) => setPrompts(r.prompts)).catch(() => undefined);
   }, []);
+
+  const reuse = (text: string) => {
+    try {
+      localStorage.setItem(PREFILL_KEY, text);
+    } catch {
+      /* storage unavailable: they arrive without the text */
+    }
+    router.push("/teacher");
+  };
+
+  const removePrompt = async (id: string) => {
+    await deleteRecentPrompt(id).catch(() => undefined);
+    refresh();
+  };
+
+  const clearPrompts = async () => {
+    if (!window.confirm("Remove every request Vivran has kept? Habits learned from them are recalculated without them.")) return;
+    await clearRecentPrompts().catch(() => undefined);
+    refresh();
+  };
 
   useEffect(() => {
     refresh();
@@ -124,18 +153,20 @@ export default function TeachingStylePage() {
 
   const visible = traits.filter((t) => t.status !== "dismissed");
   const dismissed = traits.filter((t) => t.status === "dismissed");
-  const subjects = Array.from(new Set(visible.map((t) => t.subject)));
+  const habits = visible.filter((t) => t.kind === "profile");
+  const paperTraits = visible.filter((t) => t.kind !== "profile");
+  const subjects = Array.from(new Set(paperTraits.map((t) => t.subject)));
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div className="border-b border-border pb-6">
         <h1 className="text-2xl font-extrabold font-display text-foreground flex items-center gap-2.5">
-          <PenLine className="w-6 h-6 text-accent" /> Your teaching style
+          <PenLine className="w-6 h-6 text-accent" /> Your teaching memory
         </h1>
         <p className="text-sm text-muted mt-1 max-w-2xl">
-          Add papers you&rsquo;ve set before. Vivran reads how they&rsquo;re built (sections, marks, the kind of thinking each
-          question asks for) and suggests what to keep. Nothing is used until you say so, and it only ever shapes the
-          format of a new paper, never its facts.
+          Vivran notices how you work: from papers you add, and from what you ask for and how you change it. It
+          keeps learning as your requests change. Nothing is used until you say so, and it only ever shapes the
+          format and emphasis of new work, never its facts.
         </p>
       </div>
 
@@ -227,7 +258,18 @@ export default function TeachingStylePage() {
         <div className="text-sm font-bold text-foreground font-display">What Vivran noticed</div>
         {documents !== null && visible.length === 0 && (
           <div className="p-4 rounded-xl bg-card border border-border text-xs text-muted">
-            Add at least two exam papers from the same subject. One paper is a document; two start to show a habit.
+            Keep using Vivran and habits show up here: the marks you usually set, the class you teach, how you change questions.
+            Add at least two exam papers from the same subject to learn how you build them.
+          </div>
+        )}
+        {habits.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">Your habits, from what you ask for</div>
+            {habits
+              .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))
+              .map((t) => (
+                <TraitCard key={t.id} trait={t} busy={busyTrait === t.id} onDecide={decide} />
+              ))}
           </div>
         )}
         {subjects.map((subj) => (
@@ -235,7 +277,7 @@ export default function TeachingStylePage() {
             <div className="text-[11px] font-semibold uppercase tracking-wider text-muted">
               {subj ? `${titleCase(subj)} papers` : "Papers with no subject"}
             </div>
-            {visible
+            {paperTraits
               .filter((t) => t.subject === subj)
               .sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))
               .map((t) => (
@@ -253,6 +295,38 @@ export default function TeachingStylePage() {
                 {dismissed.map((t) => <TraitCard key={t.id} trait={t} busy={busyTrait === t.id} onDecide={decide} />)}
               </div>
             )}
+          </div>
+        )}
+      </section>
+
+      {/* Recent requests */}
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-sm font-bold text-foreground font-display">Your recent requests</div>
+          {prompts.length > 0 && (
+            <button type="button" onClick={clearPrompts} className="text-xs text-muted hover:text-danger">Remove all</button>
+          )}
+        </div>
+        {prompts.length === 0 ? (
+          <div className="text-xs text-muted">Requests you type on Home appear here, so you can reuse them. Emails, phone numbers and links are removed before anything is kept.</div>
+        ) : (
+          <div className="space-y-2">
+            {prompts.map((p) => (
+              <div key={p.id} className="p-3.5 rounded-xl bg-surface border border-border flex items-start justify-between gap-3 text-xs">
+                <div className="min-w-0">
+                  <div className="text-foreground leading-relaxed">{p.text}</div>
+                  <div className="text-muted text-[11px] mt-0.5">{[p.grade, p.subject && titleCase(p.subject)].filter(Boolean).join(" · ")}</div>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button type="button" onClick={() => reuse(p.text)} className="px-2.5 py-1.5 rounded-lg border border-border bg-card text-foreground hover:border-accent-line inline-flex items-center gap-1.5">
+                    <RotateCcw className="w-3.5 h-3.5" /> Reuse
+                  </button>
+                  <button type="button" onClick={() => removePrompt(p.id)} aria-label="Remove this request" className="p-1.5 rounded-lg text-muted hover:text-danger">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </section>
@@ -299,7 +373,7 @@ function TraitCard({ trait, busy, onDecide }: { trait: StyleTrait; busy: boolean
   const chip = {
     active: { label: "In use", cls: "text-success bg-success-soft border-success-line" },
     suggested: { label: "Suggested", cls: "text-chrome bg-chrome-soft border-chrome-line" },
-    stale: { label: "Files removed", cls: "text-warning bg-warning-soft border-warning-line" },
+    stale: { label: "No longer evidence", cls: "text-warning bg-warning-soft border-warning-line" },
     dismissed: { label: "Not used", cls: "text-muted bg-card border-border" },
   }[trait.status];
 
@@ -310,16 +384,22 @@ function TraitCard({ trait, busy, onDecide }: { trait: StyleTrait; busy: boolean
         <span className={`shrink-0 px-2 py-0.5 rounded-full border text-[10.5px] font-medium ${chip.cls}`}>{chip.label}</span>
       </div>
 
-      {trait.evidence.length > 0 && (
-        <details className="text-muted">
-          <summary className="cursor-pointer select-none">Based on {trait.n_evidence} of your {trait.n_documents} papers</summary>
-          <ul className="mt-1.5 pl-4 list-disc space-y-0.5">
-            {trait.evidence.map((e) => <li key={e.document_id}>{e.title}</li>)}
-          </ul>
-        </details>
+      {trait.kind === "profile" ? (
+        <div className="text-muted">Seen in {trait.n_evidence} of your last {trait.n_documents} requests.</div>
+      ) : (
+        trait.evidence.length > 0 && (
+          <details className="text-muted">
+            <summary className="cursor-pointer select-none">Based on {trait.n_evidence} of your {trait.n_documents} papers</summary>
+            <ul className="mt-1.5 pl-4 list-disc space-y-0.5">
+              {trait.evidence.map((e) => <li key={e.document_id}>{e.title}</li>)}
+            </ul>
+          </details>
+        )
       )}
       {trait.status === "stale" && (
-        <div className="text-muted">The files this came from were removed, so it isn&rsquo;t being used.</div>
+        <div className="text-muted">
+          {trait.kind === "profile" ? "Your recent requests no longer show this, so it isn\u2019t being used." : "The files this came from were removed, so it isn\u2019t being used."}
+        </div>
       )}
       {trait.status === "active" && trait.update && (
         <div className="p-2.5 rounded-lg bg-card border border-border text-muted">

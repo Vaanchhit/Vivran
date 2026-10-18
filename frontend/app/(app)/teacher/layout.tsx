@@ -7,6 +7,7 @@ import { TeacherSidebar } from "@/app/components/sidebar";
 import { OnboardingWizard } from "@/app/components/onboarding-wizard";
 import { ReferralGate } from "@/app/components/referral-gate";
 import { Notices } from "@/app/components/notices";
+import { AskVivran } from "@/app/components/ask-vivran";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -53,6 +54,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
         </div>
       </main>
       {showChrome && <Notices />}
+      {showChrome && <AskVivran />}
     </div>
   );
 }

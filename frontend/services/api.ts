@@ -221,6 +221,124 @@ export async function parseTeacherIntent(
   });
 }
 
+// ---------------------------------------------------------------------------
+// Intuitive examples (backend app/generation/examples.py)
+// ---------------------------------------------------------------------------
+
+export interface ConceptCard {
+  concept: string;
+  one_line: string;
+  key_terms: { term: string; meaning: string }[];
+  formula?: string | null;
+  prerequisites?: string[];
+  source_ids?: string[];
+}
+
+export interface WorkedExample {
+  title: string;
+  inputs: { name: string; label: string; value: number; unit: string }[];
+  /** `value` is computed by the server, never stated by the model. */
+  steps: { name: string; label: string; expr: string; value: number }[];
+  result: { name: string; label: string; value: number };
+  explain: string;
+}
+
+export interface ExampleResult {
+  artifact_type?: "example";
+  title: string;
+  error?: string;
+  concept?: ConceptCard;
+  analogy?: {
+    setting: string;
+    story: string;
+    mapping: { term: string; meaning: string; in_story: string }[];
+    worked_example: WorkedExample | null;
+    where_it_breaks: string[];
+    common_mistake: string;
+    check: { q: string; a: string }[];
+  };
+  grounded_on?: number;
+  sources?: Source[];
+  guardrail_warnings?: string[];
+  visual_options?: { napkin: boolean };
+  library_id?: string;
+}
+
+export interface ExampleParams {
+  concept: string;
+  grade?: string;
+  subject?: string;
+  setting?: string;
+  avoidSettings?: string[];
+  materialId?: string;
+  language?: string;
+  /** From an earlier answer: re-rolling the analogy reuses it (one model call). */
+  card?: ConceptCard;
+}
+
+export function generateExample(p: ExampleParams): Promise<ExampleResult> {
+  return request<ExampleResult>("POST", "/examples", {
+    concept: p.concept,
+    grade: p.grade || undefined,
+    subject: p.subject || undefined,
+    setting: p.setting || undefined,
+    avoid_settings: p.avoidSettings ?? [],
+    material_id: p.materialId || undefined,
+    language: p.language || undefined,
+    card: p.card,
+  });
+}
+
+export function makeExampleVisual(story: string, mapping: { term: string; in_story: string }[], language?: string): Promise<{ image: string; format: string }> {
+  return request("POST", "/examples/visual", { story, mapping, language });
+}
+
+// ---------------------------------------------------------------------------
+// Ask Vivran (backend app/generation/assistant.py)
+// ---------------------------------------------------------------------------
+
+export interface AssistantEntry { id: string; q: string; a: string; steps?: string[]; points?: string[] }
+
+export interface AssistantReply {
+  answer: string;
+  steps: string[];
+  actions: { route_id: string; label: string; href: string; prompt: string | null }[];
+  followups: string[];
+  needs_human: boolean;
+  left_today?: number;
+}
+
+export function askAssistant(body: {
+  message: string;
+  page: string;
+  history: { role: "user" | "guide"; text: string }[];
+  entries: AssistantEntry[];
+}): Promise<AssistantReply> {
+  return request<AssistantReply>("POST", "/assistant/ask", body);
+}
+
+// ---------------------------------------------------------------------------
+// Teaching memory: requests and habits (backend app/memory/events.py, profile.py)
+// ---------------------------------------------------------------------------
+
+export interface RecentPrompt { id: string; text: string; subject: string; grade?: string | null; created_at?: string }
+
+export interface UsualSetup {
+  label: string;
+  /** Form values to apply on a click: grade, subject, marks, difficulty, slide_count, question_plan, language ... */
+  fields: Record<string, unknown>;
+  status: "active" | "suggested";
+}
+
+export const getRecentPrompts = (): Promise<{ prompts: RecentPrompt[] }> => request("GET", "/memory/prompts");
+export const deleteRecentPrompt = (id: string): Promise<void> => request("DELETE", `/memory/prompts/${encodeURIComponent(id)}`);
+export const clearRecentPrompts = (): Promise<void> => request("DELETE", "/memory/prompts");
+export const getUsualSetup = (artifact: string): Promise<{ usual: UsualSetup | null }> => request("GET", `/memory/usual?artifact=${encodeURIComponent(artifact)}`);
+/** For things the browser starts itself (slide decks): tells memory what was asked for. Never blocks the caller. */
+export function reportEvent(artifact: "slides" | "example", subject: string | undefined, grade: string | undefined, params: Record<string, unknown>): void {
+  request("POST", "/memory/events", { artifact, subject, grade, params }).catch(() => undefined);
+}
+
 /** One question type in a teacher-built paper. When sent, it IS the paper's
  * structure: the backend writes exactly these and works out the total. */
 export interface QuestionPlanItem {
@@ -406,7 +524,7 @@ export interface CoursePlan {
 // ── Saved work (backend app/api/library.py) ─────────────────────────────
 export type LibraryKind =
   | "course_plan" | "slides" | "worksheet" | "lesson_notes" | "interactive"
-  | "assessment" | "narration" | "image" | "video";
+  | "assessment" | "narration" | "image" | "video" | "example";
 
 export interface LibraryEntry {
   id: string;
@@ -445,6 +563,7 @@ export function libraryHref(item: Pick<LibraryEntry, "id" | "type">): string {
   if (item.type === "assessment") return `/teacher/assess?item=${id}`;
   if (item.type === "course_plan") return `/teacher/plan?item=${id}`;
   if (item.type === "worksheet") return `/teacher/assess?mode=worksheet&item=${id}`;
+  if (item.type === "example") return `/teacher/examples?item=${id}`;
   return `/teacher/create?type=${item.type}&item=${id}`;
 }
 

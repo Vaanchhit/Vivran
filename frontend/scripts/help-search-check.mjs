@@ -61,6 +61,18 @@ const SHOULD_ANSWER = [
   ["talk to someone", "contact"],
   ["genrate slids", "slides"],          // typos
   ["questoin paper marks totel", "marks-total"],
+  // The newer features.
+  ["students are not understanding fcfe, give me a simple example", "explain-simply"],
+  ["explain opportunity cost with an everyday story", "explain-simply"],
+  ["i do not like this analogy, show another", "example-another"],
+  ["are the numbers in the worked example correct", "example-numbers"],
+  ["what does where the comparison breaks mean", "example-where-breaks"],
+  ["how do i put the example diagram in my slides", "example-use"],
+  ["does vivran remember my settings", "memory-habits"],
+  ["what is the your usual button", "memory-usual"],
+  ["how do i reuse an old prompt", "memory-requests"],
+  ["where is the chatbot", "ask-vivran"],
+  ["keyboard shortcut for help", "ask-vivran"],
 ];
 
 let pass = 0;

@@ -18,9 +18,9 @@ const SETUP: CatalogItem[] = [
   },
   {
     key: "teaching_style",
-    title: "Teaching style",
-    desc: "How your papers are usually built.",
-    explain: "Add past papers and Vivran suggests how you usually build them. Nothing is used until you accept it.",
+    title: "Teaching memory",
+    desc: "How you usually work.",
+    explain: "Vivran learns from your past papers and from what you ask for, and suggests your usual settings and style. Nothing is used until you accept it, and you can remove any of it.",
     href: "/teacher/memory",
     icon: PenLine,
     color: "text-tint-clay",

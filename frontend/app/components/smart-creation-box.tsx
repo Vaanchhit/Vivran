@@ -24,6 +24,9 @@ import {
   type CoursePlan,
   type AssessmentGenerateResponse,
   type QuestionPlanItem,
+  type UsualSetup,
+  getUsualSetup,
+  reportEvent,
   type DeckReady,
   type DeckOutline,
   type DeckParams,
@@ -102,10 +105,11 @@ function inferArtifactType(requested: string[]): string {
  * overwritten; "prompt" and "profile" are *labelled suggestions* filled into
  * fields the teacher left blank, and stay fully editable. Anything with no
  * entry here was never filled at all. */
-type FieldSource = "teacher" | "prompt" | "profile";
+type FieldSource = "teacher" | "prompt" | "profile" | "history";
 
 const SOURCE_NOTE: Record<FieldSource, string | null> = {
   teacher: null,
+  history: "from your usual setup",
   prompt: "from your prompt",
   profile: "from your profile",
 };
@@ -395,6 +399,20 @@ export function SmartCreationBox({
   // this box's scope, so leaving the page (or refreshing) never loses it.
   const k = (name: string) => `${scope}:${name}`;
   const [promptText, setPromptText] = useTabState(k("prompt"), "");
+  // A request typed for the teacher by the assistant or "reuse this prompt"
+  // arrives here once, waiting to be read and sent by them. Nothing is submitted.
+  useEffect(() => {
+    try {
+      const waiting = localStorage.getItem("vivran.reusePrompt");
+      if (waiting) {
+        localStorage.removeItem("vivran.reusePrompt");
+        setPromptText(waiting);
+      }
+    } catch {
+      /* storage unavailable: nothing was waiting */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [loading, setLoading] = useLiveState(k("reading"), false);
   const [interpretation, setInterpretation] = useTabState<Interpretation | null>(k("interpretation"), null);
   const [topicDraft, setTopicDraft] = useTabState(k("topicDraft"), "");
@@ -466,6 +484,43 @@ export function SmartCreationBox({
   /** Marks a field as an explicit teacher choice so intent parsing can never
    * overwrite it afterwards. */
   const markTeacherSet = (field: string) => setFieldSource((prev) => ({ ...prev, [field]: "teacher" }));
+
+  // Your usual setup for this kind of thing, learned from your own requests.
+  // It only ever FILLS the form when the teacher clicks it, and every value it
+  // sets is labelled "from your usual setup" and stays editable.
+  const [usual, setUsual] = useState<UsualSetup | null>(null);
+  useEffect(() => {
+    setUsual(null);
+    if (!artifactType || ["narration", "image", "video"].includes(artifactType)) return;
+    let cancelled = false;
+    getUsualSetup(artifactType === "assessment" ? "assessment" : artifactType)
+      .then((r) => !cancelled && setUsual(r.usual))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [artifactType]);
+
+  const applyUsual = (u: UsualSetup) => {
+    const f = u.fields;
+    const next: Record<string, FieldSource> = {};
+    const num = (v: unknown) => (typeof v === "number" ? v : Number(v) || null);
+    const put = (name: string, run: () => void) => {
+      run();
+      next[name] = "history";
+    };
+    if (typeof f.grade === "string" && f.grade) put("grade", () => setGrade(f.grade as string));
+    if (typeof f.subject === "string" && f.subject) put("subject", () => setSubject(f.subject as string));
+    if (f.marks != null) put("marks", () => setMarks(num(f.marks)));
+    if (typeof f.difficulty === "string") put("difficulty", () => setDifficulty(f.difficulty as string));
+    if (f.slide_count != null) put("slideCount", () => setSlideCount(num(f.slide_count)));
+    if (f.question_count != null) put("questionCount", () => setQuestionCount(num(f.question_count)));
+    if (f.duration_minutes != null) put("durationMinutes", () => setDurationMinutes(num(f.duration_minutes)));
+    if (f.duration_weeks != null) put("durationWeeks", () => setDurationWeeks(num(f.duration_weeks)));
+    if (typeof f.language === "string") put("language", () => setLanguage(f.language as string));
+    if (Array.isArray(f.question_plan)) put("questionPlan", () => setQuestionPlan(f.question_plan as QuestionPlanItem[]));
+    setFieldSource((prev) => ({ ...prev, ...next }));
+  };
 
   const noteFor = (field: string) => {
     const src = fieldSource[field];
@@ -701,6 +756,9 @@ export function SmartCreationBox({
             language: language || undefined,
             materialId: materialId || undefined,
           };
+          // Slide decks are planned by the browser's own route, with no backend
+          // generate call, so memory is told what was asked for here.
+          reportEvent("slides", subject, grade, { slide_count: params.slideCount, language: params.language });
           const data = await generateOutline(params);
           if (data.status === "needs_input") {
             const asks = data.questions.filter((q) => q.blocking).map((q) => q.ask);
@@ -856,6 +914,20 @@ export function SmartCreationBox({
             as a real parameter, so the prompt above only has to carry the
             topic and the angle. Every control starts unset — picking one is
             the teacher's choice, and leaving it alone never invents a value. */}
+        {usual && hasCustomizationControls && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-muted">{usual.status === "active" ? "Your usual:" : "You often use:"}</span>
+            <button
+              type="button"
+              onClick={() => applyUsual(usual)}
+              className="px-2.5 py-1.5 rounded-lg border border-accent-line bg-accent-soft text-foreground font-medium hover:bg-accent-soft-hi"
+              title="Fills the options below. You can change any of them."
+            >
+              {usual.label}
+            </button>
+          </div>
+        )}
+
         <div className={`mt-4 pt-4 border-t border-border ${hasCustomizationControls ? "" : "hidden"}`}>
           <div className="text-[11px] text-muted font-medium mb-2.5 flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-accent" />
