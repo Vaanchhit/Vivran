@@ -17,7 +17,10 @@ export function authHeaders(req: Request): Record<string, string> {
 /** Best effort: an ungrounded deck is a worse deck, not a failed one. */
 export async function fetchGrounding(req: Request, ctx: LessonContext, materialId?: string): Promise<SourceChunk[]> {
   try {
-    const q = `Teaching material about ${ctx.topic} for a ${ctx.gradeLabel} ${ctx.subject} course`;
+    // The topic and subject only: filler words ("Teaching material about ...
+    // course") are in every query, so they pull every query towards the same
+    // generic passages instead of the topic's own.
+    const q = `${ctx.topic} ${ctx.subject}`;
     const r = await fetch(`${API}/content/grounding`, {
       method: "POST",
       headers: authHeaders(req),

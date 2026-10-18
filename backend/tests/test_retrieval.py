@@ -223,3 +223,22 @@ def test_exact_word_overlap_lifts_the_passage_that_names_the_term():
     a = {"chunk_id": "a", "content": "Valuation overview and discounting.", "rrf": 0.0330, "score": 0.6, "page_number": 1, "source_material": "B"}
     b = {"chunk_id": "b", "content": "FCFE is cash flow to equity holders.", "rrf": 0.0320, "score": 0.5, "page_number": 2, "source_material": "B"}
     assert rerank_chunks("what is fcfe", [a, b])[0]["chunk_id"] == "b"
+
+
+# ---------------------------------------------------------------------------
+# The slide deck's grounding endpoint sends the same budgeted excerpts
+# ---------------------------------------------------------------------------
+
+def test_the_grounding_endpoint_cuts_sources_to_a_budget(client, provisioned_workspace, monkeypatch):
+    from app.api import content as content_api
+
+    big = ("Introduction and history of the subject. " * 40) + "Price elasticity of demand measures responsiveness of quantity to price. " + ("Appendix and references follow. " * 40)
+    chunks = [{"chunk_id": f"c{i}", "content": big, "source_material": "Book", "page_number": i, "chapter": "Unit 4"} for i in range(6)]
+    monkeypatch.setattr(content_api, "search_knowledge_base", lambda *a, **k: chunks)
+    ws = provisioned_workspace
+    r = client.post("/api/content/grounding", headers=ws["headers"], json={"query": "price elasticity of demand", "limit": 6})
+    assert r.status_code == 200
+    body = r.json()["chunks"]
+    assert len(body) == 6 and sum(len(c["excerpt"]) for c in body) < 6000          # was 6 x ~3,000 characters
+    assert all("elasticity of demand" in c["excerpt"] for c in body)               # the relevant sentence survives the cut
+    assert body[0]["chapter"] == "Unit 4"

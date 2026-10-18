@@ -22,6 +22,9 @@ from app.memory import events as memory_events
 from app.memory import store as memory_store
 from app.media.cartesia import CartesiaService
 from app.media.elevenlabs import ElevenLabsService
+from app.core.config import settings
+from app.retrieval.context import best_excerpt
+from app.retrieval.query import terms
 from app.retrieval.search import search_knowledge_base
 
 router = APIRouter(prefix="/content", tags=["content"])
@@ -402,13 +405,19 @@ def api_grounding(
     chunks = search_knowledge_base(
         payload.query, workspace_id=ws, material_id=payload.material_id, limit=payload.limit
     )
+    # The deck prompt carries these verbatim, so they are cut to the sentences
+    # that matter within one shared budget (app/retrieval/context.py). Sent whole,
+    # six chunks were ~85% of what a deck cost to write.
+    q_terms = terms(payload.query)
+    each = max(350, min(1400, settings.retrieval_prompt_chars // max(1, len(chunks))))
     return {
         "chunks": [
             {
                 "chunk_id": c.get("chunk_id") or c.get("id"),
-                "excerpt": c.get("content") or c.get("excerpt") or "",
+                "excerpt": best_excerpt(c.get("content") or c.get("excerpt") or "", q_terms, each),
                 "source_material": c.get("source_material") or c.get("title"),
                 "page_number": c.get("page_number"),
+                "chapter": c.get("chapter"),
             }
             for c in chunks
         ],
