@@ -30,6 +30,7 @@ KINDS = {
     "worksheet": "Worksheet",
     "lesson_notes": "Lesson notes",
     "interactive": "Interactive coursework",
+    "example": "Intuitive example",
     "assessment": "Exam paper",
     "narration": "Narration audio",
     "image": "Image",

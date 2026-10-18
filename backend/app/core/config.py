@@ -114,6 +114,13 @@ class Settings(BaseSettings):
     # Tally.so — MCQ-test-to-form export
     tally_api_key: str = ""
 
+    # Napkin (https://api.napkin.ai) — optional designed visuals for intuitive
+    # examples. Off without a key. Usage draws on the key owner's Napkin
+    # credits (shared by every teacher on this deployment) and free plans add a
+    # watermark, so this is a deliberate opt-in per example, never automatic.
+    napkin_api_key: str = ""
+    napkin_base_url: str = "https://api.napkin.ai"
+
     # Supabase Infrastructure
     supabase_url: str = ""
     supabase_anon_key: str = ""

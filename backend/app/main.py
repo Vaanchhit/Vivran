@@ -1,7 +1,7 @@
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import assessments, auth, content, health, jobs, library, materials, memory, projects, teacher_workflows
+from app.api import assessments, assistant, auth, content, examples, health, jobs, library, materials, memory, projects, teacher_workflows
 from app.api.deps import require_verified_teacher
 from app.core.config import settings
 from app.core.logging import logger
@@ -39,6 +39,8 @@ app.include_router(library.router, prefix="/api", dependencies=_beta_gated)
 app.include_router(materials.router, prefix="/api", dependencies=_beta_gated)
 app.include_router(content.router, prefix="/api", dependencies=_beta_gated)
 app.include_router(memory.router, prefix="/api", dependencies=_beta_gated)
+app.include_router(examples.router, prefix="/api", dependencies=_beta_gated)
+app.include_router(assistant.router, prefix="/api", dependencies=_beta_gated)
 # Job status is as gated as the generation that creates jobs — the rows carry
 # the teacher's own generated content.
 app.include_router(jobs.router, prefix="/api", dependencies=_beta_gated)
