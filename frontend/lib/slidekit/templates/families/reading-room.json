@@ -10,7 +10,7 @@
         "fact": "purpose",
         "is": "literature"
       },
-      "weight": 4,
+      "weight": 7,
       "why": "your words point to language or literature"
     },
     {
@@ -33,6 +33,9 @@
       "why": "the topic is literary"
     }
   ],
+  "design": {
+    "skin": "classic"
+  },
   "slides": [
     {
       "id": "title",

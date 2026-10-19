@@ -181,8 +181,10 @@ def add_document(
     grade: Optional[str] = None,
     kind_hint: Optional[str] = None,
     authored_by_me: bool = True,
+    read: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    read = read_document(data, filename, kind_hint)
+    """Store what a file teaches about style. ``read`` lets a caller that already read the file skip a second read."""
+    read = read or read_document(data, filename, kind_hint)
     row = _insert(
         DOCUMENTS,
         {

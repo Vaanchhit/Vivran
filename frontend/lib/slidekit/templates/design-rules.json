@@ -1,27 +1,310 @@
 {
   "_about": "Design rules. Each rule says: when this is true, set these design properties. If two rules set the same property the higher priority wins; preferFamilies from all matching rules are merged. 'plan' rules run from the request alone; 'fill' rules also see the filled deck. Rules never change layout geometry: the matcher still verifies every slide fits whatever they set.",
   "rules": [
-    { "id": "subject-science",   "priority": 10, "when": { "fact": "family", "is": "science" },    "set": { "theme": "ocean" },      "why": "Cool, clean palette for science." },
-    { "id": "subject-humanities","priority": 10, "when": { "fact": "family", "is": "humanities" }, "set": { "theme": "paper" },      "why": "Warm paper palette for narrative subjects." },
-    { "id": "subject-quant",     "priority": 10, "when": { "fact": "family", "in": ["quant", "commerce"] }, "set": { "theme": "classic" }, "why": "Neutral blue keeps numbers and formulas calm." },
-    { "id": "subject-language",  "priority": 10, "when": { "fact": "family", "in": ["language", "arts"] }, "set": { "theme": "paper" }, "why": "Warm paper palette for reading-led lessons." },
-    { "id": "subject-computing", "priority": 20, "when": { "fact": "isCode", "truthy": true }, "set": { "theme": "midnight", "preferFamilies": ["split"] }, "why": "Dark theme and side-by-side layouts for code." },
-
-    { "id": "young-learners",    "priority": 40, "when": { "fact": "grade", "is": "primary" }, "set": { "theme": "forest", "maxDensity": "low", "minFont": 30, "preferFamilies": ["cards", "media"] }, "why": "Big type, few words and bright cards for young learners." },
-    { "id": "middle-years",      "priority": 30, "when": { "fact": "grade", "is": "middle" },  "set": { "maxDensity": "medium", "preferFamilies": ["cards"] }, "why": "Medium density with card layouts for ages 11–13." },
-    { "id": "exam-years-revision","priority": 35, "when": { "all": [ { "fact": "purpose", "is": "revision" }, { "fact": "grade", "in": ["secondary", "college"] } ] }, "set": { "maxDensity": "high", "maxItems": 6 }, "why": "Revision decks carry more per slide for older students." },
-
-    { "id": "playful-tone",      "priority": 45, "when": { "fact": "tone", "is": "playful" }, "set": { "preferFamilies": ["cards", "media"], "maxDensity": "medium" }, "why": "Light, card-based layouts for a playful lesson." },
-    { "id": "formal-tone",       "priority": 50, "when": { "fact": "tone", "is": "formal" },  "set": { "theme": "classic", "preferFamilies": ["list", "table"] }, "why": "Restrained palette and tables for a formal talk." },
-
-    { "id": "quiz-room",         "priority": 42, "when": { "fact": "purpose", "is": "assessment" }, "set": { "maxDensity": "low", "minFont": 26 }, "why": "Quiz slides are read from the back of the room, so type stays large." },
-    { "id": "hands-on",          "priority": 38, "when": { "fact": "purpose", "is": "activity" },   "set": { "theme": "forest", "preferFamilies": ["cards", "diagram"] }, "why": "Cards and diagrams for a hands-on lesson." },
-    { "id": "story-lesson",      "priority": 36, "when": { "fact": "purpose", "is": "story" },      "set": { "preferFamilies": ["diagram"] }, "why": "Timelines and cause diagrams carry a narrative." },
-
-    { "id": "indic-script",      "priority": 55, "when": { "fact": "script", "notIn": ["latin"] }, "set": { "minFont": 26 }, "why": "Indic and other scripts need a larger floor to stay legible when projected." },
-
-    { "id": "dense-text-young",  "priority": 60, "phase": "fill", "when": { "all": [ { "fact": "avgWords", "gte": 10 }, { "fact": "grade", "in": ["primary", "middle"] } ] }, "set": { "maxDensity": "low", "minFont": 26 }, "why": "The model wrote long lines for young students, so slides are spaced out and enlarged." },
-    { "id": "dense-text-any",    "priority": 30, "phase": "fill", "when": { "fact": "avgWords", "gte": 15 }, "set": { "maxDensity": "medium" }, "why": "Long lines, so the denser layouts are avoided." },
-    { "id": "meme-deck",         "priority": 25, "phase": "fill", "when": { "fact": "memeCount", "gte": 1 }, "set": { "preferFamilies": ["media"] }, "why": "A meme slide is present, so image-led layouts get a nudge." }
+    {
+      "id": "subject-science",
+      "priority": 10,
+      "when": {
+        "fact": "family",
+        "is": "science"
+      },
+      "set": {
+        "theme": "ocean"
+      },
+      "why": "Cool, clean palette for science."
+    },
+    {
+      "id": "subject-humanities",
+      "priority": 10,
+      "when": {
+        "fact": "family",
+        "is": "humanities"
+      },
+      "set": {
+        "theme": "paper"
+      },
+      "why": "Warm paper palette for narrative subjects."
+    },
+    {
+      "id": "subject-quant",
+      "priority": 10,
+      "when": {
+        "fact": "family",
+        "in": [
+          "quant",
+          "commerce"
+        ]
+      },
+      "set": {
+        "theme": "classic"
+      },
+      "why": "Neutral blue keeps numbers and formulas calm."
+    },
+    {
+      "id": "subject-language",
+      "priority": 10,
+      "when": {
+        "fact": "family",
+        "in": [
+          "language",
+          "arts"
+        ]
+      },
+      "set": {
+        "theme": "paper"
+      },
+      "why": "Warm paper palette for reading-led lessons."
+    },
+    {
+      "id": "subject-computing",
+      "priority": 20,
+      "when": {
+        "fact": "isCode",
+        "truthy": true
+      },
+      "set": {
+        "theme": "midnight",
+        "preferFamilies": [
+          "split"
+        ]
+      },
+      "why": "Dark theme and side-by-side layouts for code."
+    },
+    {
+      "id": "young-learners",
+      "priority": 40,
+      "when": {
+        "fact": "grade",
+        "is": "primary"
+      },
+      "set": {
+        "theme": "forest",
+        "maxDensity": "low",
+        "minFont": 30,
+        "preferFamilies": [
+          "cards",
+          "media"
+        ],
+        "skin": "soft"
+      },
+      "why": "Big type, few words and bright cards for young learners."
+    },
+    {
+      "id": "middle-years",
+      "priority": 30,
+      "when": {
+        "fact": "grade",
+        "is": "middle"
+      },
+      "set": {
+        "maxDensity": "medium",
+        "preferFamilies": [
+          "cards"
+        ]
+      },
+      "why": "Medium density with card layouts for ages 11–13."
+    },
+    {
+      "id": "exam-years-revision",
+      "priority": 35,
+      "when": {
+        "all": [
+          {
+            "fact": "purpose",
+            "is": "revision"
+          },
+          {
+            "fact": "grade",
+            "in": [
+              "secondary",
+              "college"
+            ]
+          }
+        ]
+      },
+      "set": {
+        "maxDensity": "high",
+        "maxItems": 6
+      },
+      "why": "Revision decks carry more per slide for older students."
+    },
+    {
+      "id": "playful-tone",
+      "priority": 45,
+      "when": {
+        "fact": "tone",
+        "is": "playful"
+      },
+      "set": {
+        "preferFamilies": [
+          "cards",
+          "media"
+        ],
+        "maxDensity": "medium"
+      },
+      "why": "Light, card-based layouts for a playful lesson."
+    },
+    {
+      "id": "formal-tone",
+      "priority": 50,
+      "when": {
+        "fact": "tone",
+        "is": "formal"
+      },
+      "set": {
+        "theme": "classic",
+        "preferFamilies": [
+          "list",
+          "table"
+        ],
+        "skin": "classic"
+      },
+      "why": "Restrained palette and tables for a formal talk."
+    },
+    {
+      "id": "quiz-room",
+      "priority": 42,
+      "when": {
+        "fact": "purpose",
+        "is": "assessment"
+      },
+      "set": {
+        "maxDensity": "low",
+        "minFont": 26
+      },
+      "why": "Quiz slides are read from the back of the room, so type stays large."
+    },
+    {
+      "id": "hands-on",
+      "priority": 38,
+      "when": {
+        "fact": "purpose",
+        "is": "activity"
+      },
+      "set": {
+        "theme": "forest",
+        "preferFamilies": [
+          "cards",
+          "diagram"
+        ]
+      },
+      "why": "Cards and diagrams for a hands-on lesson."
+    },
+    {
+      "id": "story-lesson",
+      "priority": 36,
+      "when": {
+        "fact": "purpose",
+        "is": "story"
+      },
+      "set": {
+        "preferFamilies": [
+          "diagram"
+        ]
+      },
+      "why": "Timelines and cause diagrams carry a narrative."
+    },
+    {
+      "id": "indic-script",
+      "priority": 55,
+      "when": {
+        "fact": "script",
+        "notIn": [
+          "latin"
+        ]
+      },
+      "set": {
+        "minFont": 26
+      },
+      "why": "Indic and other scripts need a larger floor to stay legible when projected."
+    },
+    {
+      "id": "dense-text-young",
+      "priority": 60,
+      "phase": "fill",
+      "when": {
+        "all": [
+          {
+            "fact": "avgWords",
+            "gte": 10
+          },
+          {
+            "fact": "grade",
+            "in": [
+              "primary",
+              "middle"
+            ]
+          }
+        ]
+      },
+      "set": {
+        "maxDensity": "low",
+        "minFont": 26
+      },
+      "why": "The model wrote long lines for young students, so slides are spaced out and enlarged."
+    },
+    {
+      "id": "dense-text-any",
+      "priority": 30,
+      "phase": "fill",
+      "when": {
+        "fact": "avgWords",
+        "gte": 15
+      },
+      "set": {
+        "maxDensity": "medium"
+      },
+      "why": "Long lines, so the denser layouts are avoided."
+    },
+    {
+      "id": "meme-deck",
+      "priority": 25,
+      "phase": "fill",
+      "when": {
+        "fact": "memeCount",
+        "gte": 1
+      },
+      "set": {
+        "preferFamilies": [
+          "media"
+        ]
+      },
+      "why": "A meme slide is present, so image-led layouts get a nudge."
+    },
+    {
+      "id": "adult-audience",
+      "priority": 48,
+      "phase": "plan",
+      "when": {
+        "fact": "audience",
+        "in": [
+          "teachers",
+          "parents"
+        ]
+      },
+      "set": {
+        "maxDensity": "medium",
+        "minFont": 26,
+        "preferFamilies": [
+          "list",
+          "cards"
+        ]
+      },
+      "why": "Adults in a meeting room: calm layouts, large type, no clutter."
+    },
+    {
+      "id": "research-room",
+      "priority": 44,
+      "phase": "plan",
+      "when": {
+        "fact": "purpose",
+        "is": "research"
+      },
+      "set": {
+        "theme": "classic",
+        "maxDensity": "high"
+      },
+      "why": "A seminar audience expects a restrained look and denser slides."
+    }
   ]
 }

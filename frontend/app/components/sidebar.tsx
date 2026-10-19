@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/auth-context";
 import { ThemeToggle } from "@/app/components/theme-toggle";
 import { ASK_EVENT } from "@/app/components/ask-vivran";
 import {
-  Plus,
   Home,
   CalendarRange,
   BookOpenCheck,
@@ -16,11 +15,11 @@ import {
   Library,
   LifeBuoy,
   Sparkles,
-  PenLine,
   Settings,
   User,
   LogOut,
 } from "lucide-react";
+import { BrandMark } from "@/app/components/brand-mark";
 
 export function TeacherSidebar() {
   const pathname = usePathname();
@@ -39,8 +38,7 @@ export function TeacherSidebar() {
     { label: "Plan", href: "/teacher/plan", icon: CalendarRange },
     { label: "Teach", href: "/teacher/create", icon: BookOpenCheck },
     { label: "Assess", href: "/teacher/assess", icon: FileCheck2 },
-    { label: "My Materials", href: "/teacher/materials", icon: FolderOpen },
-    { label: "Teaching memory", href: "/teacher/memory", icon: PenLine },
+    { label: "My sources", href: "/teacher/materials", icon: FolderOpen },
     { label: "Library", href: "/teacher/library", icon: Library },
     { label: "Settings", href: "/teacher/settings", icon: Settings },
     { label: "Help", href: "/teacher/help", icon: LifeBuoy },
@@ -50,10 +48,8 @@ export function TeacherSidebar() {
     <aside className="w-64 border-r border-border bg-surface-2 flex flex-col h-screen sticky top-0 z-20">
       {/* Brand Header */}
       <div className="p-5 border-b border-border flex items-center justify-between">
-        <Link href="/teacher" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-ink text-ink-fg flex items-center justify-center font-bold text-xs">
-            विव
-          </div>
+        <Link href="/teacher" className="vv-mark-host flex items-center gap-2.5">
+          <BrandMark className="w-9 h-9" />
           <div>
             <div className="font-display font-extrabold text-lg text-foreground leading-none">
               VIVRAN
@@ -66,17 +62,7 @@ export function TeacherSidebar() {
         <ThemeToggle />
       </div>
 
-      {/* Quick Action Button */}
-      <div className="p-4">
-        {/* The dashboard's prompt box makes any type, so "create" starts there. */}
-        <Link
-          href="/teacher"
-          className="w-full h-10 btn-primary font-medium text-sm rounded-xl flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Create anything
-        </Link>
-      </div>
-
+      <div className="pt-4" />
       <div className="px-3 pb-2">
         <button
           type="button"

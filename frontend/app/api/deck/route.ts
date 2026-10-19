@@ -119,7 +119,7 @@ export async function POST(req: Request) {
     placements,
     plan: plan.map(p => p.type),
     template: grounded.template,
-    design: { themeId: design.themeId, custom: design.custom, applied: design.applied, notes: grounded.notes },
+    design: { themeId: design.themeId, custom: design.custom, skin: design.skin, applied: design.applied, notes: grounded.notes },
     context: {
       topic: ctx.topic,
       subject: ctx.subject,

@@ -6,6 +6,7 @@
 import type { DiagramGeom, DiaFill, DiaStroke } from "./diagram";
 import type { El, Placement } from "./matcher";
 import { BOLD_ROLES, CANVAS, DECK_FONT, LINE_HEIGHT } from "./tokens";
+import { decorate, type Deco, type Paint, type Skin } from "./skin";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -149,7 +150,32 @@ function el(T: DeckTheme, e: El, cardTone: string | undefined): string {
   }
 }
 
-export function slideHTML(p: Placement, label = "", T: DeckTheme = THEME): string {
+/** The same theme turned dark: used for cover slides in skins that invert them. Accent is nudged until it reads on the dark ground. */
+export function inverseTheme(T: DeckTheme): DeckTheme {
+  const bg = T.ink, ink = T.bg;
+  let accent = T.accent;
+  for (let i = 0; i < 20 && contrast(accent, bg) < 4.5; i++) accent = mix(accent, ink, 0.15);
+  return {
+    ...T, bg, ink, accent, muted: mix(ink, bg, 0.35), line: mix(bg, ink, 0.22), card: mix(bg, ink, 0.08),
+    accentBg: mix(bg, accent, 0.22), header: mix(bg, ink, 0.12), chip: mix(bg, ink, 0.1),
+  };
+}
+
+const paint = (T: DeckTheme, k: Paint) => T[k];
+const at = (x: number, y: number, w: number, h: number) => `left:${x}px;top:${y}px;width:${w}px;height:${h}px`;
+
+function decoHTML(T: DeckTheme, d: Deco): string {
+  const op = d.k !== "text" && d.opacity !== undefined ? `;opacity:${d.opacity}` : "";
+  if (d.k === "rect") return `<div class="dc" style="${at(d.x, d.y, d.w, d.h)};background:${paint(T, d.fill)}${d.r ? `;border-radius:${d.r}px` : ""}${op}"></div>`;
+  if (d.k === "circle") return `<div class="dc" style="${at(d.cx - d.r, d.cy - d.r, d.r * 2, d.r * 2)};background:${paint(T, d.fill)};border-radius:50%${op}"></div>`;
+  return `<div class="dc" style="${at(d.x, d.y, d.w, d.h)};font-size:${d.size}px;line-height:${d.h}px;color:${paint(T, d.color)};text-align:${d.align};white-space:nowrap;overflow:hidden;text-overflow:ellipsis${d.bold ? ";font-weight:700" : ""}">${esc(d.text)}</div>`;
+}
+
+export interface SlideOptions { skin?: Skin; index?: number; total?: number; deckTitle?: string }
+
+export function slideHTML(p: Placement, label = "", T0: DeckTheme = THEME, o: SlideOptions = {}): string {
+  const dec = o.skin ? decorate(p, o.skin, { index: o.index ?? 0, total: o.total ?? 1, deckTitle: o.deckTitle ?? "" }) : null;
+  const T = dec?.invert ? inverseTheme(T0) : T0;
   const lines = p.elements.filter(e => e.t === "connector") as Extract<El, { t: "connector" }>[];
   const svg = lines.length ? `<svg class="cn" viewBox="0 0 ${CANVAS.w} ${CANVAS.h}"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${T.muted}"/></marker></defs>${lines.map(c => `<line x1="${c.x1}" y1="${c.y1}" x2="${c.x2}" y2="${c.y2}" stroke="${T.muted}" stroke-width="4" ${c.arrow ? 'marker-end="url(#ah)"' : 'stroke-dasharray="6 10"'}/>`).join("")}</svg>` : "";
   // text inside a toned card inherits the card's ink
@@ -157,13 +183,15 @@ export function slideHTML(p: Placement, label = "", T: DeckTheme = THEME): strin
   const toneAt = (e: El) => e.t === "text" && e.path !== "label"
     ? cards.find(c => e.x >= c.x && e.y >= c.y && e.x + e.w <= c.x + c.w + 1 && e.y + e.h <= c.y + c.h + 1)?.tone : undefined;
   const body = p.elements.map(e => el(T, e, toneAt(e))).join("");
-  const part = p.part ? `<div class="part">${p.part.index}/${p.part.of}</div>` : "";
-  return `<section class="slide" data-layout="${p.layoutId}" data-label="${esc(label)}">${svg}${body}${part}</section>`;
+  const part = p.part && !dec?.partShown ? `<div class="part">${p.part.index}/${p.part.of}</div>` : "";
+  const decos = dec ? dec.decos.map(d => decoHTML(T, d)).join("") : "";
+  return `<section class="slide" data-layout="${p.layoutId}" data-label="${esc(label)}" style="background:${T.bg};color:${T.ink}">${decos}${svg}${body}${part}</section>`;
 }
 
 export const slideCSS = (T: DeckTheme = THEME) => `
 .slide{position:relative;width:${CANVAS.w}px;height:${CANVAS.h}px;background:${T.bg};overflow:hidden;font-family:${DECK_FONT},"Liberation Sans",Helvetica,sans-serif;color:${T.ink}}
 .slide>*{position:absolute;box-sizing:border-box;margin:0}
+.slide .dc{pointer-events:none}
 .slide .t{overflow:hidden;white-space:normal;overflow-wrap:normal;word-break:normal}
 .slide .cn{left:0;top:0;width:100%;height:100%}
 .slide .m{display:flex;align-items:center;justify-content:center;border-radius:50%;background:${T.ink};color:${T.bg};font-weight:700}

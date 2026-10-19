@@ -38,7 +38,7 @@ export const HELP_SECTIONS: HelpSection[] = [
     title: "Get started",
     intro: "Three steps to your first paper or lesson, built from what you already teach.",
     steps: [
-      "Add a chapter, your notes or slides under My materials.",
+      "Add a chapter, your notes or slides under My sources.",
       "On Home, say what you need in your own words, for example \"a 20-mark test on demand and supply for Class 11\".",
       "Check the plan Vivran shows you, change anything under Customize, then generate. It is saved to your Library.",
     ],
@@ -85,11 +85,11 @@ export const HELP_SECTIONS: HelpSection[] = [
   },
   {
     id: "material",
-    title: "Your materials and sources",
-    intro: "What you upload is what Vivran writes from, and each question can show the page it came from.",
-    steps: ["Upload PDF, Word or PowerPoint files, or paste a YouTube link.", "Wait for it to show as ready.", "Optionally pick it as the source material when you create something."],
+    title: "My sources",
+    intro: "Add a file once. Vivran uses it for facts (new work cites its pages) and learns your style from papers, decks and lesson plans you made.",
+    steps: ["Open My sources and drop PDF, Word or PowerPoint files, or paste a YouTube link.", "Tick that there is no student work in them.", "Each file shows what it is used for: Facts, Style, or both.", "Open the Style tab to accept the patterns Vivran found."],
     href: "/teacher/materials",
-    linkLabel: "Go to My materials",
+    linkLabel: "Go to My sources",
   },
   {
     id: "style",
@@ -100,8 +100,8 @@ export const HELP_SECTIONS: HelpSection[] = [
       "Read what Vivran noticed and choose Use this or Not for me for each pattern.",
       "New papers in that subject follow the patterns you accepted.",
     ],
-    href: "/teacher/memory",
-    linkLabel: "Go to Teaching memory",
+    href: "/teacher/materials?tab=style",
+    linkLabel: "Go to My sources → Style",
   },
   {
     id: "library",
@@ -157,7 +157,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     q: "How do I get started?",
     a: "Add your material, ask for something, check it, and generate.",
     steps: [
-      "Open My materials and add a chapter, your notes or slides (drag a file in, or click to browse).",
+      "Open My sources and add a chapter, your notes or slides (drag a file in, or click to browse).",
       "Wait until the file shows READY.",
       "Go to Home and type what you need, for example \"a 20-mark test on demand and supply for Class 11\".",
       "Press Turn this into a plan and check the grade, subject and topics Vivran read from your sentence.",
@@ -166,7 +166,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     ],
     keywords: ["start", "begin", "first", "new", "beginner"],
     alt: ["where do i begin", "i am new", "shuru kaise karu"],
-    links: [{ label: "Go to My materials", href: "/teacher/materials" }],
+    links: [{ label: "Go to My sources", href: "/teacher/materials" }],
   },
   {
     id: "prompt-box", section: "start",
@@ -476,8 +476,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     q: "What can I upload?",
     a: "PDF, Word and PowerPoint files, and YouTube links.",
     steps: [
-      "Open My materials.",
-      "Drag a file onto the box, or click \"or click to browse\".",
+      "Open My sources.",
+      "Tick \"No student work\", then drag a file onto the box or click \"or choose files\".",
       "For a YouTube video, paste its link into the box and press Add. Vivran uses the transcript.",
       "Wait until it shows READY. A large file can take a minute; you can use other pages meanwhile.",
     ],
@@ -488,7 +488,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     ],
     keywords: ["material", "upload", "pdf", "youtube", "scan", "format"],
     alt: ["can i upload my textbook", "which files", "add notes"],
-    links: [{ label: "Go to My materials", href: "/teacher/materials" }],
+    links: [{ label: "Go to My sources", href: "/teacher/materials" }],
   },
   {
     id: "grounded", section: "material",
@@ -508,7 +508,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     a: "No passage in your materials matched it, so it was written from general subject knowledge.",
     steps: [
       "Read the question and its answer carefully before using it.",
-      "Or upload the chapter that covers it under My materials.",
+      "Or upload the chapter that covers it under My sources.",
       "Generate again, and choose that file as the Source material under Customize.",
     ],
     keywords: ["nosource", "missing", "hallucination", "accurate"],
@@ -519,7 +519,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     q: "How do I make a paper from one specific chapter?",
     a: "Choose it as the Source material.",
     steps: [
-      "Upload the chapter under My materials and wait for READY.",
+      "Upload the chapter under My sources and wait for READY.",
       "On Assess, open Customize.",
       "Under Source material, pick the file.",
       "Generate. Without this, Vivran searches all your materials for the topic.",
@@ -547,7 +547,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     ],
     keywords: ["style", "past", "habit", "learn", "personal"],
     alt: ["make papers like mine", "use my old papers"],
-    links: [{ label: "Go to Teaching memory", href: "/teacher/memory" }],
+    links: [{ label: "Go to My sources", href: "/teacher/materials?tab=style" }],
   },
 
   {
@@ -562,7 +562,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     ],
     keywords: ["learn", "usual", "remember", "preferences"],
     alt: ["does vivran remember what i ask", "will it remember my settings", "how does it learn from my prompts"],
-    links: [{ label: "Go to Teaching memory", href: "/teacher/memory" }],
+    links: [{ label: "Go to My sources", href: "/teacher/materials?tab=style" }],
   },
   {
     id: "memory-usual", section: "style",
@@ -579,9 +579,9 @@ export const HELP_ENTRIES: HelpEntry[] = [
   {
     id: "memory-requests", section: "style",
     q: "Where are my recent requests, and can I reuse one?",
-    a: "On the Teaching memory page, under Your recent requests.",
+    a: "On My sources, in the Habits tab, under Your recent requests.",
     steps: [
-      "Open Teaching memory.",
+      "Open My sources and choose the Habits tab.",
       "Find the request under Your recent requests.",
       "Press Reuse to open Home with it already typed, then press the button to send it.",
       "Press the bin to remove one, or Remove all to clear them.",
@@ -589,7 +589,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
     points: ["Emails, phone numbers and links are removed before a request is kept.", "Only your latest requests are kept."],
     keywords: ["requests", "prompts", "reuse", "recent", "typed"],
     alt: ["see what i typed before", "repeat an old prompt", "delete my prompts"],
-    links: [{ label: "Go to Teaching memory", href: "/teacher/memory" }],
+    links: [{ label: "Go to My sources", href: "/teacher/materials?tab=style" }],
   },
   {
     id: "style-stored", section: "style",

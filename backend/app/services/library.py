@@ -169,6 +169,14 @@ def rename_item(workspace_id: str, item_id: str, title: str) -> bool:
     return True
 
 
+def update_content(workspace_id: str, item_id: str, content: Any) -> bool:
+    """Replace a saved item's content (e.g. a deck after the teacher added a slide). Scoped to the workspace."""
+    if not table_select("projects", {"id": f"eq.{item_id}", "workspace_id": f"eq.{workspace_id}", "select": "id"}):
+        return False
+    table_update("artifacts", {"project_id": f"eq.{item_id}"}, {"content_json": content})
+    return True
+
+
 def _media_keys(project_ids: List[str]) -> List[str]:
     """Stored-file keys held by these items' saved content (audio, images, video)."""
     if not project_ids:

@@ -1,0 +1,92 @@
+{
+  "id": "viva-prep",
+  "name": "Viva & Oral Exam Prep",
+  "version": 1,
+  "description": "Gets students ready to answer out loud: the terms examiners use, the questions they ask, model answers, the traps, and rapid-fire practice.",
+  "audience": "Practical viva, oral exams, interview-style assessment.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "viva"
+      },
+      "weight": 7,
+      "why": "your words are about a viva or oral exam"
+    },
+    {
+      "when": {
+        "fact": "grade",
+        "in": [
+          "secondary",
+          "college"
+        ]
+      },
+      "weight": 1,
+      "why": "vivas are common at this level"
+    }
+  ],
+  "design": {
+    "skin": "classic"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Viva prep: {topic}, with a subtitle naming the exam.",
+      "keep": 9
+    },
+    {
+      "id": "terms",
+      "type": "vocabulary",
+      "intent": "teach",
+      "guidance": "Terms the examiner expects students to use for {topic}, each with a one-line meaning.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "questions",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "The three questions examiners most often ask about {topic}.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "answers",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "How to answer the first of those questions well: the points a good answer covers.",
+      "keep": 8
+    },
+    {
+      "id": "traps",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "A common wrong answer and the correct one.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "q1",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Rapid-fire practice question 1 on {topic}.",
+      "keep": 6
+    },
+    {
+      "id": "q2",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Rapid-fire practice question 2, a step harder.",
+      "keep": 5
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "How to answer a viva question: define, explain, give an example.",
+      "keep": 8
+    }
+  ]
+}

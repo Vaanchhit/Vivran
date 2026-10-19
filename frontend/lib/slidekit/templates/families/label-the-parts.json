@@ -1,0 +1,112 @@
+{
+  "id": "label-the-parts",
+  "name": "Label the Parts",
+  "version": 1,
+  "description": "For structures: the whole and its parts, what each part does, how they connect, a common mix-up, and a check. Built for anatomy, plant parts, machines, cells and maps.",
+  "audience": "Biology structures, engineering components, parts of a system.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "anatomy"
+      },
+      "weight": 7,
+      "why": "your words ask about parts of a structure"
+    },
+    {
+      "when": {
+        "fact": "shapes",
+        "hasAny": [
+          "structural",
+          "classificatory"
+        ]
+      },
+      "weight": 2,
+      "why": "the topic is a structure"
+    }
+  ],
+  "design": {
+    "skin": "band"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to name the parts of {topic} and say what each does.",
+      "keep": 5
+    },
+    {
+      "id": "whole",
+      "type": "definition",
+      "intent": "teach",
+      "guidance": "What {topic} is as a whole, in one sentence, and where it is found.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "parts",
+      "type": "hierarchy",
+      "intent": "teach",
+      "guidance": "The parts of {topic}, grouped, with one short line for each.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "functions",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What the most important parts do, one point each.",
+      "keep": 8
+    },
+    {
+      "id": "mixup",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "Two parts students commonly confuse, and how to tell them apart.",
+      "keep": 5,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "misconception"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Name the part from its function.",
+      "keep": 7
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "Each part and its job, in one line each.",
+      "keep": 7
+    }
+  ]
+}

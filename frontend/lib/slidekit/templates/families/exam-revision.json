@@ -18,7 +18,7 @@
         "fact": "purpose",
         "is": "revision"
       },
-      "weight": 3,
+      "weight": 7,
       "why": "your words mention revision or exams"
     },
     {
@@ -33,6 +33,9 @@
       "why": "exam years benefit from denser slides"
     }
   ],
+  "design": {
+    "skin": "bold"
+  },
   "slides": [
     {
       "id": "title",

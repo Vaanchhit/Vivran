@@ -1,0 +1,105 @@
+{
+  "id": "research-seminar",
+  "name": "Research Paper Seminar",
+  "version": 1,
+  "description": "Presents a study the way a seminar expects: background, research question, method, the main finding, how it compares to earlier work, limitations, and what's next.",
+  "audience": "Undergraduate and postgraduate seminars, journal clubs, paper presentations.",
+  "requires": {
+    "fact": "grade",
+    "in": [
+      "secondary",
+      "college"
+    ]
+  },
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "research"
+      },
+      "weight": 7,
+      "why": "your words describe a research presentation"
+    },
+    {
+      "when": {
+        "fact": "grade",
+        "is": "college"
+      },
+      "weight": 2,
+      "why": "this is a college-level audience"
+    },
+    {
+      "when": {
+        "fact": "tone",
+        "is": "formal"
+      },
+      "weight": 1,
+      "why": "a formal setting"
+    }
+  ],
+  "design": {
+    "skin": "classic"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "The study or topic {topic} as the title, with a subtitle naming the course or seminar.",
+      "keep": 9
+    },
+    {
+      "id": "question",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "The research question and what the study set out to show, as 2 or 3 aims.",
+      "keep": 8
+    },
+    {
+      "id": "background",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What was known before, and the gap this work addresses. Cite only the source material.",
+      "keep": 7
+    },
+    {
+      "id": "method",
+      "type": "process",
+      "intent": "teach",
+      "guidance": "How the study was done, as ordered steps: data, procedure, analysis.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "finding",
+      "type": "key_fact",
+      "intent": "teach",
+      "guidance": "The main result in one sentence, with its key number if the source gives one.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "compare",
+      "type": "comparison",
+      "intent": "teach",
+      "guidance": "How this result compares with earlier work or alternative approaches.",
+      "keep": 5,
+      "fallback": "explanation"
+    },
+    {
+      "id": "limits",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Limitations and open questions for the audience to discuss.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "Takeaways: what we now know, how sure we are, what to study next.",
+      "keep": 7
+    }
+  ]
+}

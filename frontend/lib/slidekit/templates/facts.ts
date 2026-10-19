@@ -14,7 +14,7 @@ import vocab from "./purposes.json";
 
 export const PLAN_FACTS = [
   "grade", "subject", "family", "goal", "slideCount", "durationMin", "shapes", "topShape", "purpose", "tone",
-  "wantsMeme", "memeOk", "grounded", "script", "language", "hasObjectives", "quantitative", "isCode",
+  "audience", "wantsMeme", "memeOk", "grounded", "script", "language", "hasObjectives", "quantitative", "isCode",
 ] as const;
 export const FILL_FACTS = ["avgWords", "maxWords", "memeCount", "hasFormula", "hasCode", "hasDiagrams", "quizShare", "blockCount"] as const;
 export const KNOWN_FACTS: ReadonlySet<string> = new Set<string>([...PLAN_FACTS, ...FILL_FACTS]);
@@ -22,9 +22,13 @@ export const KNOWN_FACTS: ReadonlySet<string> = new Set<string>([...PLAN_FACTS, 
 type Vocab = Record<string, { keywords: string[] }>;
 const PURPOSES = vocab.purposes as Vocab;
 const TONES = vocab.tones as Vocab;
+const AUDIENCES = vocab.audiences as Vocab;
 
 const norm = (s: string) => ` ${s.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ")} `;
-const hits = (text: string, words: string[]) => words.filter(w => text.includes(` ${w.toLowerCase()} `) || (w.length > 4 && text.includes(` ${w.toLowerCase()}`))).length;
+/** Matched keywords, each worth its word count: "workshop for teachers" outweighs a passing "assessment". */
+const hits = (text: string, words: string[]) => words
+  .filter(w => text.includes(` ${w.toLowerCase()} `) || (w.length > 4 && text.includes(` ${w.toLowerCase()}`)))
+  .reduce((n, w) => n + w.trim().split(/\s+/).length, 0);
 
 /** Highest-scoring vocabulary entry for the text, or undefined when nothing matched. */
 function infer(text: string, table: Vocab): string | undefined {
@@ -48,13 +52,14 @@ export function planFacts(ctx: LessonContext, durationMin?: number, extra = ""):
   const sig = signals(ctx, extra);
   const purpose = infer(sig.text, PURPOSES) ?? (ctx.goal === "assess" ? "assessment" : ctx.goal === "revise" ? "revision" : ctx.goal === "practice" ? "practice" : "introduction");
   const tone = infer(sig.text, TONES) ?? "neutral";
+  const audience = infer(sig.text, AUDIENCES) ?? "students";
   const shapes = ctx.shapes.map(s => s.shape);
   // Memes are offered only when asked for in plain words, or the deck is relaxed by nature (never in assessments,
   // formal talks, or a lesson whose own text looks like a formal event).
-  const memeOk = ctx.goal !== "assess" && tone !== "formal" && MEME_IDS.length > 0;
+  const memeOk = ctx.goal !== "assess" && tone !== "formal" && audience === "students" && MEME_IDS.length > 0;
   return {
     grade: ctx.grade, subject: ctx.subject, family: SUBJECTS[ctx.subject].family, goal: ctx.goal,
-    slideCount: ctx.slideCount, durationMin, shapes, topShape: shapes[0], purpose, tone,
+    slideCount: ctx.slideCount, durationMin, shapes, topShape: shapes[0], purpose, tone, audience,
     wantsMeme: sig.wantsMeme, memeOk, grounded: ctx.grounding === "strict", script: ctx.script, language: ctx.language.toLowerCase(),
     hasObjectives: ctx.objectives.length > 0,
     quantitative: shapes.some(s => ["quantitative", "computational", "skill"].includes(s)),

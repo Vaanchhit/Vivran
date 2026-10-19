@@ -1,0 +1,126 @@
+{
+  "id": "debate-room",
+  "name": "Debate & Perspectives",
+  "version": 1,
+  "description": "Sets up a structured debate: the motion's key terms, the strongest arguments on each side, evidence, a debate format, and reflection. Builds argument rather than recall.",
+  "audience": "Civics, ethics, literature, economics policy, science-and-society topics.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "debate"
+      },
+      "weight": 7,
+      "why": "your words ask for a debate"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "humanities",
+          "language",
+          "law"
+        ]
+      },
+      "weight": 1,
+      "why": "debate suits this subject"
+    },
+    {
+      "when": {
+        "fact": "grade",
+        "in": [
+          "middle",
+          "secondary",
+          "college"
+        ]
+      },
+      "weight": 0.5,
+      "why": "students this age can argue a position"
+    }
+  ],
+  "design": {
+    "skin": "bold"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "The motion for {topic} as the title, with a subtitle like 'For or against?'.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to argue a side of {topic} with evidence and answer the other side.",
+      "keep": 5
+    },
+    {
+      "id": "terms",
+      "type": "definition",
+      "intent": "teach",
+      "guidance": "Define the key term of the motion so both sides argue about the same thing.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "sides",
+      "type": "comparison",
+      "intent": "teach",
+      "guidance": "The strongest arguments for and against {topic}, side by side.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "evidence",
+      "type": "key_fact",
+      "intent": "teach",
+      "guidance": "One piece of evidence either side could use. Only well-established facts; mark anything uncertain [verify].",
+      "keep": 5,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "key_fact"
+        }
+      ]
+    },
+    {
+      "id": "format",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "How the debate runs: teams, speaking order, time per speaker, how it is judged.",
+      "keep": 8
+    },
+    {
+      "id": "reflect",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Questions for after the debate: what changed your mind, which argument was strongest.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "What a strong argument needs, using examples from this debate.",
+      "keep": 7
+    }
+  ]
+}

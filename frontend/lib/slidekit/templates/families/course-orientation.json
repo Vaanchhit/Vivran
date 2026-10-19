@@ -1,0 +1,81 @@
+{
+  "id": "course-orientation",
+  "name": "Course Orientation",
+  "version": 1,
+  "description": "The first class of a term: what the course covers, the term plan, how grading works, an ice-breaker, expectations, and why the subject matters.",
+  "audience": "First day of term, new batch orientation, course introductions.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "orientation"
+      },
+      "weight": 7,
+      "why": "your words describe a first class or orientation"
+    }
+  ],
+  "design": {
+    "skin": "band"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Welcome to {topic}, with a subtitle naming the class and term.",
+      "keep": 9
+    },
+    {
+      "id": "learn",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "What students will be able to do by the end of the course.",
+      "keep": 9
+    },
+    {
+      "id": "plan",
+      "type": "timeline",
+      "intent": "teach",
+      "guidance": "The term plan: units or months in order, with assessments marked.",
+      "keep": 8,
+      "fallback": "process"
+    },
+    {
+      "id": "grading",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "How work is assessed and graded, in clear points.",
+      "keep": 7
+    },
+    {
+      "id": "icebreaker",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "A short ice-breaker connected to the subject: instructions, minutes, grouping.",
+      "keep": 6
+    },
+    {
+      "id": "why",
+      "type": "real_world",
+      "intent": "hook",
+      "guidance": "Why this subject matters in life and careers.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "expect",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Questions about what students hope to learn and what worries them.",
+      "keep": 4,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "What to bring, where to find material, how to reach the teacher.",
+      "keep": 7
+    }
+  ]
+}

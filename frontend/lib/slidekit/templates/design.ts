@@ -6,6 +6,7 @@
 // rule that made it, so nothing about the look is unexplained.
 // ─────────────────────────────────────────────────────────────
 import type { DesignKnobs } from "../tokens";
+import type { Skin } from "../skin";
 import { evalCond, type Facts } from "./cond";
 import { DESIGN_RULES } from "./registry";
 import type { DesignSet } from "./schema";
@@ -15,6 +16,8 @@ export interface DesignDecision {
   themeId?: string;
   /** Or a custom accent, when a rule set one without a preset. */
   custom?: { accent: string; dark: boolean };
+  /** Margin decoration style (skin.ts). */
+  skin?: Skin;
   knobs: DesignKnobs;
   /** Which rule decided what, with its reason. Shown to the teacher. */
   applied: { id: string; why: string; set: string[] }[];
@@ -39,6 +42,7 @@ export function decideDesign(facts: Facts, base: DesignSet | undefined, phase: "
   for (const { id, set } of layers) {
     if (set.theme !== undefined && out.themeId === undefined && out.custom === undefined) { out.themeId = set.theme; note(id, "theme"); }
     else if (set.accent !== undefined && out.themeId === undefined && out.custom === undefined) { out.custom = { accent: set.accent, dark: !!set.dark }; note(id, "accent"); }
+    if (set.skin !== undefined && out.skin === undefined) { out.skin = set.skin; note(id, "skin"); }
     for (const key of ["minFont", "maxDensity", "maxItems"] as const)
       if (set[key] !== undefined && out.knobs[key] === undefined) { (out.knobs as Record<string, unknown>)[key] = set[key]; note(id, key); }
     for (const f of set.preferFamilies ?? []) { if (!families.has(f)) note(id, "preferFamilies"); families.add(f); }

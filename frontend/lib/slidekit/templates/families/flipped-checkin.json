@@ -1,0 +1,80 @@
+{
+  "id": "flipped-checkin",
+  "name": "Flipped Class Check-in",
+  "version": 1,
+  "description": "For a class that read or watched beforehand: a quick check, the misconceptions it reveals, a clarification, then class time spent applying.",
+  "audience": "Flipped classrooms, homework review, after-reading discussions.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "flipped"
+      },
+      "weight": 7,
+      "why": "your words describe a flipped or pre-read class"
+    }
+  ],
+  "design": {
+    "skin": "soft"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "{topic}: from home to class, with a subtitle naming the class.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "What students will do in class today with what they read at home.",
+      "keep": 5
+    },
+    {
+      "id": "precheck",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "A check of the key idea from the pre-reading.",
+      "keep": 8
+    },
+    {
+      "id": "myth",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "The misunderstanding students most likely brought from the reading.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "clarify",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "The idea explained again, briefly and differently from the reading.",
+      "keep": 8
+    },
+    {
+      "id": "apply",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "The main in-class task applying {topic}: instructions, minutes, grouping.",
+      "keep": 9
+    },
+    {
+      "id": "discuss",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Questions that connect the task back to the idea.",
+      "keep": 5,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "What to read or watch next, and what it will be used for.",
+      "keep": 6
+    }
+  ]
+}

@@ -29,7 +29,9 @@ class SaveRequest(BaseModel):
 
 
 class RenameRequest(BaseModel):
-    title: str = Field(min_length=1, max_length=300)
+    title: Optional[str] = Field(default=None, min_length=1, max_length=300)
+    # A teacher's edit to the saved result itself (a deck with a slide added).
+    content: Optional[Any] = None
 
 
 def _db_error(e: SupabaseError) -> HTTPException:
@@ -78,8 +80,16 @@ def save_item(payload: SaveRequest, workspace_id: str = Depends(require_workspac
 
 @router.patch("/{item_id}")
 def rename_item(item_id: uuid.UUID, payload: RenameRequest, workspace_id: str = Depends(require_workspace_id), user: CurrentUser = Depends(require_teacher)):
+    if payload.title is None and payload.content is None:
+        raise HTTPException(status_code=400, detail="Nothing to change")
+    if payload.content is not None and len(json.dumps(payload.content)) > _MAX_CONTENT_BYTES:
+        raise HTTPException(status_code=413, detail="That item is too large to save")
     try:
-        ok = library.rename_item(workspace_id, str(item_id), payload.title)
+        ok = True
+        if payload.title is not None:
+            ok = library.rename_item(workspace_id, str(item_id), payload.title)
+        if ok and payload.content is not None:
+            ok = library.update_content(workspace_id, str(item_id), payload.content)
     except SupabaseError as e:
         raise _db_error(e) from e
     if not ok:

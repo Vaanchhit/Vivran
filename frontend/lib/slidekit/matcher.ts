@@ -188,22 +188,42 @@ export function tryLayout(block: Block, l: LayoutSpec, g: GradeBand, startAt = 0
           const cx = cont.x + cont.w / 2, cy = cont.y + cont.h / 2;
           for (const it of items) A.els.push({ t: "connector", x1: cx, y1: cy, x2: it.x + it.w / 2, y2: it.y + it.h / 2, arrow: false });
         }
-        items.forEach((it, i) => {
+        // A plain vertical list reads as a list, not as rows of a grid: pack the items
+        // from the top with an even gap instead of spreading each into an equal slot,
+        // which left ragged holes between short bullets. Same sizes, same fit.
+        const slots = items;
+        const packed = s.arrange === "column" && !s.card && !s.connector
+          ? (() => {
+              const hs = slots.map((_, i) => Math.max(chosen!.stacks[i].height, hasMarker ? MARKER_D : 0) + 2 * pad + mH);
+              const gap = Math.min(64, Math.max(ITEM_GAP, (cont.h - hs.reduce((a, b) => a + b, 0)) / Math.max(1, slots.length)));
+              let y = cont.y;
+              return slots.map((it, i) => { const b = { ...it, y, h: hs[i] }; y += hs[i] + gap; return b; });
+            })()
+          : s.card && s.arrange === "row" && slots.length > 1 && slots.every(it => Math.abs(it.y - slots[0].y) < 1)
+            ? (() => {
+                // One row of cards: as tall as the fullest card needs (never below a third of
+                // the area), not the whole area, so short cards don't sit half empty.
+                const need = Math.max(...slots.map((_, i) => chosen!.stacks[i].height)) + 2 * pad + mH;
+                const h = Math.min(slots[0].h, Math.max(need, cont.h / 3));
+                return slots.map(it => ({ ...it, h }));
+              })()
+            : slots;
+        packed.forEach((it, i) => {
           if (s.card) A.els.push({ t: "box", ...it, style: "card", tone: s.tone });
-          const nx = items[i + 1];
+          const nx = packed[i + 1];
           if (s.connector === "arrow" && nx) {
             if (Math.abs(nx.y - it.y) < 1) A.els.push({ t: "connector", x1: it.x + it.w + 3, y1: it.y + it.h / 2, x2: nx.x - 3, y2: nx.y + nx.h / 2, arrow: true });
             else if (s.arrange === "radial") A.els.push({ t: "connector", ...shorten(it, nx), arrow: true });
           }
           if (s.arrange === "radial" && s.connector === "arrow" && !nx && items.length > 2)
-            A.els.push({ t: "connector", ...shorten(it, items[0]), arrow: true });
+            A.els.push({ t: "connector", ...shorten(it, packed[0]), arrow: true });
           if (hasMarker) {
             const lbl = s.marker === "number" ? String(startAt + i + 1) : s.marker === "letter" ? "ABCDEFGH"[i] : s.marker === "check" ? "✓" : "•";
             A.els.push({ t: "marker", x: it.x + pad, y: it.y + pad + (vertical ? 2 : 0), d: s.marker === "bullet" ? 16 : MARKER_D, label: lbl });
           }
           const ox = it.x + pad + mW, oy = it.y + pad + mH;
           for (const p of chosen!.stacks[i].placed) A.els.push({ t: "text", x: ox + p.x, y: oy + p.y, w: p.w, h: p.h, text: p.text, size: p.size, role: p.role, align: "start", path: p.path });
-          A.fills.push(chosen!.stacks[i].height / (it.h - 2 * pad - mH));
+          A.fills.push(chosen!.stacks[i].height / (slots[i].h - 2 * pad - mH));
         });
         A.ranks.push(chosen.step / Math.max(1, steps - 1));
         break;

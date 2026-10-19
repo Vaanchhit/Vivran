@@ -1,13 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookMarked, ChevronLeft, ChevronRight, FileDown, Palette, Presentation, Wand2 } from "lucide-react";
+import { BookMarked, ChevronLeft, ChevronRight, FileDown, Laugh, Palette, Presentation, Shapes, Trash2, Wand2 } from "lucide-react";
+import { MemeComposer } from "@/app/components/meme-composer";
+import { SKINS, SKIN_LABELS, type Skin } from "@/lib/slidekit/skin";
+import type { Placement } from "@/lib/slidekit/matcher";
+import { saveDeckEdit } from "@/services/api";
 import { DEFAULT_THEME_ID, THEMES, customTheme, slideCSS, slideHTML, type DeckTheme } from "@/lib/slidekit/render";
 import { CANVAS } from "@/lib/slidekit/tokens";
 import type { DeckReady } from "@/services/api";
 
 type ThemeChoice = { id: string } | { custom: string; dark: boolean };
 const STORAGE_KEY = "vivran_deck_theme";
+const SKIN_KEY = "vivran_deck_skin";
+
+function loadSkin(): Skin | null {
+  try {
+    const s = localStorage.getItem(SKIN_KEY);
+    return s && (SKINS as readonly string[]).includes(s) ? (s as Skin) : null;
+  } catch {
+    return null;
+  }
+}
 
 /** The teacher's saved theme, or null when they never chose one (then the design rules' pick is used). */
 function loadChoice(): ThemeChoice | null {
@@ -82,6 +96,34 @@ export function DeckView({ deck }: { deck: DeckReady }) {
   const [showNotes, setShowNotes] = useState(false);
 
   const [exporting, setExporting] = useState(false);
+  // The deck as the teacher has edited it (memes added or removed); saved back to the library.
+  const [placements, setPlacements] = useState<Placement[]>(deck.placements);
+  const [skin, setSkin] = useState<Skin>("classic");
+  const [composing, setComposing] = useState(false);
+  const [saveNote, setSaveNote] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPlacements(deck.placements);
+    setComposing(false);
+    setSkin(loadSkin() ?? deck.design?.skin ?? "classic");
+  }, [deck]);
+
+  const pickSkin = (s: Skin) => {
+    setSkin(s);
+    try {
+      localStorage.setItem(SKIN_KEY, s);
+    } catch {}
+  };
+
+  const commit = (next: Placement[], at: number) => {
+    setPlacements(next);
+    setCurrent(Math.max(0, Math.min(next.length - 1, at)));
+    if (!deck.libraryId) return;
+    setSaveNote("Saving…");
+    saveDeckEdit(deck.libraryId, { ...deck, placements: next, quality: { ...deck.quality, slides: next.length } })
+      .then(() => setSaveNote("Saved to your library"))
+      .catch(() => setSaveNote("Not saved: the change is only in this view"));
+  };
 
   // A theme the teacher saved always wins; otherwise the design rules' choice for this deck.
   useEffect(() => {
@@ -106,7 +148,11 @@ export function DeckView({ deck }: { deck: DeckReady }) {
 
   const theme = useMemo(() => resolve(choice), [choice]);
   const css = useMemo(() => slideCSS(theme), [theme]);
-  const slides = useMemo(() => deck.placements.map((p) => slideHTML(p, "", theme)), [deck.placements, theme]);
+  const title = deck.context.topic;
+  const slides = useMemo(
+    () => placements.map((p, index) => slideHTML(p, "", theme, { skin, index, total: placements.length, deckTitle: title })),
+    [placements, theme, skin, title],
+  );
   const total = slides.length;
   const go = useCallback((i: number) => setCurrent(Math.max(0, Math.min(total - 1, i))), [total]);
 
@@ -119,8 +165,9 @@ export function DeckView({ deck }: { deck: DeckReady }) {
     if (e.key === "ArrowLeft") go(current - 1);
   };
 
-  const title = deck.context.topic;
-  const notes = deck.placements[current]?.notes ?? [];
+  const notes = placements[current]?.notes ?? [];
+  const currentIsMeme = placements[current]?.block.type === "meme";
+  const slideText = (placements[current]?.elements ?? []).filter((e) => e.t === "text").map((e) => (e as { text: string }).text).join(" · ");
   const sources = deck.grounding.sources;
   const isCustom = "custom" in choice;
 
@@ -141,12 +188,20 @@ export function DeckView({ deck }: { deck: DeckReady }) {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={() => setComposing((v) => !v)}
+            aria-expanded={composing}
+            className="px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 border border-border bg-card text-foreground hover:border-accent-line"
+          >
+            <Laugh className="w-3.5 h-3.5 text-accent" /> Add meme
+          </button>
+          <button
+            type="button"
             disabled={exporting}
             onClick={async () => {
               setExporting(true);
               try {
                 const { exportPptx } = await import("@/lib/slidekit/pptx");
-                await exportPptx(deck.placements, title, theme, `${title.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "vivran-slides"}.pptx`);
+                await exportPptx(placements, title, theme, `${title.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "vivran-slides"}.pptx`, skin);
               } finally {
                 setExporting(false);
               }
@@ -175,6 +230,36 @@ export function DeckView({ deck }: { deck: DeckReady }) {
           </span>
         </div>
       )}
+
+      {composing && (
+        <MemeComposer
+          topic={title}
+          grade={deck.context.gradeLabel}
+          band={deck.context.grade}
+          subject={deck.context.subject}
+          language={deck.context.language}
+          context={slideText}
+          after={current + 1}
+          onClose={() => setComposing(false)}
+          onAdd={(p) => {
+            setComposing(false);
+            commit([...placements.slice(0, current + 1), p, ...placements.slice(current + 1)], current + 1);
+          }}
+        />
+      )}
+
+      {/* Style: the template's look (drawn in the margins only), switchable. */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="flex items-center gap-1.5 text-muted font-medium mr-1">
+          <Shapes className="w-3.5 h-3.5" /> Style
+        </span>
+        {SKINS.map((s) => (
+          <button key={s} type="button" onClick={() => pickSkin(s)} aria-pressed={skin === s}
+            className={`px-2.5 py-1 rounded-lg border transition-colors ${skin === s ? "border-accent bg-accent-soft text-foreground" : "border-border bg-card text-muted hover:text-foreground"}`}>
+            {SKIN_LABELS[s]}
+          </button>
+        ))}
+      </div>
 
       {/* Theme: the teacher's choice, applied at render time. Never sent to the model. */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -240,8 +325,15 @@ export function DeckView({ deck }: { deck: DeckReady }) {
             <button type="button" onClick={() => go(current - 1)} disabled={current === 0} className="p-1.5 rounded-lg border border-border disabled:opacity-40 hover:text-foreground" aria-label="Previous slide">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span>
+            <span className="flex items-center gap-2">
               Slide {current + 1} of {total}
+              {currentIsMeme && (
+                <button type="button" onClick={() => commit(placements.filter((_, i) => i !== current), current - 1)}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border text-muted hover:text-danger">
+                  <Trash2 className="w-3 h-3" /> Remove meme
+                </button>
+              )}
+              {saveNote && <span className="text-faint">· {saveNote}</span>}
             </span>
             <button type="button" onClick={() => go(current + 1)} disabled={current === total - 1} className="p-1.5 rounded-lg border border-border disabled:opacity-40 hover:text-foreground" aria-label="Next slide">
               <ChevronRight className="w-4 h-4" />

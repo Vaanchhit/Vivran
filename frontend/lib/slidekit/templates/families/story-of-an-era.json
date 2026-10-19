@@ -10,7 +10,7 @@
         "fact": "purpose",
         "is": "story"
       },
-      "weight": 3,
+      "weight": 7,
       "why": "your words are about events over time"
     },
     {
@@ -42,6 +42,9 @@
       "why": "the topic has causes and effects"
     }
   ],
+  "design": {
+    "skin": "bold"
+  },
   "slides": [
     {
       "id": "title",

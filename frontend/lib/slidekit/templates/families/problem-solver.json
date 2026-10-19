@@ -35,7 +35,7 @@
         "fact": "purpose",
         "is": "practice"
       },
-      "weight": 3,
+      "weight": 7,
       "why": "your words ask for problem solving"
     },
     {
@@ -50,6 +50,9 @@
       "why": "this subject is problem-heavy"
     }
   ],
+  "design": {
+    "skin": "frame"
+  },
   "slides": [
     {
       "id": "title",

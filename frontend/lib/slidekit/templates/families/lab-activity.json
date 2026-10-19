@@ -10,7 +10,7 @@
         "fact": "purpose",
         "is": "activity"
       },
-      "weight": 5,
+      "weight": 7,
       "why": "your words describe an activity or experiment"
     },
     {
@@ -30,6 +30,9 @@
       "why": "practice-oriented"
     }
   ],
+  "design": {
+    "skin": "soft"
+  },
   "slides": [
     {
       "id": "title",

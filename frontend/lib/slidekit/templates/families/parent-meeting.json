@@ -1,0 +1,90 @@
+{
+  "id": "parent-meeting",
+  "name": "Parent–Teacher Meeting",
+  "version": 1,
+  "description": "A clear, warm deck for parents: the agenda, what children are learning this term, key dates, how parents can help at home, and questions.",
+  "audience": "PTMs, parent orientations and open houses.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "parents"
+      },
+      "weight": 7,
+      "why": "your words describe a parents' meeting"
+    },
+    {
+      "when": {
+        "fact": "audience",
+        "is": "parents"
+      },
+      "weight": 3,
+      "why": "the audience is parents"
+    }
+  ],
+  "design": {
+    "skin": "soft"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "{topic}, with a subtitle naming the class and date.",
+      "keep": 9
+    },
+    {
+      "id": "agenda",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "The agenda: 3 or 4 things this meeting covers.",
+      "keep": 8
+    },
+    {
+      "id": "learning",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What the children are learning this term, in plain words for parents.",
+      "keep": 9
+    },
+    {
+      "id": "highlight",
+      "type": "key_fact",
+      "intent": "teach",
+      "guidance": "One highlight of the class this term that parents will be glad to hear. Only what the teacher's notes say; otherwise keep it general.",
+      "keep": 4,
+      "fallback": "explanation"
+    },
+    {
+      "id": "dates",
+      "type": "timeline",
+      "intent": "teach",
+      "guidance": "Key dates this term: tests, events, holidays. Only dates given by the teacher; otherwise [verify].",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "help",
+      "type": "process",
+      "intent": "apply",
+      "guidance": "Simple ways parents can help at home, as steps.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "questions",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Questions parents often ask, to open the floor.",
+      "keep": 5,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "How to reach the teacher, and the one thing to remember.",
+      "keep": 7
+    }
+  ]
+}

@@ -10,7 +10,7 @@
         "fact": "purpose",
         "is": "process"
       },
-      "weight": 3,
+      "weight": 7,
       "why": "your words describe a process"
     },
     {
@@ -45,6 +45,9 @@
       "why": "the topic has cause and effect"
     }
   ],
+  "design": {
+    "skin": "band"
+  },
   "slides": [
     {
       "id": "title",

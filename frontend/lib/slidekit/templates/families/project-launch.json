@@ -1,0 +1,89 @@
+{
+  "id": "project-launch",
+  "name": "Project Launch",
+  "version": 1,
+  "description": "Kicks off a project: the driving question, why it matters, milestones, team roles, how it will be assessed, and questions before starting.",
+  "audience": "Project-based learning, capstones, science fair and group projects.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "project"
+      },
+      "weight": 7,
+      "why": "your words describe a project"
+    },
+    {
+      "when": {
+        "fact": "goal",
+        "is": "practice"
+      },
+      "weight": 0.5,
+      "why": "a hands-on goal"
+    }
+  ],
+  "design": {
+    "skin": "band"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "A title for the {topic} project, with a subtitle like 'Project brief · {grade}'.",
+      "keep": 9
+    },
+    {
+      "id": "question",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "The driving question of the project, and what students will make or show.",
+      "keep": 9
+    },
+    {
+      "id": "why",
+      "type": "real_world",
+      "intent": "hook",
+      "guidance": "Why {topic} matters outside the classroom.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "milestones",
+      "type": "timeline",
+      "intent": "teach",
+      "guidance": "The milestones with rough dates or weeks, from start to presentation.",
+      "keep": 8,
+      "fallback": "process"
+    },
+    {
+      "id": "teams",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "How teams work: size, roles, and the first task to start today.",
+      "keep": 8
+    },
+    {
+      "id": "rubric",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "How the project is assessed: 3 to 5 clear criteria.",
+      "keep": 7
+    },
+    {
+      "id": "questions",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Questions students should answer before they start planning.",
+      "keep": 4,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "What to do first, what is due when, where to get help.",
+      "keep": 6
+    }
+  ]
+}

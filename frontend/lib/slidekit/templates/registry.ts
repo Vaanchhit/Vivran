@@ -18,12 +18,52 @@ import labActivity from "./families/lab-activity.json";
 import readingRoom from "./families/reading-room.json";
 import codeLab from "./families/code-lab.json";
 import quizRound from "./families/quiz-round.json";
+import caseStudy from "./families/case-study.json";
+import courseOrientation from "./families/course-orientation.json";
+import dataStory from "./families/data-story.json";
+import debateRoom from "./families/debate-room.json";
+import derivation from "./families/derivation.json";
+import flippedCheckin from "./families/flipped-checkin.json";
+import grammarDrill from "./families/grammar-drill.json";
+import inTheNews from "./families/in-the-news.json";
+import labelTheParts from "./families/label-the-parts.json";
+import parentMeeting from "./families/parent-meeting.json";
+import placesAndPatterns from "./families/places-and-patterns.json";
+import projectLaunch from "./families/project-launch.json";
+import researchSeminar from "./families/research-seminar.json";
+import storyTime from "./families/story-time.json";
+import teacherWorkshop from "./families/teacher-workshop.json";
+import vivaPrep from "./families/viva-prep.json";
 import designRules from "./design-rules.json";
+import vocab from "./purposes.json";
 
 const FILES: [string, unknown][] = [
-  ["concept-intro", conceptIntro], ["problem-solver", problemSolver], ["how-it-works", howItWorks],
-  ["story-of-an-era", storyOfAnEra], ["compare-contrast", compareContrast], ["exam-revision", examRevision],
-  ["lab-activity", labActivity], ["reading-room", readingRoom], ["code-lab", codeLab], ["quiz-round", quizRound],
+  ["concept-intro", conceptIntro],
+  ["problem-solver", problemSolver],
+  ["how-it-works", howItWorks],
+  ["story-of-an-era", storyOfAnEra],
+  ["compare-contrast", compareContrast],
+  ["exam-revision", examRevision],
+  ["lab-activity", labActivity],
+  ["reading-room", readingRoom],
+  ["code-lab", codeLab],
+  ["quiz-round", quizRound],
+  ["case-study", caseStudy],
+  ["course-orientation", courseOrientation],
+  ["data-story", dataStory],
+  ["debate-room", debateRoom],
+  ["derivation", derivation],
+  ["flipped-checkin", flippedCheckin],
+  ["grammar-drill", grammarDrill],
+  ["in-the-news", inTheNews],
+  ["label-the-parts", labelTheParts],
+  ["parent-meeting", parentMeeting],
+  ["places-and-patterns", placesAndPatterns],
+  ["project-launch", projectLaunch],
+  ["research-seminar", researchSeminar],
+  ["story-time", storyTime],
+  ["teacher-workshop", teacherWorkshop],
+  ["viva-prep", vivaPrep],
 ];
 
 /** Values a categorical fact can take; a rule naming any other value is a typo, not a no-match. */
@@ -31,7 +71,8 @@ const DOMAIN: Record<string, readonly (string | number | boolean)[]> = {
   grade: ["primary", "middle", "secondary", "college"],
   goal: ["introduce", "revise", "practice", "assess"],
   shapes: SHAPES, topShape: SHAPES,
-  purpose: ["revision", "practice", "activity", "assessment", "comparison", "story", "process", "code", "literature", "introduction"],
+  purpose: Object.keys(vocab.purposes),
+  audience: ["students", ...Object.keys(vocab.audiences)],
   tone: ["neutral", "playful", "formal"],
   family: ["quant", "science", "humanities", "commerce", "computing", "language", "arts", "law", "general"],
   script: ["latin", "devanagari", "bengali", "tamil", "telugu", "gujarati", "gurmukhi", "other"],

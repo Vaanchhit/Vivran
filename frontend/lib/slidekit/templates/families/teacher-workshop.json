@@ -1,0 +1,89 @@
+{
+  "id": "teacher-workshop",
+  "name": "Teacher Workshop",
+  "version": 1,
+  "description": "Professional development for teachers: the classroom problem, what research says, the strategy step by step, a try-it activity, and reflection.",
+  "audience": "Teacher training, faculty development programmes, department meetings.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "workshop"
+      },
+      "weight": 7,
+      "why": "your words describe a teacher workshop"
+    },
+    {
+      "when": {
+        "fact": "audience",
+        "is": "teachers"
+      },
+      "weight": 3,
+      "why": "the audience is teachers"
+    }
+  ],
+  "design": {
+    "skin": "classic"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Workshop: {topic}, with a subtitle naming the audience and duration.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "What participants will be able to do in their classroom after this session.",
+      "keep": 8
+    },
+    {
+      "id": "problem",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "The classroom problem this strategy solves, stated as teachers experience it.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "evidence",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What is known about why the strategy works. Only well-established findings; mark uncertain ones [verify].",
+      "keep": 6
+    },
+    {
+      "id": "strategy",
+      "type": "process",
+      "intent": "teach",
+      "guidance": "The strategy as steps a teacher can follow tomorrow.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "try",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "Participants try the strategy now: instructions, minutes, grouping.",
+      "keep": 8
+    },
+    {
+      "id": "reflect",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Reflection questions: where would this work in your class, what could go wrong.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The strategy in one line, and one thing to try this week.",
+      "keep": 7
+    }
+  ]
+}

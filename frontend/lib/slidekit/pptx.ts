@@ -6,7 +6,8 @@ import pptxgen from "pptxgenjs";
 import type { DiagramGeom, DiaFill, DiaStroke } from "./diagram";
 import type { El, Placement } from "./matcher";
 import { BOLD_ROLES, CANVAS, DECK_FONT, LINE_HEIGHT } from "./tokens";
-import { THEME, type DeckTheme } from "./render";
+import { THEME, inverseTheme, type DeckTheme } from "./render";
+import { decorate, type Deco, type Skin } from "./skin";
 
 let T: DeckTheme = THEME;      // set per export; the helpers below read it
 const IN = 144;                     // 1920 px ↔ 13.333 in
@@ -72,7 +73,19 @@ function contain(box: { x: number; y: number; w: number; h: number }, img: { w: 
  * Build the deck in the given theme. With `file`, saves it (a download in the
  * browser); without, returns the bytes, which is what the tests use.
  */
-export async function exportPptx(slides: Placement[], title: string, theme: DeckTheme = THEME, file?: string): Promise<ArrayBuffer | void> {
+/** Skin shapes as native PowerPoint shapes, drawn first so they sit behind the content. */
+function decoShapes(pres: pptxgen, s: pptxgen.Slide, decos: Deco[]) {
+  for (const d of decos) {
+    if (d.k === "rect") s.addShape(d.r ? pres.ShapeType.roundRect : pres.ShapeType.rect, { x: d.x / IN, y: d.y / IN, w: d.w / IN, h: d.h / IN,
+      ...(d.r ? { rectRadius: Math.min(0.5, d.r / Math.min(d.w, d.h)) } : {}), fill: { color: hex(T[d.fill]) }, line: { type: "none" } });
+    else if (d.k === "circle") s.addShape(pres.ShapeType.ellipse, { x: (d.cx - d.r) / IN, y: (d.cy - d.r) / IN, w: (2 * d.r) / IN, h: (2 * d.r) / IN,
+      fill: { color: hex(T[d.fill]) }, line: { type: "none" } });
+    else s.addText(d.text, { x: d.x / IN, y: d.y / IN, w: d.w / IN, h: d.h / IN, fontFace: DECK_FONT, fontSize: PT(d.size), color: hex(T[d.color]),
+      align: d.align, valign: "middle", margin: 0, bold: d.bold });
+  }
+}
+
+export async function exportPptx(slides: Placement[], title: string, theme: DeckTheme = THEME, file?: string, skin?: Skin): Promise<ArrayBuffer | void> {
   // Sizes first (async), then everything below is synchronous, so `T` can't change under it.
   const sizes = new Map<string, { w: number; h: number }>();
   for (const p of slides) for (const e of p.elements)
@@ -82,9 +95,12 @@ export async function exportPptx(slides: Placement[], title: string, theme: Deck
   pres.defineLayout({ name: "HD", width: CANVAS.w / IN, height: CANVAS.h / IN });
   pres.layout = "HD";
   pres.title = title;
-  for (const p of slides) {
+  for (const [index, p] of slides.entries()) {
     const s = pres.addSlide();
+    const dec = skin ? decorate(p, skin, { index, total: slides.length, deckTitle: title }) : null;
+    T = dec?.invert ? inverseTheme(theme) : theme;
     s.background = { color: hex(T.bg) };
+    if (dec) decoShapes(pres, s, dec.decos);
     const cards = p.elements.filter(e => e.t === "box" && e.style === "card" && e.tone && e.tone !== "inverse") as Extract<El, { t: "box" }>[];
     const toneAt = (e: Extract<El, { t: "text" }>) => e.path === "label" ? undefined : cards.find(c => e.x >= c.x && e.y >= c.y && e.x + e.w <= c.x + c.w + 1 && e.y + e.h <= c.y + c.h + 1)?.tone;
     const pos = (e: { x: number; y: number; w: number; h: number }) => ({ x: e.x / IN, y: e.y / IN, w: e.w / IN, h: e.h / IN });

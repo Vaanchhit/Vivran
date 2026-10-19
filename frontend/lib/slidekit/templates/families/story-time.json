@@ -1,0 +1,98 @@
+{
+  "id": "story-time",
+  "name": "Story Time",
+  "version": 1,
+  "description": "Teaches through a story for young learners: a question to wonder about, the story in short steps, new words, what the characters did, and a drawing or acting activity.",
+  "audience": "Classes 1–5: moral stories, EVS concepts told as stories, language lessons.",
+  "requires": {
+    "fact": "grade",
+    "in": [
+      "primary",
+      "middle"
+    ]
+  },
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "story_time"
+      },
+      "weight": 7,
+      "why": "your words ask for a story"
+    },
+    {
+      "when": {
+        "fact": "grade",
+        "is": "primary"
+      },
+      "weight": 3,
+      "why": "young learners learn well through stories"
+    }
+  ],
+  "design": {
+    "skin": "soft"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "A friendly title for the story of {topic}, with a subtitle naming the class.",
+      "keep": 9
+    },
+    {
+      "id": "wonder",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "A question that makes a young child wonder about {topic}.",
+      "keep": 6,
+      "fallback": "discussion"
+    },
+    {
+      "id": "story",
+      "type": "process",
+      "intent": "teach",
+      "guidance": "The story of {topic} in 4 to 6 short steps, each one simple sentence.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "words",
+      "type": "vocabulary",
+      "intent": "teach",
+      "guidance": "3 or 4 new words from the story with very simple meanings.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "lesson",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What the story teaches, in 2 or 3 short points a child can repeat.",
+      "keep": 8
+    },
+    {
+      "id": "think",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "One question: what would you do if you were in the story?",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "activity",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "Draw, act or retell the story: short instructions, minutes, pairs or groups.",
+      "keep": 7,
+      "fallback": "discussion"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "Three things we learned from the story.",
+      "keep": 7
+    }
+  ]
+}

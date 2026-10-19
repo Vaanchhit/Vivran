@@ -31,6 +31,9 @@
       "why": "the topic is a concept to understand"
     }
   ],
+  "design": {
+    "skin": "classic"
+  },
   "slides": [
     {
       "id": "title",

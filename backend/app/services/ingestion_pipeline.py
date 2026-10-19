@@ -136,7 +136,10 @@ def ingest_material(
     external_url: Optional[str] = None,
     subject: Optional[str] = None,
     grade: Optional[str] = None,
+    extra_metadata: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
+    """``extra_metadata`` is merged into materials.metadata (e.g. the style fingerprint it is linked to)."""
+    extra = dict(extra_metadata or {})
     if material_type not in SUPPORTED_TYPES:
         raise IngestionError(f"type must be one of {sorted(SUPPORTED_TYPES)}")
 
@@ -219,7 +222,7 @@ def ingest_material(
             "subject": subject,
             "grade": grade,
             "processing_status": "PROCESSING",
-            "metadata": {"created_by": created_by},
+            "metadata": {"created_by": created_by, **extra},
         },
     )
 
@@ -251,6 +254,7 @@ def ingest_material(
         {
             "processing_status": "READY",
             "metadata": {
+                **extra,
                 "chunk_count": len(chunks),
                 "created_by": created_by,
                 "summary": summary,

@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { BLOCK_TYPES, INTENTS, type BlockType } from "../blocks";
 import { CondSchema } from "./cond";
+import { SKINS } from "../skin";
 
 const blockType = z.string().refine((t): t is BlockType => (BLOCK_TYPES as string[]).includes(t), { message: "unknown block type" });
 
@@ -36,6 +37,8 @@ export const DesignSet = z.object({
   /** Or a custom accent colour (contrast is enforced at render). */
   accent: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   dark: z.boolean().optional(),
+  /** Visual identity drawn in the margins (see skin.ts). */
+  skin: z.enum(SKINS).optional(),
   minFont: z.union([z.literal(18), z.literal(22), z.literal(26), z.literal(30), z.literal(36)]).optional(),
   maxDensity: z.enum(["low", "medium", "high"]).optional(),
   maxItems: z.number().int().min(2).max(8).optional(),

@@ -10,7 +10,7 @@
         "fact": "purpose",
         "is": "comparison"
       },
-      "weight": 5,
+      "weight": 7,
       "why": "your words ask for a comparison"
     },
     {
@@ -32,6 +32,9 @@
       "why": "the topic compares ideas"
     }
   ],
+  "design": {
+    "skin": "frame"
+  },
   "slides": [
     {
       "id": "title",

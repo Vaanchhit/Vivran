@@ -23,7 +23,7 @@ function starters(path: string): string[] {
   if (path.startsWith("/teacher/examples")) return ["How does Explain simply work?", "Where do I see what I made?"];
   if (path.startsWith("/teacher/create")) return ["How do slides work?", "Can it make a diagram?", "How long does a video take?"];
   if (path.startsWith("/teacher/materials")) return ["What can I upload?", "Why does a question have no source?"];
-  if (path.startsWith("/teacher/memory")) return ["What is Teaching memory?", "Are my past papers stored?"];
+  if (path.startsWith("/teacher/materials")) return ["What is the difference between facts and style?", "Are my past papers stored?"];
   return ["Make a test on a topic I teach", "Where are my saved papers?", "How do I get started?"];
 }
 

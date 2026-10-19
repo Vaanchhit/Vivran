@@ -11,19 +11,27 @@ const FALLBACK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400">
 const svg = (status: number) => new Response(FALLBACK, { status, headers: { "Content-Type": "image/svg+xml", "Cache-Control": "no-store" } });
 
 const MAX_BYTES = 2_000_000;
+// Same captions → same picture, so the last few hundred are kept in memory: a
+// class opening the deck at once costs the meme host one fetch, not forty.
+const CACHE = new Map<string, ArrayBuffer>();
+const CACHE_MAX = 300;
+const png = (buf: ArrayBuffer) => new Response(buf, { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800, immutable" } });
 
 export async function GET(req: Request) {
   const q = new URL(req.url).searchParams;
   const upstream = verifyMemeQuery(q.get("t"), q.get("l"), q.get("s"));
   if (!upstream) return svg(400);
+  const hit = CACHE.get(upstream);
+  if (hit) return png(hit);
   try {
-    const res = await fetch(upstream, { signal: AbortSignal.timeout(8000), redirect: "error", headers: { Accept: "image/png" } });
+    const res = await fetch(upstream, { signal: AbortSignal.timeout(15000), redirect: "error", headers: { Accept: "image/png" } });
     const type = res.headers.get("content-type") ?? "";
     if (!res.ok || !type.startsWith("image/png")) return svg(502);
     const buf = await res.arrayBuffer();
     if (buf.byteLength > MAX_BYTES) return svg(502);
-    // Same captions give the same image, so browsers and the CDN can keep it for a long while.
-    return new Response(buf, { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=604800, immutable" } });
+    if (CACHE.size >= CACHE_MAX) CACHE.delete(CACHE.keys().next().value as string);
+    CACHE.set(upstream, buf);
+    return png(buf);
   } catch {
     return svg(502);
   }

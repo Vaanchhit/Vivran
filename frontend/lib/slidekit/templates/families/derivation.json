@@ -1,0 +1,106 @@
+{
+  "id": "derivation",
+  "name": "Derivation Walkthrough",
+  "version": 1,
+  "description": "Builds a result step by step: the assumptions, the starting law, each algebraic step with its reason, the result, when it applies, and a check.",
+  "audience": "Physics and maths derivations and proofs, Class 11 onwards.",
+  "requires": {
+    "fact": "grade",
+    "in": [
+      "secondary",
+      "college"
+    ]
+  },
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "derivation"
+      },
+      "weight": 7,
+      "why": "your words ask for a derivation or proof"
+    },
+    {
+      "when": {
+        "fact": "quantitative",
+        "truthy": true
+      },
+      "weight": 1.5,
+      "why": "the topic is mathematical"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "quant"
+        ]
+      },
+      "weight": 1,
+      "why": "this subject derives its results"
+    }
+  ],
+  "design": {
+    "skin": "frame"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Deriving {topic}, with a subtitle naming the class.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to derive {topic} and state when it holds.",
+      "keep": 5
+    },
+    {
+      "id": "assume",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "The assumptions and starting point of the derivation, as short points.",
+      "keep": 8
+    },
+    {
+      "id": "start",
+      "type": "formula",
+      "intent": "teach",
+      "guidance": "The law or definition the derivation starts from, every symbol explained.",
+      "keep": 8,
+      "fallback": "definition"
+    },
+    {
+      "id": "steps",
+      "type": "worked_example",
+      "intent": "teach",
+      "guidance": "The derivation itself: each step with the reason for it, ending in the result.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "result",
+      "type": "formula",
+      "intent": "teach",
+      "guidance": "The final result, every symbol explained, with when it applies.",
+      "keep": 7,
+      "fallback": "definition"
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "A question on which assumption the result depends on, or a quick use of it.",
+      "keep": 6
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The chain of the derivation in four lines.",
+      "keep": 7
+    }
+  ]
+}

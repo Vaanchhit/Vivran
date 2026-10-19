@@ -45,16 +45,16 @@ const render = (title: string, sub: string, r: ReturnType<typeof build>) => {
   const scoped = slideCSS(r.theme).replace(/\.slide/g, `.t${sections.length} .slide`);
   css.add(scoped);
   sections.push(`<section class="t${sections.length}"><h2>${title}</h2><p>${sub}</p><div class="grid">${r.placements.map((p, i) =>
-    `<figure><div class="frame"><div class="in">${slideHTML(p, "", r.theme)}</div></div><figcaption>${i + 1} · ${p.layoutId}</figcaption></figure>`).join("")}</div></section>`);
+    `<figure><div class="frame"><div class="in">${slideHTML(p, "", r.theme, { skin: r.design.skin, index: i, total: r.placements.length, deckTitle: r.prep.context.topic })}</div></div><figcaption>${i + 1} · ${p.layoutId}</figcaption></figure>`).join("")}</div></section>`);
 };
 
 for (const g of GOLDEN) {
   const r = build(g.input, () => g.blocks);
-  render(`Golden · ${r.prep.template.name}`, `hand-written · theme ${r.design.themeId ?? "custom"} · ${r.design.applied.map(a => a.id).join(", ")}`, r);
+  render(`Golden · ${r.prep.template.name}`, `hand-written · skin ${r.design.skin} · theme ${r.design.themeId ?? "custom"} · ${r.design.applied.map(a => a.id).join(", ")}`, r);
 }
 for (const t of TEMPLATES) {
   const r = build(SAMPLE[t.id], (plan, ctx) => mockDeck(plan, ctx, "typical", t.id).blocks);
-  render(`Mock · ${t.name}`, `${r.prep.template.id} (${r.prep.template.how}) · theme ${r.design.themeId ?? "custom"} · ${r.design.applied.map(a => a.id).join(", ")}`, r);
+  render(`Mock · ${t.name}`, `${r.prep.template.id} (${r.prep.template.how}) · skin ${r.design.skin} · theme ${r.design.themeId ?? "custom"} · ${r.design.applied.map(a => a.id).join(", ")}`, r);
 }
 
 writeFileSync(out, `<!doctype html><html><head><meta charset="utf-8"><title>Template gallery</title>

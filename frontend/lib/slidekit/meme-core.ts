@@ -13,7 +13,7 @@
 // ─────────────────────────────────────────────────────────────
 import data from "./memes.json";
 
-export interface MemeFormat { id: string; lines: number; use: string }
+export interface MemeFormat { id: string; name: string; lines: number; use: string }
 export const MEME_FORMATS: readonly MemeFormat[] = data.formats;
 export const MEME_IDS = MEME_FORMATS.map(f => f.id) as [string, ...string[]];
 export const memeFormat = (id: unknown) => MEME_FORMATS.find(f => f.id === id);

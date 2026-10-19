@@ -434,6 +434,59 @@ export async function uploadMaterial(params: {
 }
 
 // ---------------------------------------------------------------------------
+// Sources (backend app/services/sources.py): one upload, used for facts and/or style.
+// ---------------------------------------------------------------------------
+
+export interface Source {
+  /** A material id, or "style:<document id>" for a file kept only for style. */
+  id: string;
+  title: string;
+  type: string;
+  subject?: string | null;
+  grade?: string | null;
+  created_at?: string;
+  facts: { status: "PROCESSING" | "READY" | "FAILED" | "UPLOADED"; chunks?: number | null } | null;
+  style: { document_id: string; kind: HistoryKind; status: "ready" | "needs_review"; reason?: string | null } | null;
+}
+
+export interface SourceAdded {
+  material: Material | null;
+  facts: { used: boolean; reason: string };
+  style: { learned: boolean; reason: string; kind: HistoryKind | null; document: HistoryDocument | null };
+}
+
+export const listSources = (): Promise<{ sources: Source[] }> => request("GET", "/sources");
+
+export async function addSource(params: {
+  title: string;
+  type: "pdf" | "docx" | "pptx" | "youtube";
+  file?: File;
+  externalUrl?: string;
+  subject?: string;
+  grade?: string;
+  useForFacts: boolean;
+  learnStyle: "auto" | "yes" | "no";
+  authoredByMe: boolean;
+  confirmNoStudentData: boolean;
+}): Promise<SourceAdded> {
+  const form = new FormData();
+  form.append("title", params.title);
+  form.append("type", params.type);
+  if (params.file) form.append("file", params.file);
+  if (params.externalUrl) form.append("external_url", params.externalUrl);
+  if (params.subject) form.append("subject", params.subject);
+  if (params.grade) form.append("grade", params.grade);
+  form.append("use_for_facts", String(params.useForFacts));
+  form.append("learn_style", params.learnStyle);
+  form.append("authored_by_me", String(params.authoredByMe));
+  form.append("confirm_no_student_data", String(params.confirmNoStudentData));
+  return requestForm<SourceAdded>("/sources", form);
+}
+
+export const deleteSource = (id: string): Promise<void> => request("DELETE", `/sources/${encodeURIComponent(id)}`);
+export const stopLearningStyle = (id: string): Promise<void> => request("DELETE", `/sources/${encodeURIComponent(id)}/style`);
+
+// ---------------------------------------------------------------------------
 // Teaching style (backend app/memory): past files -> traits the teacher decides on.
 // ---------------------------------------------------------------------------
 
@@ -597,7 +650,7 @@ export interface DeckReady {
   /** Which template shaped the deck, and why (lib/slidekit/templates). */
   template?: { id: string; name: string; reasons: string[]; how: "teacher" | "scored" | "default"; alternatives: { id: string; name: string; score: number }[] };
   /** The look the design rules chose. A theme the teacher saved always wins over this. */
-  design?: { themeId?: string; custom?: { accent: string; dark: boolean }; applied: { id: string; why: string; set: string[] }[]; notes: string[] };
+  design?: { themeId?: string; custom?: { accent: string; dark: boolean }; skin?: "classic" | "band" | "frame" | "soft" | "bold"; applied: { id: string; why: string; set: string[] }[]; notes: string[] };
   provider?: string;
   model?: string;
   /** Set when the deck was saved to the library. */
@@ -659,6 +712,31 @@ export function generateOutline(params: DeckParams): Promise<DeckOutline | DeckN
 /** The PRODUCE step. With `outline`, only the teacher-approved structure is written. */
 export function generateDeck(params: DeckParams & { outline?: OutlineSlide[] }): Promise<DeckResult> {
   return deckRequest("/api/deck", { ...deckBody(params), outline: params.outline }, "Could not generate that deck.");
+}
+
+// ---- Meme slides added from the deck viewer (app/api/deck/meme) ----
+export interface MemeFormatInfo { id: string; name: string; lines: number; use: string; preview: string | null }
+export interface MemeDraft { template: string; lines: string[]; takeaway: string }
+
+export async function getMemeFormats(): Promise<MemeFormatInfo[]> {
+  const res = await fetch("/api/deck/meme", { headers: buildHeaders() });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, data?.error || "Could not load meme formats.");
+  return data.formats as MemeFormatInfo[];
+}
+
+/** One small model call, only when the teacher asks: a meme for the slide they're on. */
+export function suggestMeme(p: { topic: string; grade?: string; subject?: string; language?: string; context?: string }): Promise<{ block: MemeDraft }> {
+  return deckRequest("/api/deck/meme", { suggest: true, ...p }, "Could not suggest a meme.");
+}
+
+export function buildMemeSlide(block: MemeDraft, band: string): Promise<{ placement: Placement }> {
+  return deckRequest("/api/deck/meme", { block, band }, "Could not make that meme slide.");
+}
+
+/** Save a deck the teacher edited (a slide added or removed) over its library copy. */
+export function saveDeckEdit(libraryId: string, deck: unknown): Promise<{ status: string }> {
+  return request("PATCH", `/library/${encodeURIComponent(libraryId)}`, { content: deck });
 }
 
 export interface WorksheetResult {

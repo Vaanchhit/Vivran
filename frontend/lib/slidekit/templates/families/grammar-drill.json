@@ -1,0 +1,112 @@
+{
+  "id": "grammar-drill",
+  "name": "Grammar Rule & Practice",
+  "version": 1,
+  "description": "One grammar point taught properly: the rule, right vs wrong side by side, a transformation worked through, the common error, and practice.",
+  "audience": "Tenses, voice, narration, articles, prepositions in any language.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "grammar"
+      },
+      "weight": 7,
+      "why": "your words are about a grammar point"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "language"
+        ]
+      },
+      "weight": 2,
+      "why": "this is a language lesson"
+    }
+  ],
+  "design": {
+    "skin": "classic"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to use {topic} correctly in their own sentences.",
+      "keep": 5
+    },
+    {
+      "id": "rule",
+      "type": "definition",
+      "intent": "teach",
+      "guidance": "The rule of {topic} in one plain sentence, with one example sentence.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "rightwrong",
+      "type": "comparison",
+      "intent": "teach",
+      "guidance": "Correct and incorrect sentences side by side, with what changes.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "transform",
+      "type": "worked_example",
+      "intent": "apply",
+      "guidance": "Change one sentence using the rule, step by step.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "error",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "The most common mistake with {topic} and the correct form.",
+      "keep": 6,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "misconception"
+        }
+      ]
+    },
+    {
+      "id": "practice",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Choose the correct sentence.",
+      "keep": 7
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The rule, one example, and the mistake to avoid.",
+      "keep": 7
+    }
+  ]
+}

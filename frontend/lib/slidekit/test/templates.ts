@@ -39,8 +39,9 @@ const ok = (cond: unknown, msg: string) => { checks++; if (!cond) failures.push(
 }
 
 // ── library integrity ───────────────────────────────────────
-ok(TEMPLATES.length === 10, `ten templates, got ${TEMPLATES.length}`);
+ok(TEMPLATES.length === 26, `26 templates, got ${TEMPLATES.length}`);
 for (const t of TEMPLATES) ok(t.slides.length === 8, `${t.id} has 8 slides, has ${t.slides.length}`);
+for (const t of TEMPLATES) ok(!!t.design?.skin, `${t.id} has a skin`);
 for (const r of DESIGN_RULES) if (r.set.theme) ok(THEMES[r.set.theme], `rule ${r.id} names a real theme`);
 for (const [id, th] of Object.entries(THEMES)) { // the contrast guard: every preset the rules can pick reads
   ok(contrast(th.theme.ink, th.theme.bg) >= 7, `${id}: ink on bg ≥ 7:1`);
@@ -65,6 +66,23 @@ const CASES: Case[] = [
   { who: "Meme via include flag", input: { topic: "Compound interest vs simple interest", grade: "Class 9", subject: "Economics", include: { meme: true } }, expect: "compare-contrast", meme: true },
   { who: "No meme unless asked", input: { topic: "Photosynthesis", grade: "Class 8", subject: "Science", goal: "introduce" }, expect: "how-it-works", meme: false },
   { who: "No meme in an assessment even if asked", input: { topic: "Fractions quiz", grade: "Class 5", subject: "Mathematics", goal: "assess", notes: "funny memes please" }, expect: "quiz-round", meme: false },
+  { who: "Law case", input: { topic: "Kesavananda Bharati case study", grade: "LLB", subject: "law" }, expect: "case-study" },
+  { who: "Civics debate", input: { topic: "Debate: should voting be compulsory", grade: "Class 10", subject: "civics" }, expect: "debate-room" },
+  { who: "PG seminar", input: { topic: "Research paper presentation on transformer models", grade: "M.Tech", subject: "computer_science" }, expect: "research-seminar" },
+  { who: "Class 2 story", input: { topic: "The thirsty crow story", grade: "Class 2", subject: "english_literature" }, expect: "story-time" },
+  { who: "Science fair project", input: { topic: "Science fair project on water purification", grade: "Class 8", subject: "science" }, expect: "project-launch" },
+  { who: "Current affairs", input: { topic: "Repo rate hike in the news", grade: "Class 12", subject: "economics" }, expect: "in-the-news" },
+  { who: "Parts of a flower", input: { topic: "Parts of a flower", grade: "Class 6", subject: "biology" }, expect: "label-the-parts" },
+  { who: "Physics derivation", input: { topic: "Derive the equations of motion", grade: "Class 11", subject: "physics" }, expect: "derivation" },
+  { who: "Geography regions", input: { topic: "Climate regions of India", grade: "Class 9", subject: "geography" }, expect: "places-and-patterns" },
+  { who: "Practical viva", input: { topic: "Viva questions on titration", grade: "Class 12", subject: "chemistry" }, expect: "viva-prep" },
+  { who: "First day", input: { topic: "Welcome to Class 11 Accountancy: course orientation", grade: "Class 11", subject: "accountancy" }, expect: "course-orientation" },
+  { who: "Teacher workshop", input: { topic: "Workshop for teachers on formative assessment", grade: "college", subject: "general" }, expect: "teacher-workshop" },
+  { who: "PTM", input: { topic: "Parent teacher meeting for term 1", grade: "Class 4", subject: "general" }, expect: "parent-meeting" },
+  { who: "Grammar", input: { topic: "Active and passive voice", grade: "Class 7", subject: "language" }, expect: "grammar-drill" },
+  { who: "Flipped", input: { topic: "Flipped classroom check-in on cell division after watching the video", grade: "Class 9", subject: "biology" }, expect: "flipped-checkin" },
+  { who: "Data", input: { topic: "India's GDP growth data and trends", grade: "Class 12", subject: "economics" }, expect: "data-story" },
+  { who: "No meme for parents even if asked", input: { topic: "Parent teacher meeting, add a meme", grade: "Class 4", subject: "general" }, expect: "parent-meeting", meme: false },
   { who: "Fewer slides requested", input: { topic: "Photosynthesis", grade: "Class 6", subject: "Science", slideCount: 6 }, expect: "how-it-works", slides: 6 },
 ];
 
@@ -109,7 +127,7 @@ for (const c of CASES) {
   }
   rows.push(`| ${c.who} | ${prep.template.id} (${prep.template.how}) | ${prep.plan.map(p => p.type).join(" → ")} | ${prep.design.applied.map(a => a.id).join(", ") || "–"} |`);
 }
-ok([...coverage].length >= 9, `selection reaches at least 9 of the 10 templates, reached ${coverage.size}`);
+ok([...coverage].length >= 25, `selection reaches at least 25 of the 26 templates, reached ${coverage.size}`);
 
 // ── design rules: conflict resolution + fill phase ──────────
 {

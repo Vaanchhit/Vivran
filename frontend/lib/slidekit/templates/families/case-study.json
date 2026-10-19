@@ -1,0 +1,105 @@
+{
+  "id": "case-study",
+  "name": "Case Study",
+  "version": 1,
+  "description": "A real-world case worked through: the facts, the context, what went wrong, the options, a judgement to debate, and the principle it teaches. For law, commerce, management and medicine.",
+  "audience": "Law judgments, business cases, patient cases, ethics scenarios.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "case"
+      },
+      "weight": 7,
+      "why": "your words describe a case"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "law",
+          "commerce",
+          "science"
+        ]
+      },
+      "weight": 1,
+      "why": "case teaching is common in this subject"
+    },
+    {
+      "when": {
+        "fact": "grade",
+        "in": [
+          "secondary",
+          "college"
+        ]
+      },
+      "weight": 1,
+      "why": "older students handle open cases"
+    }
+  ],
+  "design": {
+    "skin": "frame"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Title naming the case in {topic}, with a subtitle saying what principle it teaches.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "What students will be able to analyse or judge after working through {topic}.",
+      "keep": 5
+    },
+    {
+      "id": "facts",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "The one fact of the case that makes it worth studying. Only facts in the source or well established.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "context",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "The background students need: who was involved, what the situation was. Three or four points.",
+      "keep": 8
+    },
+    {
+      "id": "issue",
+      "type": "cause_effect",
+      "intent": "teach",
+      "guidance": "What led to the problem in {topic}, and what followed from it.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "options",
+      "type": "comparison",
+      "intent": "apply",
+      "guidance": "The courses of action available, compared on their consequences.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "judge",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "One or two questions asking students what they would decide, and why.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The principle this case teaches, and how it applies to other cases.",
+      "keep": 8
+    }
+  ]
+}

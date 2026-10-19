@@ -1,0 +1,90 @@
+{
+  "id": "places-and-patterns",
+  "name": "Places & Patterns",
+  "version": 1,
+  "description": "Geography made spatial: a striking fact about a place, how regions are classified, why things are where they are, a comparison of two places, and a check.",
+  "audience": "Geography: climate, resources, landforms, population, agriculture.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "geography"
+      },
+      "weight": 7,
+      "why": "your words are about places and regions"
+    },
+    {
+      "when": {
+        "fact": "subject",
+        "is": "geography"
+      },
+      "weight": 3,
+      "why": "this is a geography lesson"
+    }
+  ],
+  "design": {
+    "skin": "band"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "hook",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "A striking fact or number about {topic}. Mark uncertain figures [verify].",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to explain where and why for {topic}.",
+      "keep": 5
+    },
+    {
+      "id": "types",
+      "type": "hierarchy",
+      "intent": "teach",
+      "guidance": "How {topic} is classified into types or regions.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "why",
+      "type": "cause_effect",
+      "intent": "teach",
+      "guidance": "The physical and human factors that explain the pattern.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "compare",
+      "type": "comparison",
+      "intent": "teach",
+      "guidance": "Two places or regions compared on the factors that matter.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Which factor explains a given pattern.",
+      "keep": 6
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The pattern and its main causes.",
+      "keep": 7
+    }
+  ]
+}

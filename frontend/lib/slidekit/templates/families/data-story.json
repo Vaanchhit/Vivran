@@ -1,0 +1,101 @@
+{
+  "id": "data-story",
+  "name": "Data Story",
+  "version": 1,
+  "description": "Tells the story in numbers: a headline figure, a comparison table, what drives the trend, what it means, and a check of reading data correctly.",
+  "audience": "Economics, statistics, geography and social science lessons built on data.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "data"
+      },
+      "weight": 7,
+      "why": "your words are about data or statistics"
+    },
+    {
+      "when": {
+        "fact": "quantitative",
+        "truthy": true
+      },
+      "weight": 1,
+      "why": "the topic is numerical"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "commerce",
+          "humanities",
+          "quant"
+        ]
+      },
+      "weight": 0.5,
+      "why": "data matters in this subject"
+    }
+  ],
+  "design": {
+    "skin": "frame"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "headline",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "The headline number of {topic} and what it measures. Use [verify] for any figure not in the source.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to read and explain the data on {topic}.",
+      "keep": 5
+    },
+    {
+      "id": "table",
+      "type": "comparison",
+      "intent": "teach",
+      "guidance": "The key figures compared across groups, places or years.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "drivers",
+      "type": "cause_effect",
+      "intent": "teach",
+      "guidance": "What drives the trend, and what it leads to.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "meaning",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What the numbers do and don't tell us, in a few points.",
+      "keep": 7
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "A question on reading the data correctly.",
+      "keep": 6
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The trend in one line, and how to read such data.",
+      "keep": 7
+    }
+  ]
+}

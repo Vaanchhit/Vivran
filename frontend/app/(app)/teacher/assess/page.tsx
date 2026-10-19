@@ -410,7 +410,7 @@ function AssessPageInner() {
               <PenLine className="w-4 h-4 text-accent" /> Shaped by your teaching style
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/teacher/memory" className="text-accent hover:underline">Manage</Link>
+              <Link href="/teacher/materials?tab=style" className="text-accent hover:underline">Manage</Link>
               {paper.request && (
                 <button type="button" onClick={makeWithoutStyle} disabled={restyling} className="text-muted hover:text-foreground disabled:opacity-50 inline-flex items-center gap-1.5">
                   {restyling && <BookLoader className="w-3 h-3" />} Make it without my style

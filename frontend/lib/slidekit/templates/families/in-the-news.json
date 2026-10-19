@@ -1,0 +1,102 @@
+{
+  "id": "in-the-news",
+  "name": "In the News",
+  "version": 1,
+  "description": "Links a current event to the syllabus: the headline fact, what happened, why it happened, the concept it illustrates, and a discussion. Dates and figures are flagged for checking.",
+  "audience": "Current affairs, economics, civics, geography and science-in-the-news lessons.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "news"
+      },
+      "weight": 7,
+      "why": "your words are about current events"
+    }
+  ],
+  "design": {
+    "skin": "bold"
+  },
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "A headline-style title for {topic}, with a subtitle linking it to the chapter.",
+      "keep": 9
+    },
+    {
+      "id": "headline",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "The key fact of the news story. Write [verify] for any number or date not in the source.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "what",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What happened, in three or four plain points.",
+      "keep": 8
+    },
+    {
+      "id": "why",
+      "type": "cause_effect",
+      "intent": "teach",
+      "guidance": "The causes of the event and its likely effects.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "concept",
+      "type": "real_world",
+      "intent": "apply",
+      "guidance": "The syllabus concept this news illustrates, and how.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "views",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Questions about what should happen next and who is affected.",
+      "keep": 6,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "discussion"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "A question that checks the concept, not the news trivia.",
+      "keep": 5
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The concept in one line, and how to spot it in the news again.",
+      "keep": 7
+    }
+  ]
+}

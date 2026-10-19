@@ -1,20 +1,423 @@
 {
-  "_about": "Vocabulary the template selector reads from the teacher's own words. Add a keyword to teach the system a new phrase; no code change. Matching is by whole word (or word start for words over 4 letters).",
+  "_about": "Vocabulary the template selector reads from the teacher's own words. Add a keyword to teach the system a new phrase; no code change. Matching is by whole word (or word start for words over 4 letters). 'audiences' says who the deck is for when it isn't students.",
   "purposes": {
-    "revision":    { "keywords": ["revise", "revision", "recap", "last minute", "exam prep", "before the exam", "board exam", "quick review", "cheat sheet", "summary", "summarise", "summarize", "refresh"] },
-    "practice":    { "keywords": ["practice", "practise", "solve", "numericals", "problems", "exercise", "worksheet", "drill", "sums", "questions to solve", "problem solving"] },
-    "activity":    { "keywords": ["activity", "experiment", "lab", "hands on", "hands-on", "group work", "project", "demo", "demonstration", "role play", "build", "craft"] },
-    "assessment":  { "keywords": ["quiz", "test", "assessment", "unit test", "mcq", "quiz round", "kahoot", "game", "competition", "buzzer"] },
-    "comparison":  { "keywords": ["compare", "comparison", "difference between", "differences", "versus", "vs", "contrast", "similarities"] },
-    "story":       { "keywords": ["history", "timeline", "revolution", "war", "empire", "movement", "era", "chronology", "events leading", "causes of", "freedom struggle"] },
-    "process":     { "keywords": ["how does", "how do", "cycle", "process", "stages", "steps of", "mechanism", "working of", "lifecycle", "life cycle", "photosynthesis", "digestion"] },
-    "code":        { "keywords": ["code", "coding", "program", "programming", "python", "java", "javascript", "algorithm", "function", "loop", "debug", "sql", "c++"] },
-    "literature":  { "keywords": ["poem", "poetry", "novel", "story analysis", "character", "theme of", "grammar", "essay", "comprehension", "literary", "vocabulary", "tenses", "writing"] },
-    "introduction":{ "keywords": ["introduce", "introduction", "intro", "basics", "what is", "what are", "overview", "fundamentals", "beginner"] }
+    "revision": {
+      "keywords": [
+        "revise",
+        "revision",
+        "recap",
+        "last minute",
+        "exam prep",
+        "before the exam",
+        "board exam",
+        "quick review",
+        "cheat sheet",
+        "summary",
+        "summarise",
+        "summarize",
+        "refresh"
+      ]
+    },
+    "practice": {
+      "keywords": [
+        "practice",
+        "practise",
+        "solve",
+        "numericals",
+        "problems",
+        "exercise",
+        "worksheet",
+        "drill",
+        "sums",
+        "questions to solve",
+        "problem solving"
+      ]
+    },
+    "activity": {
+      "keywords": [
+        "activity",
+        "experiment",
+        "lab",
+        "hands on",
+        "hands-on",
+        "group work",
+        "demo",
+        "demonstration",
+        "role play",
+        "build",
+        "craft"
+      ]
+    },
+    "assessment": {
+      "keywords": [
+        "quiz",
+        "assessment",
+        "unit test",
+        "mcq",
+        "quiz round",
+        "kahoot",
+        "game",
+        "competition",
+        "buzzer",
+        "test paper",
+        "class test",
+        "unit test"
+      ]
+    },
+    "comparison": {
+      "keywords": [
+        "compare",
+        "comparison",
+        "difference between",
+        "differences",
+        "versus",
+        "vs",
+        "contrast",
+        "similarities"
+      ]
+    },
+    "story": {
+      "keywords": [
+        "history",
+        "timeline",
+        "revolution",
+        "war",
+        "empire",
+        "movement",
+        "era",
+        "chronology",
+        "events leading",
+        "causes of",
+        "freedom struggle"
+      ]
+    },
+    "process": {
+      "keywords": [
+        "how does",
+        "how do",
+        "cycle",
+        "process",
+        "stages",
+        "steps of",
+        "mechanism",
+        "working of",
+        "lifecycle",
+        "life cycle",
+        "photosynthesis",
+        "digestion"
+      ]
+    },
+    "code": {
+      "keywords": [
+        "code",
+        "coding",
+        "program",
+        "programming",
+        "python",
+        "java",
+        "javascript",
+        "algorithm",
+        "function",
+        "loop",
+        "debug",
+        "sql",
+        "c++"
+      ]
+    },
+    "literature": {
+      "keywords": [
+        "poem",
+        "poetry",
+        "novel",
+        "story analysis",
+        "character",
+        "theme of",
+        "essay",
+        "comprehension",
+        "literary",
+        "writing"
+      ]
+    },
+    "introduction": {
+      "keywords": [
+        "introduce",
+        "introduction",
+        "intro",
+        "basics",
+        "what is",
+        "what are",
+        "overview",
+        "fundamentals",
+        "beginner"
+      ]
+    },
+    "case": {
+      "keywords": [
+        "case study",
+        "case studies",
+        "landmark case",
+        "judgment",
+        "judgement",
+        "scenario",
+        "business case",
+        "patient case",
+        "caselet"
+      ]
+    },
+    "debate": {
+      "keywords": [
+        "debate",
+        "for and against",
+        "pros and cons",
+        "perspectives",
+        "argue",
+        "arguments",
+        "should we",
+        "the motion",
+        "this house"
+      ]
+    },
+    "research": {
+      "keywords": [
+        "research paper",
+        "journal club",
+        "paper presentation",
+        "literature review",
+        "methodology",
+        "findings",
+        "thesis",
+        "dissertation",
+        "seminar on"
+      ]
+    },
+    "story_time": {
+      "keywords": [
+        "story",
+        "stories",
+        "storytelling",
+        "story time",
+        "fable",
+        "tale",
+        "once upon a time",
+        "moral story"
+      ]
+    },
+    "project": {
+      "keywords": [
+        "project",
+        "project based",
+        "pbl",
+        "capstone",
+        "milestones",
+        "team project",
+        "science fair"
+      ]
+    },
+    "news": {
+      "keywords": [
+        "news",
+        "current affairs",
+        "current events",
+        "headline",
+        "in the news",
+        "this week"
+      ]
+    },
+    "anatomy": {
+      "keywords": [
+        "parts of",
+        "label",
+        "labelling",
+        "labeling",
+        "structure of",
+        "anatomy",
+        "diagram of",
+        "components of"
+      ]
+    },
+    "derivation": {
+      "keywords": [
+        "derive",
+        "derivation",
+        "derivations",
+        "prove",
+        "proof",
+        "deduce",
+        "show that"
+      ]
+    },
+    "geography": {
+      "keywords": [
+        "map",
+        "maps",
+        "region",
+        "regions",
+        "climate",
+        "rivers",
+        "mountains",
+        "landforms",
+        "continents",
+        "population distribution",
+        "resources"
+      ]
+    },
+    "viva": {
+      "keywords": [
+        "viva",
+        "viva voce",
+        "oral exam",
+        "oral test",
+        "practical exam questions",
+        "interview questions"
+      ]
+    },
+    "orientation": {
+      "keywords": [
+        "first day",
+        "first class",
+        "orientation",
+        "course overview",
+        "welcome to",
+        "syllabus overview",
+        "new batch",
+        "induction"
+      ]
+    },
+    "workshop": {
+      "keywords": [
+        "teacher training",
+        "teachers workshop",
+        "workshop for teachers",
+        "professional development",
+        "faculty development",
+        "fdp",
+        "pd session",
+        "pedagogy"
+      ]
+    },
+    "parents": {
+      "keywords": [
+        "parent teacher meeting",
+        "ptm",
+        "parents meeting",
+        "parent orientation",
+        "open house",
+        "for parents"
+      ]
+    },
+    "grammar": {
+      "keywords": [
+        "grammar",
+        "tense",
+        "tenses",
+        "active and passive",
+        "passive voice",
+        "direct and indirect",
+        "reported speech",
+        "articles",
+        "prepositions",
+        "parts of speech",
+        "clauses",
+        "subject verb agreement"
+      ]
+    },
+    "flipped": {
+      "keywords": [
+        "flipped",
+        "flipped classroom",
+        "pre reading",
+        "pre-reading",
+        "after watching",
+        "homework review",
+        "before class"
+      ]
+    },
+    "data": {
+      "keywords": [
+        "data",
+        "statistics",
+        "statistical",
+        "graph",
+        "graphs",
+        "trend",
+        "trends",
+        "survey",
+        "census",
+        "gdp",
+        "inflation",
+        "chart",
+        "charts"
+      ]
+    }
   },
   "tones": {
-    "playful": { "keywords": ["fun", "funny", "engaging", "interactive", "playful", "memes", "meme", "humour", "humor", "light", "game", "icebreaker", "ice breaker", "exciting", "cool"] },
-    "formal":  { "keywords": ["formal", "seminar", "conference", "viva", "defence", "thesis", "research", "professional", "serious", "official", "board meeting", "academic paper"] }
+    "playful": {
+      "keywords": [
+        "fun",
+        "funny",
+        "engaging",
+        "interactive",
+        "playful",
+        "memes",
+        "meme",
+        "humour",
+        "humor",
+        "light",
+        "game",
+        "icebreaker",
+        "ice breaker",
+        "exciting",
+        "cool"
+      ]
+    },
+    "formal": {
+      "keywords": [
+        "formal",
+        "seminar",
+        "conference",
+        "viva",
+        "defence",
+        "thesis",
+        "research",
+        "professional",
+        "serious",
+        "official",
+        "board meeting",
+        "academic paper"
+      ]
+    }
   },
-  "memeWords": ["meme", "memes", "funny", "humour", "humor", "joke", "jokes", "make it fun", "light moment"]
+  "memeWords": [
+    "meme",
+    "memes",
+    "funny",
+    "humour",
+    "humor",
+    "joke",
+    "jokes",
+    "make it fun",
+    "light moment"
+  ],
+  "audiences": {
+    "teachers": {
+      "keywords": [
+        "teachers",
+        "teacher training",
+        "faculty",
+        "educators",
+        "staff meeting",
+        "department meeting",
+        "workshop for teachers"
+      ]
+    },
+    "parents": {
+      "keywords": [
+        "parents",
+        "ptm",
+        "parent teacher",
+        "guardians",
+        "open house"
+      ]
+    }
+  }
 }
