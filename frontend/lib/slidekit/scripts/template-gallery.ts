@@ -25,6 +25,22 @@ const SAMPLE: Record<string, TeacherInput> = {
   "reading-room": { topic: "The poem Daffodils analysis", grade: "Class 9", subject: "english_literature" },
   "code-lab": { topic: "Python for loops", grade: "BCA", subject: "computer_science" },
   "quiz-round": { topic: "Fractions quiz round", grade: "Class 5", subject: "mathematics", goal: "assess" },
+  "case-study": { topic: "Kesavananda Bharati case study", grade: "LLB", subject: "law" },
+  "debate-room": { topic: "Debate: should voting be compulsory", grade: "Class 10", subject: "civics" },
+  "research-seminar": { topic: "Research paper presentation on transformer models", grade: "M.Tech", subject: "computer_science" },
+  "story-time": { topic: "The thirsty crow story", grade: "Class 2", subject: "english_literature" },
+  "project-launch": { topic: "Science fair project on water purification", grade: "Class 8", subject: "science" },
+  "in-the-news": { topic: "Repo rate hike in the news", grade: "Class 12", subject: "economics" },
+  "label-the-parts": { topic: "Parts of a flower", grade: "Class 6", subject: "biology" },
+  "derivation": { topic: "Derive the equations of motion", grade: "Class 11", subject: "physics" },
+  "places-and-patterns": { topic: "Climate regions of India", grade: "Class 9", subject: "geography" },
+  "viva-prep": { topic: "Viva questions on titration", grade: "Class 12", subject: "chemistry" },
+  "course-orientation": { topic: "Welcome to Class 11 Accountancy: course orientation", grade: "Class 11", subject: "accountancy" },
+  "teacher-workshop": { topic: "Workshop for teachers on formative assessment", grade: "college", subject: "general" },
+  "parent-meeting": { topic: "Parent teacher meeting for term 1", grade: "Class 4", subject: "general" },
+  "grammar-drill": { topic: "Active and passive voice", grade: "Class 7", subject: "language" },
+  "flipped-checkin": { topic: "Flipped classroom check-in on cell division after watching the video", grade: "Class 9", subject: "biology" },
+  "data-story": { topic: "India's GDP growth data and trends", grade: "Class 12", subject: "economics" },
 };
 
 function build(input: TeacherInput, blocksFor: (plan: any, ctx: any) => unknown[]) {
@@ -53,6 +69,7 @@ for (const g of GOLDEN) {
   render(`Golden · ${r.prep.template.name}`, `hand-written · skin ${r.design.skin} · theme ${r.design.themeId ?? "custom"} · ${r.design.applied.map(a => a.id).join(", ")}`, r);
 }
 for (const t of TEMPLATES) {
+  if (!SAMPLE[t.id]) { console.warn(`no sample prompt for ${t.id}`); continue; }
   const r = build(SAMPLE[t.id], (plan, ctx) => mockDeck(plan, ctx, "typical", t.id).blocks);
   render(`Mock · ${t.name}`, `${r.prep.template.id} (${r.prep.template.how}) · skin ${r.design.skin} · theme ${r.design.themeId ?? "custom"} · ${r.design.applied.map(a => a.id).join(", ")}`, r);
 }
