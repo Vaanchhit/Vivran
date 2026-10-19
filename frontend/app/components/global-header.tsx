@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/app/components/theme-toggle";
+import { BrandMark } from "@/app/components/brand-mark";
 
 /** Header for the public marketing site — see app/(marketing)/layout.tsx. The
  * authenticated teacher product has its own sidebar chrome (app/(app)/teacher/layout.tsx)
@@ -12,10 +13,8 @@ export function GlobalHeader() {
     <header className="w-full border-b border-border bg-background backdrop-blur-2xl sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         {/* Plain anchors: "/" is a static document (public/home.html), not an app route. */}
-        <a href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-ink text-ink-fg flex items-center justify-center font-bold text-xs">
-            विव
-          </div>
+        <a href="/" className="vv-mark-host flex items-center gap-2.5">
+          <BrandMark className="w-9 h-9" />
           <span className="font-display font-extrabold text-lg tracking-tight text-foreground">
             VIVRAN
           </span>

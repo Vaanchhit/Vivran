@@ -8,6 +8,7 @@ import { WAITLIST_EMAIL, REQUEST_ACCESS_MAILTO } from "@/lib/constants";
 import type { Role } from "@/types";
 import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound, User } from "lucide-react";
 import { BookLoader } from "@/app/components/book-loader";
+import { BrandMark } from "@/app/components/brand-mark";
 
 export default function LoginPage() {
   return (
@@ -133,10 +134,8 @@ function LoginForm() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md max-w-lg z-10">
         {/* Brand logo */}
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-ink text-ink-fg flex items-center justify-center font-bold shadow-soft">
-            विव
-          </div>
+        <div className="vv-mark-host flex items-center justify-center gap-3 mb-6">
+          <BrandMark className="w-12 h-12" />
           <span className="font-display font-extrabold text-2xl tracking-tight text-foreground">
             Vivran <span className="text-muted text-base font-normal">विवरण</span>
           </span>
