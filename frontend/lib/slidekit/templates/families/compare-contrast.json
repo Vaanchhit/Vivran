@@ -1,0 +1,116 @@
+{
+  "id": "compare-contrast",
+  "name": "Compare & Contrast",
+  "version": 1,
+  "description": "Two or three easily confused things set side by side: definitions, a comparison table, where they overlap, a misconception, and a check.",
+  "audience": "Teaching differences: mitosis vs meiosis, simple vs compound interest, plant vs animal cells.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "comparison"
+      },
+      "weight": 5,
+      "why": "your words ask for a comparison"
+    },
+    {
+      "when": {
+        "fact": "topShape",
+        "in": [
+          "comparative"
+        ]
+      },
+      "weight": 3,
+      "why": "the topic is two things to tell apart"
+    },
+    {
+      "when": {
+        "fact": "shapes",
+        "has": "comparative"
+      },
+      "weight": 1.5,
+      "why": "the topic compares ideas"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to tell {topic} apart and explain how.",
+      "keep": 5
+    },
+    {
+      "id": "define",
+      "type": "definition",
+      "intent": "teach",
+      "guidance": "Define the first of the things being compared in {topic}, in one plain sentence.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "compare",
+      "type": "comparison",
+      "intent": "teach",
+      "guidance": "Compare the things in {topic} on the attributes students most confuse. Exactly the things named in the topic.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "overlap",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "What the things in {topic} have in common, and where they genuinely differ.",
+      "keep": 6
+    },
+    {
+      "id": "myth",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "The most common mix-up between the things in {topic}, and how to remember the difference.",
+      "keep": 6,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "misconception"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "A question where the options are the things being compared, to check students can tell them apart.",
+      "keep": 8
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "One line per thing, then the single difference that matters most.",
+      "keep": 8
+    }
+  ]
+}

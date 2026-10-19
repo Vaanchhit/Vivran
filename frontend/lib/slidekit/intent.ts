@@ -10,6 +10,7 @@ import {
   inferSubject, resolveSubject, type Shape, type SubjectId,
 } from "./subjects";
 import type { GradeBand } from "./tokens";
+import vocab from "./templates/purposes.json";
 
 // ── input ───────────────────────────────────────────────────
 export const GOALS = ["introduce", "revise", "practice", "assess"] as const;
@@ -30,13 +31,13 @@ export const TeacherInput = z.object({
   sourceText: z.string().trim().max(20000).optional(),
   include: z.object({
     quiz: z.boolean(), activity: z.boolean(), misconceptions: z.boolean(),
-    realWorld: z.boolean(), vocabulary: z.boolean(),
+    realWorld: z.boolean(), vocabulary: z.boolean(), meme: z.boolean(),
   }).partial().default({}),
   language: z.string().trim().max(30).default("English"),
   notes: z.string().trim().max(1000).optional(),
 });
 export type TeacherInput = z.input<typeof TeacherInput>;
-type Include = { quiz: boolean; activity: boolean; misconceptions: boolean; realWorld: boolean; vocabulary: boolean };
+type Include = { quiz: boolean; activity: boolean; misconceptions: boolean; realWorld: boolean; vocabulary: boolean; meme: boolean };
 
 // ── output ──────────────────────────────────────────────────
 export interface Question {
@@ -156,10 +157,10 @@ function defaultInclude(goal: Goal, grade: GradeBand, subject: SubjectId): Inclu
   const fam = SUBJECTS[subject].family;
   const young = grade === "primary" || grade === "middle";
   switch (goal) {
-    case "introduce": return { quiz: true, activity: young, misconceptions: true, realWorld: true, vocabulary: young || fam === "science" || fam === "humanities" };
-    case "revise":    return { quiz: true, activity: false, misconceptions: true, realWorld: false, vocabulary: true };
-    case "practice":  return { quiz: true, activity: true, misconceptions: false, realWorld: false, vocabulary: false };
-    case "assess":    return { quiz: true, activity: false, misconceptions: false, realWorld: false, vocabulary: false };
+    case "introduce": return { quiz: true, activity: young, misconceptions: true, realWorld: true, vocabulary: young || fam === "science" || fam === "humanities", meme: false };
+    case "revise":    return { quiz: true, activity: false, misconceptions: true, realWorld: false, vocabulary: true, meme: false };
+    case "practice":  return { quiz: true, activity: true, misconceptions: false, realWorld: false, vocabulary: false, meme: false };
+    case "assess":    return { quiz: true, activity: false, misconceptions: false, realWorld: false, vocabulary: false, meme: false };
   }
 }
 
@@ -238,6 +239,9 @@ export function understand(rawInput: TeacherInput): LessonContext {
   const trustedNotes = notesC.flagged ? "" : notesC.text ?? "";
   const shapes = scoreShapes(`${topic} ${trustedNotes} ${(input.objectives ?? []).join(" ")}`, subject);
   const allowed = allowedBlocks(subject).filter(b => !GRADE_BLOCK_EXCLUDES[grade].includes(b));
+  // Memes are opt-in: asked for outright, or in plain words ("make it fun", "add a meme"). Never in an assessment.
+  const memeText = ` ${`${topic} ${trustedNotes}`.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ")} `;
+  if (input.goal !== "assess" && (input.include.meme === true || (vocab.memeWords as string[]).some(w => memeText.includes(` ${w} `)))) allowed.push("meme");
 
   return {
     topic, subject, subjectSource, grade, gradeLabel: g?.label ?? "unspecified", goal: input.goal, slideCount,

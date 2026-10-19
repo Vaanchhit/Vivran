@@ -126,6 +126,13 @@ function el(T: DeckTheme, e: El, cardTone: string | undefined): string {
       return `<div class="m" style="${pos(e.x, e.y, e.d, e.d)};font-size:${Math.round(e.d * 0.55)}px">${esc(e.label)}</div>`;
     case "image":
       return `<div class="img" style="${pos(e.x, e.y, e.w, e.h)}${e.bg ? ";border-radius:0" : ""}"><span>Photo: ${esc(e.query)}</span></div>`;
+    case "picture": {
+      // src is filled by the server (signed proxy); without it the slide still reads: caption text in a frame.
+      const inner = e.src
+        ? `<img src="${esc(e.src)}" alt="${esc(e.alt)}" loading="lazy" referrerpolicy="no-referrer">`
+        : `<span>${esc(e.lines.join(" · "))}</span>`;
+      return `<div class="pic" style="${pos(e.x, e.y, e.w, e.h)}">${inner}</div>`;
+    }
     case "icon":
       return `<div class="ico" style="${pos(e.x, e.y, e.w, e.h)}"><span>${esc(e.name)}</span></div>`;
     case "formula":
@@ -162,6 +169,9 @@ export const slideCSS = (T: DeckTheme = THEME) => `
 .slide .m{display:flex;align-items:center;justify-content:center;border-radius:50%;background:${T.ink};color:${T.bg};font-weight:700}
 .slide .img{background:repeating-linear-gradient(135deg,${T.card} 0 18px,${T.line} 18px 36px);border-radius:18px;display:flex;align-items:flex-end}
 .slide .img span,.slide .ico span,.slide .dia span{font-size:20px;color:${T.muted};padding:14px 18px}
+.slide .pic{display:flex;align-items:center;justify-content:center;background:${T.card};border-radius:18px;overflow:hidden}
+.slide .pic img{width:100%;height:100%;object-fit:contain}
+.slide .pic span{font-size:26px;color:${T.muted};padding:24px;text-align:center}
 .slide .ico{border-radius:50%;background:${T.accentBg};display:flex;align-items:center;justify-content:center}
 .slide .fx{display:flex;align-items:center;justify-content:center;font-size:44px;color:${T.accent};overflow:hidden}
 .slide .fx span{font-family:"Times New Roman","Liberation Serif",serif;font-style:italic;padding:0}

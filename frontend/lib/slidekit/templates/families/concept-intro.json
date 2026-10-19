@@ -1,0 +1,115 @@
+{
+  "id": "concept-intro",
+  "name": "Concept Explorer",
+  "version": 1,
+  "default": true,
+  "description": "The classic first lesson on a topic: hook, objectives, a clear definition, the core idea explained, a real-world link, a check, and a recap.",
+  "audience": "Introducing a new concept to any class.",
+  "signals": [
+    {
+      "when": {
+        "fact": "goal",
+        "is": "introduce"
+      },
+      "weight": 2,
+      "why": "you are introducing the topic"
+    },
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "introduction"
+      },
+      "weight": 2,
+      "why": "your words sound like an introduction"
+    },
+    {
+      "when": {
+        "fact": "shapes",
+        "has": "conceptual"
+      },
+      "weight": 1,
+      "why": "the topic is a concept to understand"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Three things students will be able to do after this lesson on {topic}, in student-friendly words.",
+      "keep": 6
+    },
+    {
+      "id": "hook",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "A surprising fact or a question that makes a {grade} student curious about {topic}.",
+      "keep": 4,
+      "fallback": "discussion",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "key_fact"
+        }
+      ]
+    },
+    {
+      "id": "define",
+      "type": "definition",
+      "intent": "teach",
+      "guidance": "Define the central term of {topic} in one plain sentence, with one everyday example.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "core",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "Explain how {topic} works in a few clear points, in the order a student needs them.",
+      "keep": 8
+    },
+    {
+      "id": "real",
+      "type": "real_world",
+      "intent": "apply",
+      "guidance": "Connect {topic} to something a {grade} student sees in daily life.",
+      "keep": 5,
+      "fallback": "explanation"
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "One question that checks the core idea, not trivia. One clearly correct option, three plausible wrong ones.",
+      "keep": 7
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "Three to five takeaways that match the objectives.",
+      "keep": 8
+    }
+  ]
+}

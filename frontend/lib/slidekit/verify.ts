@@ -7,7 +7,7 @@ import { layoutDiagram, worstCaseData, KIND_PATHS } from "./diagram";
 import { LAYOUTS, type DiagramSlot, type Field, type LayoutSpec, type Slot } from "./layouts";
 import { GRADE_BLOCK_EXCLUDES } from "./subjects";
 import {
-  GLYPH, GRADE_PROFILES, ITEM_PAD, LABEL_H, LINE_HEIGHT, ROLE_SIZES, SAFE, WRAP_SLACK, WRAP_WORD,
+  GLYPH, profileOf, ITEM_PAD, LABEL_H, LINE_HEIGHT, ROLE_SIZES, SAFE, WRAP_SLACK, WRAP_WORD,
   areaInBounds, areaToBox, itemBoxes, type Box, type GradeBand, type TypeRole,
 } from "./tokens";
 
@@ -41,7 +41,7 @@ export function arrayBounds(t: BlockType, key: string): [number, number] | null 
 // ── text fitting ────────────────────────────────────────────
 /** Sizes a role may use at this grade. The grade minimum overrides the role ladder. */
 export function sizesFor(role: TypeRole, grade: GradeBand): number[] {
-  const min = GRADE_PROFILES[grade].minFont;
+  const min = profileOf(grade).minFont;
   const ok = ROLE_SIZES[role].filter(s => s >= min);
   return ok.length ? ok : [min];
 }
@@ -53,7 +53,7 @@ const lines = (chars: number, size: number, width: number, role: TypeRole = "bod
 
 /** Height needed for fields at the smallest allowed size, or null if any field exceeds maxLines. */
 function fieldsHeight(fields: Field[], width: number, grade: GradeBand, capWords: boolean, inline?: number): number | null {
-  const cap = GRADE_PROFILES[grade].maxWordsPerItem * CHARS_PER_WORD;
+  const cap = profileOf(grade).maxWordsPerItem * CHARS_PER_WORD;
   const one = (fd: Field, w: number) => {
     const size = Math.min(...sizesFor(fd.role, grade));
     const chars = capWords && fd.role !== "title" ? Math.min(fd.maxChars, cap) : fd.maxChars;
@@ -82,7 +82,7 @@ function occupied(slot: Slot, l: LayoutSpec, grade: GradeBand): Box[] {
 }
 function maxCount(l: LayoutSpec, bind: string, grade: GradeBand) {
   const cap = l.capacity[bind]?.[1] ?? 6;
-  return Math.max(l.capacity[bind]?.[0] ?? 1, Math.min(cap, GRADE_PROFILES[grade].maxItems));
+  return Math.max(l.capacity[bind]?.[0] ?? 1, Math.min(cap, profileOf(grade).maxItems));
 }
 const boxesOverlap = (a: Box, b: Box) =>
   a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
@@ -152,6 +152,7 @@ function slotFits(slot: Slot, l: LayoutSpec, grade: GradeBand): string | null {
     // five layouts unchecked.
     case "image":
     case "icon":
+    case "picture":
       return null; // no text of their own; both scale to their box
     case "formula":
       return null; // KaTeX scales the expression down to fit
@@ -165,7 +166,7 @@ function slotFits(slot: Slot, l: LayoutSpec, grade: GradeBand): string | null {
  * nothing set below the grade's minimum font.
  */
 function diagramFits(slot: DiagramSlot, l: LayoutSpec, grade: GradeBand, box: Box): string | null {
-  const cap = Math.floor(GRADE_PROFILES[grade].maxWordsPerItem * CHARS_PER_WORD);
+  const cap = Math.floor(profileOf(grade).maxWordsPerItem * CHARS_PER_WORD);
   const wc = {
     // Exactly what budgets.ts hands the mock model, so the verifier and the sweep agree.
     chars: (p: string) => slot.budget?.[p] !== undefined
@@ -188,7 +189,7 @@ function diagramFits(slot: DiagramSlot, l: LayoutSpec, grade: GradeBand, box: Bo
       : s;
     if (!within(b)) return `${slot.diagram} diagram ${s.s} leaves its box`;
   }
-  const min = GRADE_PROFILES[grade].minFont;
+  const min = profileOf(grade).minFont;
   for (const lb of gm.labels) {
     if (!within(lb)) return `${slot.diagram} diagram label "${lb.path}" leaves its box`;
     if (lb.size < min) return `${slot.diagram} diagram label "${lb.path}" is ${lb.size}px, below the ${min}px minimum`;

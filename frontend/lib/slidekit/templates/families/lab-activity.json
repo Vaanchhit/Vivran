@@ -1,0 +1,95 @@
+{
+  "id": "lab-activity",
+  "name": "Hands-on Activity",
+  "version": 1,
+  "description": "A lesson built around doing: vocabulary, steps, an activity with timing and grouping, discussion, and a link to real life. For labs, projects and group work.",
+  "audience": "Practical sessions, experiments and group activities.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "activity"
+      },
+      "weight": 5,
+      "why": "your words describe an activity or experiment"
+    },
+    {
+      "when": {
+        "fact": "shapes",
+        "has": "skill"
+      },
+      "weight": 1.5,
+      "why": "the topic is a skill students perform"
+    },
+    {
+      "when": {
+        "fact": "goal",
+        "is": "practice"
+      },
+      "weight": 1,
+      "why": "practice-oriented"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "What students will do and what they will be able to explain after {topic}.",
+      "keep": 6
+    },
+    {
+      "id": "vocab",
+      "type": "vocabulary",
+      "intent": "teach",
+      "guidance": "Words students need before starting {topic}, each with a plain meaning.",
+      "keep": 4,
+      "fallback": "explanation"
+    },
+    {
+      "id": "method",
+      "type": "process",
+      "intent": "teach",
+      "guidance": "The steps students follow for {topic}, in order, with the safety or setup note where it matters.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "activity",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "The task: clear instructions, minutes, and whether students work alone, in pairs or groups.",
+      "keep": 9
+    },
+    {
+      "id": "observe",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Questions that make students explain what they saw and why.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "real",
+      "type": "real_world",
+      "intent": "apply",
+      "guidance": "Where {topic} shows up outside the classroom.",
+      "keep": 5,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "What was done, what was found, and what to remember.",
+      "keep": 7
+    }
+  ]
+}

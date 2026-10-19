@@ -1,0 +1,19 @@
+{
+  "_about": "Allowlist of meme formats a deck may use. Edit freely: ids are memegen.link template ids (https://api.memegen.link/templates), lines is how many captions the format takes, use tells the model when the format fits. Cartoon and animal formats only, on purpose: no real people's faces on a teacher's slide.",
+  "formats": [
+    { "id": "pooh",         "lines": 2, "use": "a plain way vs a smarter way (top: weak habit, bottom: better habit)" },
+    { "id": "spiderman",    "lines": 2, "use": "two things that are really the same, or two sides pointing at each other" },
+    { "id": "fine",         "lines": 2, "use": "calmly ignoring a problem that is clearly growing (top: setup, bottom: the calm line)" },
+    { "id": "buzz",         "lines": 2, "use": "an idea that shows up everywhere (top: X, bottom: X everywhere)" },
+    { "id": "philosoraptor","lines": 2, "use": "a thought-provoking question that makes students stop and think" },
+    { "id": "spongebob",    "lines": 2, "use": "mocking a common wrong claim (top: the claim, bottom: same claim in mocking case)" },
+    { "id": "gru",          "lines": 4, "use": "a plan whose last step reveals a flaw (steps 1-2 sensible, 3-4 the same surprising result)" },
+    { "id": "reveal",       "lines": 4, "use": "unmasking: what looks like X is really Y (villain, prompt, unmasked, reaction)" },
+    { "id": "pigeon",       "lines": 3, "use": "misidentifying a concept (person, the thing, 'Is this X?')" },
+    { "id": "exit",         "lines": 3, "use": "swerving to the tempting option (option A, option B, the one chosen)" },
+    { "id": "ds",           "lines": 3, "use": "a hard choice between two options (option 1, option 2, the struggling person)" },
+    { "id": "xy",           "lines": 2, "use": "an over-enthusiastic rule (top: X, bottom: all the Y)" },
+    { "id": "doge",         "lines": 2, "use": "an excited, simple reaction to a satisfying idea" },
+    { "id": "grumpycat",    "lines": 2, "use": "an unimpressed reaction to a common mistake" }
+  ]
+}

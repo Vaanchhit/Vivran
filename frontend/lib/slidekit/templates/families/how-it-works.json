@@ -1,0 +1,129 @@
+{
+  "id": "how-it-works",
+  "name": "How It Works",
+  "version": 1,
+  "description": "A process or cycle, step by step: the big picture, the steps, what causes what, a misconception, and a check. For biology, chemistry, physics and engineering mechanisms.",
+  "audience": "Explaining a process, a cycle or a mechanism.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "process"
+      },
+      "weight": 3,
+      "why": "your words describe a process"
+    },
+    {
+      "when": {
+        "fact": "topShape",
+        "in": [
+          "process"
+        ]
+      },
+      "weight": 3,
+      "why": "the topic is a sequence of steps"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "science"
+        ]
+      },
+      "weight": 1.5,
+      "why": "science topics are usually processes"
+    },
+    {
+      "when": {
+        "fact": "shapes",
+        "hasAny": [
+          "process",
+          "causal"
+        ]
+      },
+      "weight": 1.5,
+      "why": "the topic has cause and effect"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to describe {topic} and say what happens at each stage.",
+      "keep": 5
+    },
+    {
+      "id": "bigpicture",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "The big picture of {topic}: what goes in, what comes out, why it matters. Three short points.",
+      "keep": 7
+    },
+    {
+      "id": "steps",
+      "type": "process",
+      "intent": "teach",
+      "guidance": "The steps of {topic} in order, each with a short label and one line of detail. Set isCycle only if it really loops.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "cause",
+      "type": "cause_effect",
+      "intent": "teach",
+      "guidance": "What causes {topic} to start or change, and what happens as a result.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "myth",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "A misconception {grade} students commonly hold about {topic}, and the correct idea.",
+      "keep": 5,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "misconception"
+        }
+      ]
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "One question about the order or the cause in {topic}.",
+      "keep": 7
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The process in one line, then the key takeaways.",
+      "keep": 8
+    }
+  ]
+}

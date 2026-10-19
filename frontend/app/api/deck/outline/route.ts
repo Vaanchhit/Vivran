@@ -5,7 +5,8 @@
 // deterministic draft. If it fails or returns something unusable, the teacher
 // still gets the deterministic draft to edit, so this step never blocks them.
 import { NextResponse } from "next/server";
-import { prepareLesson, type TeacherInput } from "@/lib/slidekit";
+import { type TeacherInput } from "@/lib/slidekit";
+import { prepareTemplated } from "@/lib/slidekit/templates";
 import { TYPE_LABELS, buildOutlinePrompt, draftOutline, parseOutline } from "@/lib/slidekit/outline";
 import { MAX_SLIDES } from "@/lib/slidekit/intent";
 import { buildSourceMaterial, toSubjectId } from "@/lib/slidekit-bridge";
@@ -14,18 +15,18 @@ import { callModel, fetchGrounding } from "@/lib/deck-server";
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  let body: TeacherInput & { materialId?: string };
+  let body: TeacherInput & { materialId?: string; template?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Expected a JSON body." }, { status: 400 });
   }
-  const { materialId, ...rest } = body;
+  const { materialId, template: forcedTemplate, ...rest } = body;
   const input: TeacherInput = { ...rest, subject: rest.subject ? (toSubjectId(rest.subject) ?? rest.subject) : undefined };
 
   let prep;
   try {
-    prep = prepareLesson(input);
+    prep = prepareTemplated(input, { template: forcedTemplate });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Could not read that request." }, { status: 400 });
   }
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
 
   const chunks = await fetchGrounding(req, prep.context, materialId);
   const { sourceText } = buildSourceMaterial(chunks);
-  const grounded = prepareLesson({ ...input, sourceText: sourceText || undefined });
+  const grounded = prepareTemplated({ ...input, sourceText: sourceText || undefined }, { template: forcedTemplate });
   if (grounded.status !== "ready") return NextResponse.json({ status: "needs_input", questions: grounded.questions });
   const ctx = grounded.context;
   const allowed = ctx.allowedBlocks;
@@ -52,6 +53,7 @@ export async function POST(req: Request) {
     // "draft" tells the UI the planning model was unavailable, so this is slidekit's own plan.
     plannedBy: proposed && res.ok ? res.meta.provider : "draft",
     maxSlides: MAX_SLIDES,
+    template: grounded.template,
     types: allowed.map(t => ({ type: t, label: TYPE_LABELS[t] })),
     context: { topic: ctx.topic, gradeLabel: ctx.gradeLabel, grounded: chunks.length > 0 },
   });

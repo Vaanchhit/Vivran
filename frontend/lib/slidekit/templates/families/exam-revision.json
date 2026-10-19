@@ -1,0 +1,98 @@
+{
+  "id": "exam-revision",
+  "name": "Exam Revision Sprint",
+  "version": 1,
+  "description": "A dense, fast revision deck: the map of the whole topic, key terms, the rules or formula, the traps examiners set, and two checks. Higher density for older students.",
+  "audience": "Last-week revision for board and university exams.",
+  "signals": [
+    {
+      "when": {
+        "fact": "goal",
+        "is": "revise"
+      },
+      "weight": 4,
+      "why": "you want to revise"
+    },
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "revision"
+      },
+      "weight": 3,
+      "why": "your words mention revision or exams"
+    },
+    {
+      "when": {
+        "fact": "grade",
+        "in": [
+          "secondary",
+          "college"
+        ]
+      },
+      "weight": 1,
+      "why": "exam years benefit from denser slides"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "map",
+      "type": "concept_map",
+      "intent": "teach",
+      "guidance": "One overview of {topic}: the central idea and how the main parts connect to it.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "terms",
+      "type": "vocabulary",
+      "intent": "teach",
+      "guidance": "The terms examiners expect for {topic}, each with a one-line meaning.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "rules",
+      "type": "formula",
+      "intent": "teach",
+      "guidance": "The main formula or rule to memorise for {topic}, every symbol defined. Use the key rule if there is no formula.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "traps",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "A mistake students lose marks on in {topic} and the correct statement.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "q1",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "An exam-style question on {topic}: recall plus one step of application.",
+      "keep": 8
+    },
+    {
+      "id": "q2",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "A harder exam-style question on {topic} that mixes two ideas.",
+      "keep": 6
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The five things to remember on exam day for {topic}.",
+      "keep": 9
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "id": "story-of-an-era",
+  "name": "Story of an Era",
+  "version": 1,
+  "description": "A history or social-science narrative: a hook, a timeline, causes and consequences, a point to debate, and a check. Dates only from the source or well-established.",
+  "audience": "Teaching events, movements and eras in order.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "story"
+      },
+      "weight": 3,
+      "why": "your words are about events over time"
+    },
+    {
+      "when": {
+        "fact": "topShape",
+        "in": [
+          "chronological"
+        ]
+      },
+      "weight": 3,
+      "why": "the topic unfolds over time"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "humanities"
+        ]
+      },
+      "weight": 2,
+      "why": "humanities lessons suit a narrative"
+    },
+    {
+      "when": {
+        "fact": "shapes",
+        "has": "causal"
+      },
+      "weight": 1,
+      "why": "the topic has causes and effects"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "hook",
+      "type": "key_fact",
+      "intent": "hook",
+      "guidance": "A striking fact, date or question that opens {topic}.",
+      "keep": 4,
+      "fallback": "discussion",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "key_fact"
+        }
+      ]
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "Students will be able to explain what happened in {topic} and why.",
+      "keep": 5
+    },
+    {
+      "id": "timeline",
+      "type": "timeline",
+      "intent": "teach",
+      "guidance": "The key events of {topic} in order, with dates. Only dates in the source or firmly established.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "causes",
+      "type": "cause_effect",
+      "intent": "teach",
+      "guidance": "The causes that led to the central event of {topic}, and its effects.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "view",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "Why people at the time acted as they did, in a few clear points.",
+      "keep": 5
+    },
+    {
+      "id": "discuss",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "One or two open questions that ask students to judge or connect, not recall.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "Takeaways: what happened, why, and what changed.",
+      "keep": 8
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": "code-lab",
+  "name": "Code Walkthrough",
+  "version": 1,
+  "description": "Teach a programming idea: define it, show short runnable code, annotate it, show the decision flow, and check understanding. Code is capped at a size a class can read.",
+  "audience": "Programming and computer-science lessons.",
+  "requires": {
+    "fact": "family",
+    "in": [
+      "computing",
+      "general",
+      "quant"
+    ]
+  },
+  "signals": [
+    {
+      "when": {
+        "fact": "isCode",
+        "truthy": true
+      },
+      "weight": 4,
+      "why": "this is a computing subject"
+    },
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "code"
+      },
+      "weight": 3,
+      "why": "your words mention code or programming"
+    },
+    {
+      "when": {
+        "fact": "topShape",
+        "in": [
+          "computational",
+          "skill"
+        ]
+      },
+      "weight": 1.5,
+      "why": "the topic is something students run"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "What students will be able to write or trace after {topic}.",
+      "keep": 5
+    },
+    {
+      "id": "define",
+      "type": "definition",
+      "intent": "teach",
+      "guidance": "Define {topic} in one plain sentence with a non-code analogy.",
+      "keep": 7,
+      "fallback": "explanation"
+    },
+    {
+      "id": "code1",
+      "type": "code_example",
+      "intent": "teach",
+      "guidance": "The smallest runnable example of {topic}, at most 14 lines, with a one-line caption saying what it prints.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "code2",
+      "type": "code_example",
+      "intent": "teach",
+      "guidance": "A second example that adds one new idea to the first. Annotate the new line.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "flow",
+      "type": "flowchart",
+      "intent": "teach",
+      "guidance": "The decision {topic} makes, as a flowchart: steps, one yes/no question, and what each answer does.",
+      "keep": 5,
+      "fallback": "process"
+    },
+    {
+      "id": "check",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Ask what a short snippet of {topic} outputs. One unambiguous answer.",
+      "keep": 8
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "Rules of thumb for {topic} students can reuse.",
+      "keep": 7
+    }
+  ]
+}

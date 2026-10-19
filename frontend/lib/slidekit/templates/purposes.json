@@ -1,0 +1,20 @@
+{
+  "_about": "Vocabulary the template selector reads from the teacher's own words. Add a keyword to teach the system a new phrase; no code change. Matching is by whole word (or word start for words over 4 letters).",
+  "purposes": {
+    "revision":    { "keywords": ["revise", "revision", "recap", "last minute", "exam prep", "before the exam", "board exam", "quick review", "cheat sheet", "summary", "summarise", "summarize", "refresh"] },
+    "practice":    { "keywords": ["practice", "practise", "solve", "numericals", "problems", "exercise", "worksheet", "drill", "sums", "questions to solve", "problem solving"] },
+    "activity":    { "keywords": ["activity", "experiment", "lab", "hands on", "hands-on", "group work", "project", "demo", "demonstration", "role play", "build", "craft"] },
+    "assessment":  { "keywords": ["quiz", "test", "assessment", "unit test", "mcq", "quiz round", "kahoot", "game", "competition", "buzzer"] },
+    "comparison":  { "keywords": ["compare", "comparison", "difference between", "differences", "versus", "vs", "contrast", "similarities"] },
+    "story":       { "keywords": ["history", "timeline", "revolution", "war", "empire", "movement", "era", "chronology", "events leading", "causes of", "freedom struggle"] },
+    "process":     { "keywords": ["how does", "how do", "cycle", "process", "stages", "steps of", "mechanism", "working of", "lifecycle", "life cycle", "photosynthesis", "digestion"] },
+    "code":        { "keywords": ["code", "coding", "program", "programming", "python", "java", "javascript", "algorithm", "function", "loop", "debug", "sql", "c++"] },
+    "literature":  { "keywords": ["poem", "poetry", "novel", "story analysis", "character", "theme of", "grammar", "essay", "comprehension", "literary", "vocabulary", "tenses", "writing"] },
+    "introduction":{ "keywords": ["introduce", "introduction", "intro", "basics", "what is", "what are", "overview", "fundamentals", "beginner"] }
+  },
+  "tones": {
+    "playful": { "keywords": ["fun", "funny", "engaging", "interactive", "playful", "memes", "meme", "humour", "humor", "light", "game", "icebreaker", "ice breaker", "exciting", "cool"] },
+    "formal":  { "keywords": ["formal", "seminar", "conference", "viva", "defence", "thesis", "research", "professional", "serious", "official", "board meeting", "academic paper"] }
+  },
+  "memeWords": ["meme", "memes", "funny", "humour", "humor", "joke", "jokes", "make it fun", "light moment"]
+}

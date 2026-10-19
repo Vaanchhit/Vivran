@@ -6,7 +6,7 @@
 // ─────────────────────────────────────────────────────────────
 import { Blocks, type BlockType } from "./blocks";
 import { fallbackFor, type LayoutSpec } from "./layouts";
-import { GRADE_PROFILES, type GradeBand } from "./tokens";
+import { profileOf, type GradeBand } from "./tokens";
 
 const CHARS_PER_WORD = 6.5;
 const BASE_KEYS = new Set(["intent", "source", "imageQuery", "icon", "notes", "sourceIds", "type"]);
@@ -28,7 +28,7 @@ const check = (s: any, name: string) => s?._zod?.def?.checks?.find((c: any) => c
 
 /** Limits a layout is verified to hold at a grade. Defaults to the type's fallback layout. */
 export function budgetFor(type: BlockType, g: GradeBand, l: LayoutSpec = fallbackFor(type)): Budget {
-  const gp = GRADE_PROFILES[g];
+  const gp = profileOf(g);
   const cap = Math.floor(gp.maxWordsPerItem * CHARS_PER_WORD);
   const chars: Record<string, number> = {};
   const items: Record<string, [number, number]> = {};

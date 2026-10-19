@@ -1,0 +1,92 @@
+{
+  "id": "quiz-round",
+  "name": "Quiz Round",
+  "version": 1,
+  "description": "A review game: instructions, then rapid questions that mix recall and application, then the answers recap. Low-density slides for projecting to a whole class.",
+  "audience": "Unit tests, review games, end-of-chapter checks.",
+  "signals": [
+    {
+      "when": {
+        "fact": "goal",
+        "is": "assess"
+      },
+      "weight": 5,
+      "why": "you want to assess"
+    },
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "assessment"
+      },
+      "weight": 4,
+      "why": "your words are about a quiz or test"
+    },
+    {
+      "when": {
+        "fact": "tone",
+        "is": "playful"
+      },
+      "weight": 0.5,
+      "why": "a playful tone suits a quiz round"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Title for a quiz round on {topic}, with a subtitle that sets the stakes (e.g. 'Teams of 4 · 1 point each').",
+      "keep": 9
+    },
+    {
+      "id": "how",
+      "type": "activity",
+      "intent": "orient",
+      "guidance": "How the quiz runs: team size, time per question, scoring. Short numbered instructions.",
+      "keep": 5,
+      "fallback": "explanation"
+    },
+    {
+      "id": "q1",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Question 1 of 5 on {topic}: a warm-up, direct recall.",
+      "keep": 9
+    },
+    {
+      "id": "q2",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Question 2 of 5: recall with a twist.",
+      "keep": 8
+    },
+    {
+      "id": "q3",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Question 3 of 5: application to a small situation.",
+      "keep": 8
+    },
+    {
+      "id": "q4",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Question 4 of 5: harder, applying two ideas.",
+      "keep": 7
+    },
+    {
+      "id": "q5",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "Question 5 of 5: the tie-breaker, the hardest.",
+      "keep": 6
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The ideas behind the questions, so students know what to revise.",
+      "keep": 7
+    }
+  ]
+}

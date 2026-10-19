@@ -21,7 +21,7 @@
 import { charBudget, sizesFor, wrapToLines } from "./fit";
 import type { Tone } from "./layouts";
 import type { Overflow } from "./matcher";
-import { GRADE_PROFILES, LABEL_H, LINE_HEIGHT, type Box, type GradeBand, type TypeRole } from "./tokens";
+import { profileOf, LABEL_H, LINE_HEIGHT, type Box, type GradeBand, type TypeRole } from "./tokens";
 
 export type DiagramKind = "tree" | "venn" | "fishbone" | "chain" | "mindmap" | "flow";
 
@@ -123,7 +123,7 @@ class Sheet {
 
   /** A fixed caption ("Cause", "Both"). Short by construction, so it never overflows. */
   caption(text: string, x: number, y: number, w: number, align: "start" | "center" = "center") {
-    const size = Math.max(22, GRADE_PROFILES[this.g].minFont);
+    const size = Math.max(22, profileOf(this.g).minFont);
     this.labels.push({ x: r2(x), y: r2(y), w: r2(w), h: Math.ceil(size * LINE_HEIGHT), lines: [text], size, role: "label", align, tone: "muted", path: "label" });
   }
 

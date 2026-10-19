@@ -1,0 +1,118 @@
+{
+  "id": "reading-room",
+  "name": "Language & Literature Room",
+  "version": 1,
+  "description": "Text-led lessons: key vocabulary, how the text works, an idea to examine, discussion prompts, and a writing or speaking activity. For English, languages, arts and philosophy.",
+  "audience": "Poems, passages, grammar points and writing skills.",
+  "signals": [
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "literature"
+      },
+      "weight": 4,
+      "why": "your words point to language or literature"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "language",
+          "arts"
+        ]
+      },
+      "weight": 3,
+      "why": "this subject is language or arts based"
+    },
+    {
+      "when": {
+        "fact": "shapes",
+        "has": "literary"
+      },
+      "weight": 2,
+      "why": "the topic is literary"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "What students will be able to notice, explain or write after {topic}.",
+      "keep": 6
+    },
+    {
+      "id": "vocab",
+      "type": "vocabulary",
+      "intent": "teach",
+      "guidance": "Words or terms for {topic} with a plain meaning and, where useful, a short example in context.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "how",
+      "type": "explanation",
+      "intent": "teach",
+      "guidance": "How the text or technique in {topic} works: three or four clear points tied to evidence in the text.",
+      "keep": 8
+    },
+    {
+      "id": "fact",
+      "type": "key_fact",
+      "intent": "teach",
+      "guidance": "One detail or idea in {topic} worth noticing, with why it matters.",
+      "keep": 4,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "key_fact"
+        }
+      ]
+    },
+    {
+      "id": "discuss",
+      "type": "discussion",
+      "intent": "apply",
+      "guidance": "Open questions about {topic} that have more than one defensible answer.",
+      "keep": 8,
+      "fallback": "explanation"
+    },
+    {
+      "id": "activity",
+      "type": "activity",
+      "intent": "apply",
+      "guidance": "A short writing or speaking task on {topic}, with minutes and grouping.",
+      "keep": 6,
+      "fallback": "discussion"
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "Key ideas and the one skill students practised.",
+      "keep": 7
+    }
+  ]
+}

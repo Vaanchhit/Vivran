@@ -45,6 +45,8 @@ export interface TableSlot extends SlotBase {
   attr: Field; cell: Field;
 }
 export interface MediaSlot extends SlotBase { kind: "image" | "icon"; bind: string }
+/** A meme image drawn from a block's template + lines. Always the same-origin signed proxy; see meme.ts. */
+export interface PictureSlot extends SlotBase { kind: "picture"; bind: "template" }
 export interface FormulaSlot extends SlotBase { kind: "formula"; bind: string }
 export interface CodeSlot extends SlotBase { kind: "code"; bind: string; maxLines: number }
 export interface DiagramSlot extends SlotBase {
@@ -60,7 +62,7 @@ export interface DiagramSlot extends SlotBase {
 }
 export interface MetaSlot extends SlotBase { kind: "meta"; binds: string[] }
 
-export type Slot = TextSlot | RepeatSlot | TableSlot | MediaSlot | FormulaSlot | CodeSlot | DiagramSlot | MetaSlot;
+export type Slot = TextSlot | RepeatSlot | TableSlot | MediaSlot | PictureSlot | FormulaSlot | CodeSlot | DiagramSlot | MetaSlot;
 
 export interface LayoutSpec {
   id: string;
@@ -96,6 +98,7 @@ const rep = (id: string, bind: string, area: Area, arrange: Arrange, fields: Fie
   extra: Partial<RepeatSlot> = {}): RepeatSlot => ({ kind: "repeat", id, bind, area, arrange, fields, ...extra });
 
 const img = (area: Area, extra: Partial<MediaSlot> = {}): MediaSlot => ({ kind: "image", id: "image", bind: "imageQuery", area, ...extra });
+const picture = (area: Area, extra: Partial<PictureSlot> = {}): PictureSlot => ({ kind: "picture", id: "picture", bind: "template", area, ...extra });
 const icon = (area: Area): MediaSlot => ({ kind: "icon", id: "icon", bind: "icon", area, optional: true });
 
 /** Standard slide heading across the top row. */
@@ -403,6 +406,24 @@ export const LAYOUTS: LayoutSpec[] = [
       text("problem", "problem", "body", A(0, 5, 1, 7), 260, 8, { card: true, tone: "muted", label: "Problem" }),
       rep("steps", "steps", A(6, 6, 1, 5), "column", [f(".", "body", 140, 3)], { marker: "number" }),
       text("answer", "answer", "heading", A(6, 6, 6, 2), 100, 2, { card: true, tone: "positive", label: "Answer" }),
+    ],
+  },
+
+  // MEME ────────────────────────────────────────────────────
+  {
+    id: "meme_side", accepts: "meme", family: "media", density: "low", gradeFit: ALL, capacity: { lines: [1, 4] }, fallback: true,
+    description: "Meme on the left, the point it makes on the right.",
+    slots: [
+      picture(A(0, 8, 0, 8)),
+      text("takeaway", "takeaway", "heading", A(8, 4, 2, 4), 140, 6, { card: true, tone: "accent", label: "The idea" }),
+    ],
+  },
+  {
+    id: "meme_top", accepts: "meme", family: "media", density: "low", gradeFit: ALL, capacity: { lines: [1, 4] },
+    description: "Meme centred, the point it makes underneath.",
+    slots: [
+      picture(A(2, 8, 0, 6)),
+      text("takeaway", "takeaway", "heading", A(1, 10, 6, 2), 140, 3, { align: "center" }),
     ],
   },
 

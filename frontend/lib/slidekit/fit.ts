@@ -3,12 +3,12 @@
 // using per-role average glyph widths. The render audit checks
 // these estimates against a real browser.
 // ─────────────────────────────────────────────────────────────
-import { BOLD_ROLES, GLYPH, GRADE_PROFILES, LINE_HEIGHT, ROLE_SIZES, WRAP_SLACK, WRAP_WORD, type GradeBand, type TypeRole } from "./tokens";
+import { BOLD_ROLES, GLYPH, profileOf, LINE_HEIGHT, ROLE_SIZES, WRAP_SLACK, WRAP_WORD, type GradeBand, type TypeRole } from "./tokens";
 import { textWidth } from "./metrics";
 
 /** Sizes a role may use at this grade, largest first. The grade minimum overrides the role ladder. */
 export function sizesFor(role: TypeRole, grade: GradeBand): number[] {
-  const min = GRADE_PROFILES[grade].minFont;
+  const min = profileOf(grade).minFont;
   const ok = ROLE_SIZES[role].filter(s => s >= min);
   return ok.length ? ok : [min];
 }

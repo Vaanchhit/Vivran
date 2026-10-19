@@ -31,7 +31,7 @@ export const WRAP_WORD = 5;
 export const LABEL_H = 36;
 
 /** The only font sizes that exist. */
-export const TYPE_LADDER = [96, 72, 56, 44, 36, 30, 26, 22, 18] as const;
+export const TYPE_LADDER = [96, 72, 60, 56, 52, 44, 40, 36, 32, 30, 26, 22, 18] as const;
 export type FontSize = (typeof TYPE_LADDER)[number];
 
 export type TypeRole = "display" | "title" | "heading" | "body" | "caption" | "label" | "mono";
@@ -39,10 +39,10 @@ export type TypeRole = "display" | "title" | "heading" | "body" | "caption" | "l
 /** Allowed sizes per role, largest first. The fitter steps down this list. */
 export const ROLE_SIZES: Record<TypeRole, FontSize[]> = {
   display: [96, 72, 56],
-  title: [56, 44, 36],
-  heading: [36, 30, 26, 22],
-  body: [30, 26, 22, 18],
-  caption: [22, 18],
+  title: [60, 52, 44, 36],
+  heading: [44, 40, 36, 30, 26, 22],
+  body: [40, 36, 32, 30, 26, 22, 18],
+  caption: [26, 22, 18],
   label: [26, 22, 18],
   mono: [26, 22, 18],
 };
@@ -67,6 +67,56 @@ export const GRADE_PROFILES: Record<GradeBand, GradeProfile> = {
 };
 
 export const DENSITY_RANK: Record<Density, number> = { low: 0, medium: 1, high: 2 };
+
+// ── Design knobs ─────────────────────────────────────────────
+// What the design rules (templates/design.ts) may turn. They adjust the grade
+// profile for ONE deck: bigger type for a back-row classroom, a lower density
+// for a younger audience, a preference for card layouts in an interactive
+// session. Layout geometry, the safe area and the fit guarantees are not knobs:
+// nothing here can make text overflow, because the matcher still verifies every
+// slide against whatever profile is in force.
+export interface DesignKnobs {
+  maxDensity?: Density;
+  /** Floor for rendered text. The matcher always picks the largest size that fits, so this is the
+   *  real lever for "bigger type": a higher floor means fewer words per slide, never overflow. */
+  minFont?: FontSize;
+  maxItems?: number;
+  image?: GradeProfile["image"];
+  /** Layout families that earn a scoring bonus (see matcher.score). */
+  preferFamilies?: string[];
+}
+
+let knobs: DesignKnobs = {};
+
+/** The grade profile with the current deck's design knobs applied. */
+export function profileOf(g: GradeBand): GradeProfile {
+  const base = GRADE_PROFILES[g];
+  if (!Object.keys(knobs).length) return base;
+  return {
+    ...base,
+    maxDensity: knobs.maxDensity ?? base.maxDensity,
+    minFont: knobs.minFont ?? base.minFont,
+    maxItems: knobs.maxItems ?? base.maxItems,
+    image: knobs.image ?? base.image,
+  };
+}
+
+export const preferredFamilies = (): readonly string[] => knobs.preferFamilies ?? [];
+
+/**
+ * Runs ``fn`` with the knobs in force and restores the previous ones after.
+ * Synchronous on purpose: layout matching is, so a request can never see another
+ * request's knobs.
+ */
+export function withKnobs<T>(next: DesignKnobs, fn: () => T): T {
+  const previous = knobs;
+  knobs = { ...next };
+  try {
+    return fn();
+  } finally {
+    knobs = previous;
+  }
+}
 
 // ── Geometry ─────────────────────────────────────────────────
 

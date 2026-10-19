@@ -11,12 +11,13 @@
 //             plus a flagged, deterministic trim so it always renders
 // ─────────────────────────────────────────────────────────────
 import type { Block, BlockType } from "./blocks";
+import { memeAlt, memeLines } from "./meme-core";
 import { layoutDiagram, type DiagramGeom } from "./diagram";
 import { fitAtStep, fitText, charBudget, sizesFor, trimToBudget } from "./fit";
 import { LAYOUTS, fallbackFor, type Field, type LayoutSpec, type Slot, type Tone } from "./layouts";
 import {
-  DENSITY_RANK, GRADE_PROFILES, ITEM_GAP, ITEM_PAD, LABEL_H, LINE_HEIGHT,
-  areaToBox, itemBoxes, type Box, type GradeBand, type TypeRole,
+  DENSITY_RANK, profileOf, ITEM_GAP, ITEM_PAD, LABEL_H, LINE_HEIGHT,
+  areaToBox, itemBoxes, preferredFamilies, type Box, type GradeBand, type TypeRole,
 } from "./tokens";
 
 const MARKER_W = 56, MARKER_H = 48, MARKER_D = 40, FIELD_GAP = 8, TABLE_PAD = 16, HEADER_H = 72, CELL_GAP = 8;
@@ -28,6 +29,7 @@ export type El =
   | { t: "marker"; x: number; y: number; d: number; label: string }
   | { t: "connector"; x1: number; y1: number; x2: number; y2: number; arrow: boolean }
   | { t: "image"; x: number; y: number; w: number; h: number; query: string; bg: boolean }
+  | { t: "picture"; x: number; y: number; w: number; h: number; template: string; lines: string[]; alt: string; src?: string }
   | { t: "icon"; x: number; y: number; w: number; h: number; name: string }
   | { t: "formula"; x: number; y: number; w: number; h: number; latex: string }
   | { t: "code"; x: number; y: number; w: number; h: number; code: string; size: number; language: string }
@@ -62,10 +64,10 @@ interface Attempt {
 const get = (b: any, k: string) => b?.[k];
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : typeof v === "number" ? String(v) : "");
 const present = (v: unknown) => (Array.isArray(v) ? v.length > 0 : v !== undefined && v !== null && v !== "" && v !== false);
-const labelSize = (g: GradeBand) => Math.max(22, GRADE_PROFILES[g].minFont);
+const labelSize = (g: GradeBand) => Math.max(22, profileOf(g).minFont);
 const effMax = (l: LayoutSpec, key: string, g: GradeBand) => {
   const [lo, hi] = l.capacity[key];
-  return Math.max(lo, Math.min(hi, GRADE_PROFILES[g].maxItems));
+  return Math.max(lo, Math.min(hi, profileOf(g).maxItems));
 };
 
 function fieldValues(item: unknown, fd: Field): string[] {
@@ -210,7 +212,7 @@ export function tryLayout(block: Block, l: LayoutSpec, g: GradeBand, startAt = 0
       case "table": {
         const subjects: string[] = b[s.header];
         const rows: { attribute: string; values: string[] }[] = b[s.bind];
-        const steps = 4;
+        const steps = Math.max(2, ...(["label", s.attr.role, s.cell.role] as TypeRole[]).map(r => sizesFor(r, g).length)); // down to the grade floor
         let done = false;
         let blame: { path: string; text: string; role: TypeRole; w: number; h: number; maxLines: number } | null = null;
         for (let step = 0; step < steps && !done; step++) {
@@ -264,6 +266,12 @@ export function tryLayout(block: Block, l: LayoutSpec, g: GradeBand, startAt = 0
         if (!q) { if (!s.optional) A.missing.push("imageQuery"); break; }
         A.els.push({ t: "image", ...box, query: q, bg: s.layer === "bg" });
         if (s.layer === "bg") A.els.push({ t: "box", ...box, style: "card", tone: "inverse" }); // scrim
+        break;
+      }
+      case "picture": {
+        const lines = memeLines(b.template, b.lines);
+        if (!lines) { if (!s.optional) A.missing.push("template"); break; }
+        A.els.push({ t: "picture", ...box, template: String(b.template), lines, alt: memeAlt(String(b.template), lines) });
         break;
       }
       case "icon": {
@@ -343,7 +351,7 @@ function visibleLatexLength(latex: string) {
 
 // ── scoring ─────────────────────────────────────────────────
 export function score(l: LayoutSpec, a: Attempt, block: Block, g: GradeBand, hist: { id: string; family: string }[]): { total: number; why: string } {
-  const gp = GRADE_PROFILES[g];
+  const gp = profileOf(g);
   const avg = (xs: number[]) => (xs.length ? xs.reduce((s, x) => s + x, 0) / xs.length : 1);
   const readable = 1 - 0.6 * avg(a.ranks);                           // larger type is better
   const fill = avg(a.fills.map(f => (f < 0.15 ? 0.55 : f < 0.3 ? 0.8 : f > 0.97 ? 0.85 : 1))); // neither empty nor cramped
@@ -355,8 +363,11 @@ export function score(l: LayoutSpec, a: Attempt, block: Block, g: GradeBand, his
   const p1 = hist[hist.length - 1], p2 = hist[hist.length - 2];
   const reuse = hist.filter(h => h.id === l.id).length;               // freshness across the whole deck
   const variety = -(p1?.id === l.id ? 0.5 : 0) - (p1?.family === l.family ? 0.2 : 0) - (p2?.family === l.family ? 0.1 : 0) - 0.04 * reuse;
-  const total = 0.35 * readable + 0.25 * fill + 0.2 * density + visual + specific + variety;
-  const why = `readable ${readable.toFixed(2)} · fill ${fill.toFixed(2)} · density ${density} · visual ${visual.toFixed(2)} · specific ${specific.toFixed(2)} · variety ${variety.toFixed(2)}`;
+  // The deck's design may prefer a family (card layouts in an interactive
+  // session, diagrams in a process-heavy lesson): a nudge, never a veto.
+  const liked = preferredFamilies().includes(l.family) ? 0.12 : 0;
+  const total = 0.35 * readable + 0.25 * fill + 0.2 * density + visual + specific + variety + liked;
+  const why = `readable ${readable.toFixed(2)} · fill ${fill.toFixed(2)} · density ${density} · visual ${visual.toFixed(2)} · specific ${specific.toFixed(2)} · variety ${variety.toFixed(2)}${liked ? " · preferred family" : ""}`;
   return { total: +total.toFixed(4), why };
 }
 
@@ -413,7 +424,7 @@ const notesOf = (block: Block, l: LayoutSpec) => {
 };
 
 /** Paint order: background photo, connectors, boxes, then content. Renderers draw elements in this order. */
-const LAYER: Record<El["t"], number> = { image: 0, connector: 1, box: 2, diagram: 3, formula: 3, code: 3, icon: 3, marker: 4, text: 5 };
+const LAYER: Record<El["t"], number> = { image: 0, picture: 0, connector: 1, box: 2, diagram: 3, formula: 3, code: 3, icon: 3, marker: 4, text: 5 };
 const ordered = (els: El[]) => els.map((e, i) => ({ e, i }))
   .sort((a, b) => (LAYER[a.e.t] - (a.e.t === "box" && a.e.tone === "inverse" ? 1.5 : 0)) - (LAYER[b.e.t] - (b.e.t === "box" && b.e.tone === "inverse" ? 1.5 : 0)) || a.i - b.i)
   .map(x => x.e);

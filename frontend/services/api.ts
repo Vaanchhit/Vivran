@@ -594,6 +594,10 @@ export interface DeckReady {
   context: { topic: string; subject: string; grade: string; gradeLabel: string; goal: string; language: string; warnings: string[] };
   grounding: { retrieved: number; cited: number; sources: DeckSource[]; inventedCitations: string[] };
   quality: { slides: number; repaired: string[]; unrecoverable: number; copyFit: string[]; trimmed: unknown[]; dropped: unknown[] };
+  /** Which template shaped the deck, and why (lib/slidekit/templates). */
+  template?: { id: string; name: string; reasons: string[]; how: "teacher" | "scored" | "default"; alternatives: { id: string; name: string; score: number }[] };
+  /** The look the design rules chose. A theme the teacher saved always wins over this. */
+  design?: { themeId?: string; custom?: { accent: string; dark: boolean }; applied: { id: string; why: string; set: string[] }[]; notes: string[] };
   provider?: string;
   model?: string;
   /** Set when the deck was saved to the library. */

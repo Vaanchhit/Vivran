@@ -1,0 +1,135 @@
+{
+  "id": "problem-solver",
+  "name": "Problem Solver",
+  "version": 1,
+  "description": "Formula first, then two fully worked examples that increase in difficulty, then questions students try themselves. Built for maths, physics and any numerical topic.",
+  "audience": "Teaching a method students must practise: numericals, derivations, accounting entries.",
+  "requires": {
+    "fact": "family",
+    "in": [
+      "quant",
+      "science",
+      "commerce",
+      "general"
+    ]
+  },
+  "signals": [
+    {
+      "when": {
+        "fact": "quantitative",
+        "truthy": true
+      },
+      "weight": 3,
+      "why": "the topic is calculation-based"
+    },
+    {
+      "when": {
+        "fact": "goal",
+        "is": "practice"
+      },
+      "weight": 2,
+      "why": "you want students to practise"
+    },
+    {
+      "when": {
+        "fact": "purpose",
+        "is": "practice"
+      },
+      "weight": 3,
+      "why": "your words ask for problem solving"
+    },
+    {
+      "when": {
+        "fact": "family",
+        "in": [
+          "quant",
+          "commerce"
+        ]
+      },
+      "weight": 1.5,
+      "why": "this subject is problem-heavy"
+    }
+  ],
+  "slides": [
+    {
+      "id": "title",
+      "type": "title",
+      "intent": "hook",
+      "guidance": "Lesson title for {topic} and a short subtitle that names the class level.",
+      "keep": 9
+    },
+    {
+      "id": "objectives",
+      "type": "objectives",
+      "intent": "orient",
+      "guidance": "The method students will be able to apply for {topic}, as skills ('calculate…', 'identify…').",
+      "keep": 5
+    },
+    {
+      "id": "formula",
+      "type": "formula",
+      "intent": "teach",
+      "guidance": "The core formula or rule of {topic} with every symbol explained and its unit.",
+      "keep": 9,
+      "fallback": "definition"
+    },
+    {
+      "id": "ex1",
+      "type": "worked_example",
+      "intent": "apply",
+      "guidance": "A simple worked example for {topic}: one problem, each step with the reason, the final answer with unit.",
+      "keep": 9,
+      "fallback": "explanation"
+    },
+    {
+      "id": "ex2",
+      "type": "worked_example",
+      "intent": "apply",
+      "guidance": "A harder worked example for {topic} that adds one twist students often miss. Show the step where the twist is handled.",
+      "keep": 6,
+      "fallback": "explanation"
+    },
+    {
+      "id": "trap",
+      "type": "misconception",
+      "intent": "teach",
+      "guidance": "The most common mistake {grade} students make when solving {topic} and the correct way.",
+      "keep": 5,
+      "fallback": "explanation",
+      "variants": [
+        {
+          "when": {
+            "all": [
+              {
+                "fact": "wantsMeme",
+                "truthy": true
+              },
+              {
+                "fact": "memeOk",
+                "truthy": true
+              }
+            ]
+          },
+          "type": "meme",
+          "intent": "teach",
+          "guidance": "A classroom meme about {topic}. Pick one format from MEME FORMATS that matches the idea, write captions a {grade} student finds funny and that make the correct idea easier to remember. Kind to students, never about a person.",
+          "fallback": "misconception"
+        }
+      ]
+    },
+    {
+      "id": "try",
+      "type": "quiz_mcq",
+      "intent": "check",
+      "guidance": "A problem for students to solve themselves. The wrong options are the answers produced by the common mistakes.",
+      "keep": 8
+    },
+    {
+      "id": "recap",
+      "type": "recap",
+      "intent": "close",
+      "guidance": "The method in three to five steps students can reuse.",
+      "keep": 8
+    }
+  ]
+}

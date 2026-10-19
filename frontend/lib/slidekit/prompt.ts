@@ -7,7 +7,8 @@ import { hintFor } from "./budgets";
 import type { LessonContext } from "./intent";
 import type { PlanItem } from "./planner";
 import { SUBJECTS } from "./subjects";
-import { GRADE_PROFILES } from "./tokens";
+import { memeCatalogue } from "./meme-core";
+import { profileOf } from "./tokens";
 
 const LEVEL: Record<LessonContext["grade"], string> = {
   primary: "ages 6–10: short sentences, everyday words, one idea per line, concrete examples",
@@ -19,7 +20,7 @@ const LEVEL: Record<LessonContext["grade"], string> = {
 export interface BuiltPrompt { system: string; user: string }
 
 export function buildPrompt(ctx: LessonContext, items: PlanItem[]): BuiltPrompt {
-  const gp = GRADE_PROFILES[ctx.grade];
+  const gp = profileOf(ctx.grade);
   const types = [...new Set(items.flatMap(i => [i.type, i.fallbackType].filter(Boolean) as BlockType[]))];
 
   const system = [
@@ -32,6 +33,10 @@ export function buildPrompt(ctx: LessonContext, items: PlanItem[]): BuiltPrompt 
     "BLOCK SHAPES (\"≤N\" = hard max characters, aim for about two thirds of it; \"?\" = optional):",
     ...types.map(t => `- ${hintFor(t, ctx.grade)}`),
     "Any block may also have \"imageQuery\" (2–4 word photo search of a concrete, photographable thing) and \"notes\" (speaker notes for the teacher).",
+    types.includes("meme")
+      ? ["", "MEME FORMATS (set \"template\" to one id; give exactly as many \"lines\" as the format takes, in order):", memeCatalogue(),
+         "Meme rules: captions are short and funny the way a teacher would say them, and the joke must reinforce the correct idea. Never mock a student, a group, or a real person. No profanity, no slurs, no political content. \"takeaway\" states the idea in one plain sentence."].join("\n")
+      : "",
     ctx.grounding === "strict"
       ? "- Also set \"sourceIds\": the SOURCE MATERIAL tags (\"S1\", \"S2\") a block was written from. Cite only tags that appear in SOURCE MATERIAL; omit it when the block is not drawn from one."
       : "",

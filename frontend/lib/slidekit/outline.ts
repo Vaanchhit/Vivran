@@ -25,7 +25,7 @@ export const TYPE_LABELS: Record<BlockType, string> = {
   cause_effect: "Cause and effect", timeline: "Timeline", hierarchy: "Classification / structure", formula: "Formula",
   worked_example: "Worked example", key_fact: "Hook / key fact", misconception: "Common misconception",
   real_world: "Real-world example", quiz_mcq: "Quiz question", activity: "Class activity", discussion: "Discussion",
-  recap: "Recap", code_example: "Code example", concept_map: "Concept map", flowchart: "Decision flowchart",
+  recap: "Recap", meme: "Meme (light moment)", code_example: "Code example", concept_map: "Concept map", flowchart: "Decision flowchart",
 };
 
 const INTENT_OF: Partial<Record<BlockType, Intent>> = {

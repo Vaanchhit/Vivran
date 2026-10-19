@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BookMarked, ChevronLeft, ChevronRight, FileDown, Palette } from "lucide-react";
+import { BookMarked, ChevronLeft, ChevronRight, FileDown, Palette, Presentation, Wand2 } from "lucide-react";
 import { DEFAULT_THEME_ID, THEMES, customTheme, slideCSS, slideHTML, type DeckTheme } from "@/lib/slidekit/render";
 import { CANVAS } from "@/lib/slidekit/tokens";
 import type { DeckReady } from "@/services/api";
@@ -9,7 +9,8 @@ import type { DeckReady } from "@/services/api";
 type ThemeChoice = { id: string } | { custom: string; dark: boolean };
 const STORAGE_KEY = "vivran_deck_theme";
 
-function loadChoice(): ThemeChoice {
+/** The teacher's saved theme, or null when they never chose one (then the design rules' pick is used). */
+function loadChoice(): ThemeChoice | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -18,7 +19,7 @@ function loadChoice(): ThemeChoice {
       if (c && typeof c.custom === "string") return { custom: c.custom, dark: !!c.dark };
     }
   } catch {}
-  return { id: DEFAULT_THEME_ID };
+  return null;
 }
 
 const resolve = (c: ThemeChoice): DeckTheme => ("id" in c ? THEMES[c.id].theme : customTheme(c.custom, c.dark));
@@ -80,14 +81,21 @@ export function DeckView({ deck }: { deck: DeckReady }) {
   const [current, setCurrent] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
 
+  const [exporting, setExporting] = useState(false);
+
+  // A theme the teacher saved always wins; otherwise the design rules' choice for this deck.
   useEffect(() => {
-    const c = loadChoice();
+    const saved = loadChoice();
+    const suggested: ThemeChoice | null = deck.design?.themeId && THEMES[deck.design.themeId]
+      ? { id: deck.design.themeId }
+      : deck.design?.custom ? { custom: deck.design.custom.accent, dark: deck.design.custom.dark } : null;
+    const c = saved ?? suggested ?? { id: DEFAULT_THEME_ID };
     setChoice(c);
     if ("custom" in c) {
       setCustomAccent(c.custom);
       setCustomDark(c.dark);
     }
-  }, []);
+  }, [deck]);
 
   const pick = (c: ThemeChoice) => {
     setChoice(c);
@@ -130,14 +138,43 @@ export function DeckView({ deck }: { deck: DeckReady }) {
               : " · not grounded in your uploads"}
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => printDeck(title, slides, css, theme.bg)}
-          className="btn-primary px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-2"
-        >
-          <FileDown className="w-3.5 h-3.5" /> Export PDF
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={exporting}
+            onClick={async () => {
+              setExporting(true);
+              try {
+                const { exportPptx } = await import("@/lib/slidekit/pptx");
+                await exportPptx(deck.placements, title, theme, `${title.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "vivran-slides"}.pptx`);
+              } finally {
+                setExporting(false);
+              }
+            }}
+            className="btn-primary px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 disabled:opacity-60"
+          >
+            <Presentation className="w-3.5 h-3.5" /> {exporting ? "Preparing…" : "Export PowerPoint"}
+          </button>
+          <button
+            type="button"
+            onClick={() => printDeck(title, slides, css, theme.bg)}
+            className="btn-primary px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-2"
+          >
+            <FileDown className="w-3.5 h-3.5" /> Export PDF
+          </button>
+        </div>
       </div>
+
+      {deck.template && (
+        <div className="flex items-start gap-2 text-xs text-muted">
+          <Wand2 className="w-3.5 h-3.5 mt-0.5 shrink-0 text-accent" />
+          <span>
+            Built on the <strong className="text-foreground">{deck.template.name}</strong> template
+            {deck.template.reasons.length ? ` because ${deck.template.reasons.slice(0, 2).join(" and ")}` : ""}.
+            {deck.design?.applied.length ? ` Design: ${deck.design.applied.slice(0, 2).map((a) => a.why.replace(/\.$/, "").toLowerCase()).join("; ")}.` : ""}
+          </span>
+        </div>
+      )}
 
       {/* Theme: the teacher's choice, applied at render time. Never sent to the model. */}
       <div className="flex flex-wrap items-center gap-2 text-xs">

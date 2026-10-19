@@ -4,6 +4,7 @@
 // Limits here are absolute ceilings. Grade profiles tighten them.
 // ─────────────────────────────────────────────────────────────
 import { z } from "zod";
+import { MEME_IDS } from "./meme-core";
 
 export const INTENTS = ["hook", "orient", "teach", "apply", "check", "close"] as const;
 export type Intent = (typeof INTENTS)[number];
@@ -140,6 +141,12 @@ export const Blocks = {
     ...base, type: z.literal("flowchart"), heading: s(60),
     steps: list(s(40), 1, 3), question: s(60), yes: s(60), no: s(60),
   }),
+
+  /** A classroom meme: a format id from memes.json, its captions, and the teaching point it lands. */
+  meme: z.object({
+    ...base, type: z.literal("meme"),
+    template: z.enum(MEME_IDS), lines: list(s(70), 1, 4), takeaway: s(140),
+  }),
 } as const;
 
 export type BlockType = keyof typeof Blocks;
@@ -189,5 +196,6 @@ export const BLOCK_HINTS: Record<BlockType, string> = {
   recap: `{"type":"recap","heading":"≤60","points":["≤110", 3-5]}`,
   code_example: `{"type":"code_example","heading":"≤60","language":"","code":"≤900 chars, ≤14 lines","caption":"≤140?","annotations":["≤100", 1-4]?}`,
   concept_map: `{"type":"concept_map","heading":"≤60","center":"≤40","nodes":[{"label":"≤36","relation":"≤40"}, 3-6]}`,
+  meme: `{"type":"meme","template":"id from MEME FORMATS","lines":["≤70 each, exactly as many as the format takes"],"takeaway":"≤140, the idea the meme makes memorable"}`,
   flowchart: `{"type":"flowchart","heading":"≤60","steps":["≤40", 1-3],"question":"≤60, answerable yes or no","yes":"≤60","no":"≤60"}`,
 };

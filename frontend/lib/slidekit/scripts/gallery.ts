@@ -58,6 +58,7 @@ function drawSlot(s: Slot, l: LayoutSpec): string {
   if (s.kind === "diagram") return rect(box, cls, 18) + label(box, `${s.diagram} diagram`);
   if (s.kind === "image") return rect(box, cls + opt, 12) +
     `<path class="x" d="M${box.x} ${box.y}L${box.x + box.w} ${box.y + box.h}M${box.x + box.w} ${box.y}L${box.x} ${box.y + box.h}"/>` + label(box, "photo");
+  if (s.kind === "picture") return rect(box, cls + opt, 12) + label(box, "meme image");
   if (s.kind === "icon") return rect(box, cls + opt, 12) + label(box, "icon");
   if (s.kind === "formula") return rect(box, cls, 12) + label(box, "formula (KaTeX)");
   if (s.kind === "code") return rect(box, cls, 12) + label(box, `code ≤${s.maxLines} lines`);

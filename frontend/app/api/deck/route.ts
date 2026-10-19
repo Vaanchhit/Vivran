@@ -1,6 +1,6 @@
 // The slidekit pipeline, run server-side: the PRODUCE step.
 //
-//   understand -> [approved outline | plan] -> buildPrompt -> [backend: grounding + model]
+//   understand -> pick template -> [approved outline | template plan] -> design -> buildPrompt -> [backend: grounding + model]
 //   -> repair -> matchDeck -> placements
 //
 // When the teacher approved an outline (app/api/deck/outline), it replaces the
@@ -12,7 +12,10 @@
 // This is a Node route handler, not an edge one: slidekit imports zod and does
 // real work, and none of it should ship to the browser.
 import { NextResponse } from "next/server";
-import { buildPrompt, prepareLesson, type TeacherInput } from "@/lib/slidekit";
+import { buildPrompt, type TeacherInput } from "@/lib/slidekit";
+import { finalDesign, prepareTemplated } from "@/lib/slidekit/templates";
+import { memeSrc } from "@/lib/slidekit/meme";
+import { withKnobs } from "@/lib/slidekit/tokens";
 import { repairBlock } from "@/lib/slidekit/repair";
 import { matchDeck } from "@/lib/slidekit/matcher";
 import { outlineToPlan, validateOutline } from "@/lib/slidekit/outline";
@@ -28,13 +31,13 @@ const withoutImage = (b: Block): Block => {
 };
 
 export async function POST(req: Request) {
-  let body: TeacherInput & { materialId?: string; outline?: unknown };
+  let body: TeacherInput & { materialId?: string; outline?: unknown; template?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Expected a JSON body." }, { status: 400 });
   }
-  const { outline, materialId, ...rest } = body;
+  const { outline, materialId, template: forcedTemplate, ...rest } = body;
 
   // 1. Understand — deterministic. May come back with questions instead of a
   //    plan, which is the point: slidekit asks rather than guessing.
@@ -44,7 +47,7 @@ export async function POST(req: Request) {
   };
   let prep;
   try {
-    prep = prepareLesson(input);
+    prep = prepareTemplated(input, { template: forcedTemplate });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Could not read that request." }, { status: 400 });
   }
@@ -56,7 +59,7 @@ export async function POST(req: Request) {
   // 2. Grounding. Strict mode (citation tags) turns on when anything was retrieved.
   const chunks = await fetchGrounding(req, ctx, materialId);
   const { sourceText, tagToChunk } = buildSourceMaterial(chunks);
-  const grounded = prepareLesson({ ...input, sourceText: sourceText || undefined });
+  const grounded = prepareTemplated({ ...input, sourceText: sourceText || undefined }, { template: forcedTemplate });
   if (grounded.status !== "ready") {
     return NextResponse.json({ status: "needs_input", questions: grounded.questions });
   }
@@ -70,7 +73,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "That outline has a slide this lesson can't use. Please check it and try again." }, { status: 400 });
     }
     plan = outlineToPlan(approved);
-    prompt = buildPrompt(grounded.context, plan);
+    prompt = withKnobs(grounded.design.knobs, () => buildPrompt(grounded.context, plan));
   }
 
   // 4. The one non-deterministic step.
@@ -102,13 +105,21 @@ export async function POST(req: Request) {
   // 6. Layout, by arithmetic. Nothing generates photos yet, so an image
   //    query would render as a labelled placeholder box. Dropping it lets the
   //    matcher pick the text layout for that block instead.
-  const placements = matchDeck(blocks.map(withoutImage), ctx.grade);
+  //    The design is decided twice: from the request (above, which sized the prompt)
+  //    and again from what the model actually wrote (long lines, formulas, a meme),
+  //    and the layouts are matched under the second.
+  const design = finalDesign(grounded, blocks);
+  const placements = withKnobs(design.knobs, () => matchDeck(blocks.map(withoutImage), ctx.grade));
+  // Meme images go through our signed proxy (app/api/meme); the slide never links the meme host.
+  for (const p of placements) for (const e of p.elements) if (e.t === "picture") e.src = memeSrc(e.template, e.lines) ?? undefined;
   const { cited, invented } = resolveCitations(blocks, tagToChunk);
 
   const deck = {
     status: "ready",
     placements,
     plan: plan.map(p => p.type),
+    template: grounded.template,
+    design: { themeId: design.themeId, custom: design.custom, applied: design.applied, notes: grounded.notes },
     context: {
       topic: ctx.topic,
       subject: ctx.subject,
@@ -142,7 +153,7 @@ export async function POST(req: Request) {
     kind: "slides",
     title: ctx.topic,
     content: deck,
-    params: { topic: rest.topic, grade: rest.grade, subject: rest.subject, slideCount: rest.slideCount, language: rest.language },
+    params: { template: grounded.template.id, topic: rest.topic, grade: rest.grade, subject: rest.subject, slideCount: rest.slideCount, language: rest.language },
   });
   return NextResponse.json({ ...deck, libraryId });
 }
