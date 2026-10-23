@@ -47,17 +47,17 @@ const MODES: Record<Mode, { heading: string; placeholder: string }> = {
   quiz: {
     heading: "What quick quiz would you like?",
     placeholder:
-      "Just the topic and the angle — e.g. 'Demand and supply, exit-ticket level, mostly MCQs'. Set the grade, subject and marks below.",
+      "e.g. Demand and supply, a 5-minute exit ticket",
   },
   test: {
     heading: "What full test paper would you like?",
     placeholder:
-      "Just the topic and the angle — e.g. 'Porter's Five Forces with case-study application questions'. Set the grade, subject, marks and difficulty below.",
+      "e.g. Porter's Five Forces, with case-based questions",
   },
   worksheet: {
     heading: "What should the worksheet practise?",
     placeholder:
-      "Just the topic and the angle — e.g. 'Simple interest word problems set in a village market'. Set the grade, subject and number of questions below.",
+      "e.g. Simple interest word problems set in a village market",
   },
 };
 

@@ -2,9 +2,10 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, X, Plus, ChevronDown } from "lucide-react";
+import { Mic, Sparkles, CheckCircle2, AlertCircle, ArrowRight, X, Plus, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookLoader } from "@/app/components/book-loader";
+import { isBlocked } from "@/lib/slidekit/try-topics";
 import { OutlineEditor } from "@/app/components/outline-editor";
 import { useAuth } from "@/lib/auth-context";
 import { getLiveValue, noticeIfAway, useLiveState, useOnScreen, useTabState } from "@/lib/tab-state";
@@ -574,6 +575,15 @@ export function SmartCreationBox({
   const handleRunSmartPrompt = async () => {
     const text = promptText;
     if (!text.trim() || getLiveValue(k("reading"), false)) return;
+    // Classroom language only, caught here before anything is sent to a model.
+    if (isBlocked(text)) {
+      setErrorMsg("Let's keep it classroom-friendly. Describe the topic you're teaching.");
+      return;
+    }
+    if (!/[a-zA-Z\u0900-\u097F]{3,}/.test(text)) {
+      setErrorMsg("Tell Vivran the topic in a few words, for example \u201cPhotosynthesis for Class 8\u201d.");
+      return;
+    }
 
     setLoading(true);
     setErrorMsg(null);
@@ -872,7 +882,6 @@ export function SmartCreationBox({
             <Sparkles className="w-4 h-4 text-accent" />
             {heading}
           </label>
-          <span className="text-xs text-muted hidden sm:inline">Write it the way you&rsquo;d say it out loud</span>
         </div>
 
         {/* Textarea Input Box */}
@@ -882,9 +891,9 @@ export function SmartCreationBox({
             onChange={(e) => setPromptText(e.target.value)}
             placeholder={
               promptPlaceholder ||
-              "Just the topic and the angle you want — e.g. 'Porter's Five Forces, using real Indian company examples, exam-focused'. Set the grade, subject and the rest below."
+              "e.g. Photosynthesis for Class 8, with a short quiz at the end"
             }
-            className="w-full h-28 sm:h-32 p-4 pr-12 bg-card border border-border rounded-xl text-foreground placeholder:text-faint text-sm focus:outline-none focus:border-accent transition-all resize-none leading-relaxed"
+            className="w-full h-24 sm:h-28 p-4 pr-12 bg-card border border-border rounded-xl text-foreground placeholder:text-faint text-sm focus:outline-none focus:border-accent transition-all resize-none leading-relaxed"
           />
           <button
             type="button"
@@ -931,11 +940,6 @@ export function SmartCreationBox({
         )}
 
         <div className={`mt-4 pt-4 border-t border-border ${hasCustomizationControls ? "" : "hidden"}`}>
-          <div className="text-[11px] text-muted font-medium mb-2.5 flex items-center gap-1.5">
-            <Sliders className="w-3.5 h-3.5 text-accent" />
-            The essentials. Set these and your request only needs the topic.
-          </div>
-
           {/* Essentials stay in view; everything else waits behind "More options". */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             {!lockedArtifactType && (

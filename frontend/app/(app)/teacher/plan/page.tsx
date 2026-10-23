@@ -68,7 +68,7 @@ function PlanPageInner() {
         lockedArtifactType="course_plan"
         showInlineResult={false}
         heading="What course would you like to plan?"
-        promptPlaceholder="Just the ground you want to cover — e.g. 'Demand, Supply and Market Equilibrium, building up to a unit test'. Set the grade, subject and length below."
+        promptPlaceholder="e.g. Demand, supply and market equilibrium, building up to a unit test"
         onGenerated={(result) => {
           if (result.artifactType !== "course_plan") return;
           setError(null);

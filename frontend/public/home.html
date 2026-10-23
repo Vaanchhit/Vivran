@@ -594,12 +594,7 @@ p{ margin:0; text-wrap:pretty; }
 .aud p{ font-size:0.98rem; color:var(--vv-ink-2); line-height:1.55; }
 .audience-close{ margin-top:18px; text-align:center; font-family:var(--disp); font-weight:600; font-size:clamp(1.3rem,1.1rem + .9vw,1.9rem); letter-spacing:-0.025em; color:var(--vv-ink); text-wrap:balance; }
 @media (min-width:800px){
-  .audience-close::before{
-    content:""; display:block; height:30px; margin:0 calc(100% / 6) 18px;
-    border:1.5px solid var(--vv-rule-hi); border-top:0;
-    border-bottom-left-radius:16px; border-bottom-right-radius:16px;
-  }
-  .audience-close{ margin-top:0; }
+  .audience-close{ margin-top:56px; }
 }
 
 .final-cta{ text-align:center; }
@@ -972,8 +967,7 @@ body::after{
   }
 
   /* Grounding: half the sample paper is enough to make the point. */
-  #qlist .qrow[data-q="2"], #qlist .qrow[data-q="3"], #qlist .qrow[data-q="4"],
-  #qlist .qrow[data-q="9"], #qlist .qrow[data-q="10"]{ display:none; }
+  /* six questions show on phones too, so the "5 of 6" count matches what is on screen */
   .q-more{
     display:block; padding:10px 13px; font-family:var(--disp); font-weight:600; text-transform:uppercase;
     letter-spacing:0.08em; font-size:0.64rem; color:var(--vv-ink-3); background:var(--vv-paper-2);
@@ -1015,6 +1009,7 @@ details.more .lede{ margin-top:10px; }
 .try-form input{ flex:1; min-width:0; font:inherit; font-size:1rem; padding:13px 16px; border-radius:12px; border:1px solid var(--vv-rule-hi); background:var(--vv-card); color:var(--vv-ink); }
 .try-form input:focus{ outline:none; border-color:var(--vv-accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--vv-accent) 18%, transparent); }
 .try-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+#try [hidden]{ display:none !important; }
 .try-chips button{ font:inherit; font-size:.82rem; padding:6px 12px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink-2); cursor:pointer; transition:border-color .15s, color .15s; }
 .try-chips button:hover{ border-color:var(--vv-accent); color:var(--vv-ink); }
 .try-out{ margin-top:28px; }
@@ -1027,15 +1022,32 @@ details.more .lede{ margin-top:10px; }
 .try-why{ margin-top:8px; color:var(--vv-ink-2); line-height:1.55; }
 .try-look{ margin-top:8px; font-size:.86rem; color:var(--vv-ink-2); display:flex; align-items:center; gap:8px; }
 .try-look i{ width:14px; height:14px; border-radius:4px; display:inline-block; }
-.try-plan{ list-style:none; margin:22px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; }
-.try-plan li{ border:1px solid var(--vv-rule); background:var(--vv-card); border-radius:12px; padding:12px 14px; opacity:0; transform:translateY(8px); animation:tryIn .4s cubic-bezier(.22,.7,.3,1) forwards; }
+.try-plan{ list-style:none; margin:22px 0 0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+@media (min-width:820px){ .try-plan{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
+.try-plan li{ border:1px solid var(--vv-rule); background:var(--vv-card); border-radius:10px; padding:10px 12px; opacity:0; transform:translateY(8px); animation:tryIn .4s cubic-bezier(.22,.7,.3,1) forwards; }
 .try-plan .n{ font-size:.72rem; color:var(--vv-accent); font-weight:700; letter-spacing:.04em; }
-.try-plan .k{ font-weight:650; margin-top:2px; }
-.try-plan .w{ font-size:.84rem; color:var(--vv-ink-2); margin-top:4px; line-height:1.45; }
+.try-plan .k{ font-weight:650; margin-top:2px; font-size:.92rem; }
+.try-plan .w{ font-size:.8rem; color:var(--vv-ink-2); margin-top:2px; line-height:1.35; }
 .try-foot{ margin-top:16px; font-size:.86rem; color:var(--vv-ink-2); }
 .try-err{ margin-top:16px; color:var(--vv-risk); }
 @keyframes tryIn{ to{ opacity:1; transform:none; } }
 @media (prefers-reduced-motion:reduce){ .try-plan li{ animation:none; opacity:1; transform:none; } }
+
+.try-box{ margin-top:26px; max-width:640px; }
+.try-combo{ position:relative; }
+.try-combo input{ width:100%; font:inherit; font-size:1rem; padding:14px 16px; border-radius:12px; border:1px solid var(--vv-rule-hi); background:var(--vv-card); color:var(--vv-ink); }
+.try-combo input:focus{ outline:none; border-color:var(--vv-accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--vv-accent) 18%, transparent); }
+.try-list{ position:absolute; z-index:20; left:0; right:0; top:calc(100% + 6px); margin:0; padding:6px; list-style:none; background:var(--vv-card); border:1px solid var(--vv-rule-hi); border-radius:12px; box-shadow:0 18px 40px -20px rgba(20,16,12,.35); animation:moreIn .16s ease-out; }
+.try-list li{ display:flex; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; }
+.try-list li[aria-selected="true"], .try-list li:hover{ background:var(--vv-paper-2, rgba(20,16,12,.04)); }
+.try-list .t{ font-weight:600; color:var(--vv-ink); }
+.try-list .s{ font-size:.8rem; color:var(--vv-ink-2); white-space:nowrap; }
+.try-levels{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.try-levels button{ font:inherit; font-size:.85rem; padding:7px 14px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink-2); cursor:pointer; transition:all .15s; }
+.try-levels button[aria-checked="true"]{ background:var(--vv-brand); color:var(--vv-paper); border-color:var(--vv-brand); }
+.try-note{ margin-top:12px; font-size:.9rem; color:var(--vv-ink-2); }
+.try-note .try-ex{ font:inherit; font-size:.85rem; margin:4px 4px 0 0; padding:4px 10px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink); cursor:pointer; }
+.try-out.busy{ opacity:.55; transition:opacity .15s; }
 </style>
 </head>
 <body>
@@ -1342,20 +1354,25 @@ details.more .lede{ margin-top:10px; }
   <div class="wrap">
     <div class="sec-head">
       <span class="eyebrow rv">Try it, no sign-up</span>
-      <h2 class="rv d1">Type what you teach next.</h2>
-      <p class="lede rv d2">See the lesson shape Vivran picks and the slides it plans. Instant, and no AI involved.</p>
+      <h2 class="rv d1">What are you teaching next?</h2>
+      <p class="lede rv d2">Pick a topic and a class. See the lesson shape Vivran chooses and the slides it plans. Instant, and no AI involved.</p>
     </div>
-    <form class="try-form rv d2" id="tryForm" autocomplete="off">
-      <label class="sr-only" for="tryTopic">Your topic</label>
-      <input id="tryTopic" name="topic" maxlength="120" placeholder="e.g. Photosynthesis for Class 7" required />
-      <button class="btn btn-primary" type="submit">Plan it &rarr;</button>
-    </form>
-    <div class="try-chips rv d2" aria-label="Examples">
-      <button type="button" data-topic="Mitosis vs meiosis for Class 11">Mitosis vs meiosis</button>
-      <button type="button" data-topic="Revolt of 1857 for Class 8">Revolt of 1857</button>
-      <button type="button" data-topic="Python for loops for BCA">Python loops</button>
-      <button type="button" data-topic="Derive the equations of motion, Class 11">A derivation</button>
-      <button type="button" data-topic="Fractions quiz round for Class 5">A quiz round</button>
+    <div class="try-box rv d2">
+      <div class="try-combo" id="tryCombo">
+        <label class="sr-only" for="tryTopic">Topic</label>
+        <input id="tryTopic" type="text" role="combobox" aria-expanded="false" aria-controls="tryList" aria-autocomplete="list"
+               maxlength="80" placeholder="Start typing a topic, like photosynthesis" spellcheck="false" />
+        <ul class="try-list" id="tryList" role="listbox" hidden></ul>
+      </div>
+      <div class="try-levels" id="tryLevels" role="radiogroup" aria-label="Class" hidden></div>
+      <p class="try-note" id="tryNote" hidden></p>
+      <div class="try-chips" id="tryChips" aria-label="Or start from one of these">
+        <button type="button" data-id="mitosis-vs-meiosis" data-topic="Mitosis vs meiosis">Mitosis vs meiosis</button>
+        <button type="button" data-id="the-revolt-of-1857" data-topic="The Revolt of 1857">Revolt of 1857</button>
+        <button type="button" data-id="python-for-loops" data-topic="Python for loops">Python loops</button>
+        <button type="button" data-id="equations-of-motion" data-topic="Equations of motion">A derivation</button>
+        <button type="button" data-id="active-and-passive-voice" data-topic="Active and passive voice">A grammar lesson</button>
+      </div>
     </div>
     <div class="try-out" id="tryOut" aria-live="polite" hidden>
       <div class="try-pick">
@@ -1408,8 +1425,8 @@ details.more .lede{ margin-top:10px; }
         </div>
 
         <div>
-          <span class="gcol-lbl">Generated paper · 40 marks · 10 questions</span>
-          <div class="qlist" id="qlist" role="group" aria-label="A generated ten-question history paper. Nine questions carry a citation to an uploaded source; question seven is flagged as ungrounded.">
+          <span class="gcol-lbl">Generated paper · 6 of its questions</span>
+          <div class="qlist" id="qlist" role="group" aria-label="Six questions from a generated history paper. Five carry a citation to an uploaded source; question seven is flagged as ungrounded.">
             <div class="qrow" data-q="1" data-mat="0">
               <span class="qrow-n">Q1 · 1m</span>
               <div class="qrow-b"><div class="qrow-t">In which year was the Boundary Commission appointed?</div>
@@ -1420,25 +1437,10 @@ details.more .lede{ margin-top:10px; }
               <div class="qrow-b"><div class="qrow-t">Define "communal award" in one sentence.</div>
               <span class="qcite">Week 6 Slides.pptx · s.6</span></div>
             </div>
-            <div class="qrow" data-q="3" data-mat="0">
-              <span class="qrow-n">Q3 · 1m</span>
-              <div class="qrow-b"><div class="qrow-t">Name one province divided by the 1947 boundary.</div>
-              <span class="qcite">Unit 4.pdf · p.11</span></div>
-            </div>
-            <div class="qrow" data-q="4" data-mat="0">
-              <span class="qrow-n">Q4 · 1m</span>
-              <div class="qrow-b"><div class="qrow-t">Which canal system was split between the two new states?</div>
-              <span class="qcite">Unit 4.pdf · p.9</span></div>
-            </div>
             <div class="qrow" data-q="5" data-mat="2">
               <span class="qrow-n">Q5 · 2m</span>
               <div class="qrow-b"><div class="qrow-t">Explain why migration figures for 1947 are given as ranges rather than totals.</div>
               <span class="qcite">lecture transcript · 14:20</span></div>
-            </div>
-            <div class="qrow" data-q="6" data-mat="0">
-              <span class="qrow-n">Q6 · 4m</span>
-              <div class="qrow-b"><div class="qrow-t">Apply the idea of "administrative haste" to the drawing of the boundary line.</div>
-              <span class="qcite">Unit 4.pdf · p.18</span></div>
             </div>
             <div class="qrow ungrounded" data-q="7">
               <span class="qrow-n">Q7 · 6m</span>
@@ -1453,25 +1455,20 @@ details.more .lede{ margin-top:10px; }
               <div class="qrow-b"><div class="qrow-t">Using the source extract, analyse how the border was justified at the time.</div>
               <span class="qcite">Unit 4.pdf · p.23</span></div>
             </div>
-            <div class="qrow" data-q="9" data-mat="1">
-              <span class="qrow-n">Q9 · 8m</span>
-              <div class="qrow-b"><div class="qrow-t">Assess whether oral testimony can carry the same evidential weight as a state record.</div>
-              <span class="qcite">Week 6 Slides.pptx · s.14</span></div>
-            </div>
             <div class="qrow" data-q="10" data-mat="0">
               <span class="qrow-n">Q10 · 8m</span>
               <div class="qrow-b"><div class="qrow-t">Using the extract, evaluate two competing accounts of the same week.</div>
               <span class="qcite">Unit 4.pdf · p.27</span></div>
             </div>
-            <span class="q-more m-only" aria-hidden="true">+ 5 more questions, each cited</span>
+            
           </div>
         </div>
       </div>
     </div>
 
     <div class="ground-counter rv">
-      <span class="gc-num" id="gcNum">9</span>
-      <span class="gc-k">of 10 questions cite your material</span>
+      <span class="gc-num" id="gcNum">5</span>
+      <span class="gc-k">of 6 questions cite your material</span>
       <span class="gc-t">
         <b>Every question points back to a page.</b> The one that can&rsquo;t is flagged, not hidden.
       </span>
@@ -1500,8 +1497,7 @@ details.more .lede{ margin-top:10px; }
         <span class="hz-mark" aria-hidden="true"></span>
         <span class="hz-tag">Next</span>
         <h3>Tomorrow</h3>
-        <p class="m-hide">It can understand what happened in that lesson. What students understood, where they struggled, what needs to be taught again, and what should change in the next class.</p>
-        <p class="m-only">It understands what happened in that lesson, and what to teach again.</p>
+        <p>It understands what happened in that lesson, and what to teach again.</p>
       </li>
       <li class="hz hz-far">
         <span class="hz-mark" aria-hidden="true"></span>
@@ -1511,14 +1507,6 @@ details.more .lede{ margin-top:10px; }
       </li>
     </ol>
 
-    <details class="more aud-more rv d2">
-      <summary>What it means for teachers, students and schools</summary>
-    <div class="audience">
-      <div class="aud" id="for-teachers"><span class="aud-k">For teachers</span><p>Less time assembling. More time teaching. A clearer picture of the classroom.</p></div>
-      <div class="aud" id="for-students"><span class="aud-k">For students</span><p>Learning that builds on what they were actually taught, not starting from scratch every time.</p></div>
-      <div class="aud" id="for-institutions"><span class="aud-k">For schools</span><p>A clearer understanding of what is being taught, what is being learned, and where students need help.</p></div>
-    </div>
-    </details>
     <p class="audience-close rv">One education. One shared understanding.</p>
   </div>
 </section>
@@ -1544,7 +1532,6 @@ details.more .lede{ margin-top:10px; }
             </div>
           </div>
           <p>I&rsquo;m a student at SRCC in New Delhi, and I&rsquo;ve spent years on both sides of this system: as someone learning from it, and watching the people teaching us work within it.</p>
-          <p class="m-hide">I started Vivran because I don&rsquo;t think education has to feel this disconnected.</p>
           <p>If you teach, run a school or work in a department, I&rsquo;d genuinely love to hear what your week looks like. Write to me. I&rsquo;ll reply myself.</p>
           <div class="founder-links">
           <a href="https://www.linkedin.com/in/vaanchhit-agarwal-549036296/" target="_blank" rel="noreferrer">LinkedIn</a>
@@ -1951,7 +1938,7 @@ details.more .lede{ margin-top:10px; }
     drawn = true;
     showAllCitations();
     buildEdges();
-    document.getElementById("gcNum").textContent = "9";
+    document.getElementById("gcNum").textContent = "5";
   } else {
 
     var gcObj = { v: 0 };
@@ -1971,7 +1958,7 @@ details.more .lede{ margin-top:10px; }
           gsap.delayedCall(0.28 + i * 0.075, function () { c.classList.add("on"); });
         });
         gsap.to(gcObj, {
-          v: 9, duration: 1.1, delay: 0.3, ease: "power2.out",
+          v: 5, duration: 1.1, delay: 0.3, ease: "power2.out",
           onUpdate: function () { document.getElementById("gcNum").textContent = Math.round(gcObj.v); }
         });
       }
@@ -2135,31 +2122,78 @@ details.more .lede{ margin-top:10px; }
 </script>
 
 <script>
-/* Try it: deterministic planning only (app/api/deck/try). No model, no login. */
+/* Try it: a guided picker over a curated syllabus list (app/api/deck/try).
+   Typo-tolerant suggestions; only listed topics can be planned. No model, no login. */
 (function(){
-  var form=document.getElementById('tryForm'); if(!form) return;
-  var input=document.getElementById('tryTopic'), out=document.getElementById('tryOut'), err=document.getElementById('tryErr');
-  var cover=document.getElementById('tryCover'), btn=form.querySelector('button');
+  var input=document.getElementById('tryTopic'); if(!input) return;
+  var list=document.getElementById('tryList'), levels=document.getElementById('tryLevels'), note=document.getElementById('tryNote');
+  var chips=document.getElementById('tryChips'), out=document.getElementById('tryOut'), err=document.getElementById('tryErr'), cover=document.getElementById('tryCover');
   var esc=function(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; };
-  function fit(){ var box=cover.parentElement; var k=box.clientWidth/1920; cover.style.transform='scale('+k+')'; }
+  var items=[], active=-1, picked=null, level=null, timer=null, seq=0;
+  function fit(){ var box=cover.parentElement; cover.style.transform='scale('+(box.clientWidth/1920)+')'; }
   window.addEventListener('resize', fit);
-  async function run(topic){
-    err.hidden=true; btn.disabled=true; btn.textContent='Planning…';
+  function close(){ list.hidden=true; input.setAttribute('aria-expanded','false'); active=-1; }
+  function render(){
+    list.innerHTML=items.map(function(m,i){ return '<li role="option" id="tryOpt'+i+'" aria-selected="'+(i===active)+'" data-i="'+i+'"><span class="t">'+esc(m.topic)+'</span><span class="s">'+esc(m.subject)+'</span></li>'; }).join('');
+    list.hidden=!items.length; input.setAttribute('aria-expanded', String(!!items.length));
+    if(active>=0) input.setAttribute('aria-activedescendant','tryOpt'+active); else input.removeAttribute('aria-activedescendant');
+  }
+  function showNote(text, examples){
+    if(!text){ note.hidden=true; return; }
+    note.innerHTML=esc(text)+(examples?' '+examples.map(function(e){ return '<button type="button" class="try-ex">'+esc(e)+'</button>'; }).join(' '):'');
+    note.hidden=false;
+    note.querySelectorAll('.try-ex').forEach(function(b){ b.addEventListener('click',function(){ input.value=b.textContent; search(b.textContent, true); }); });
+  }
+  async function search(q, pickFirst){
+    var my=++seq;
     try{
-      var r=await fetch('/api/deck/try',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:topic})});
-      var d=await r.json();
-      if(!r.ok) throw new Error(d.error||'Try a different topic.');
+      var r=await fetch('/api/deck/try?q='+encodeURIComponent(q)); var d=await r.json();
+      if(my!==seq) return;
+      items=d.matches||[]; active=items.length?0:-1;
+      showNote(d.note, d.examples);
+      if(pickFirst && items.length){ choose(items[0]); return; }
+      render();
+    }catch(e){}
+  }
+  input.addEventListener('input',function(){
+    picked=null; levels.hidden=true; chips.hidden=false; clearTimeout(timer);
+    var q=input.value.trim();
+    if(q.length<2){ items=[]; render(); showNote(null); return; }
+    timer=setTimeout(function(){ search(q,false); },140);
+  });
+  input.addEventListener('keydown',function(e){
+    if(list.hidden) { if(e.key==='Enter' && input.value.trim()){ e.preventDefault(); search(input.value.trim(), true); } return; }
+    if(e.key==='ArrowDown'){ e.preventDefault(); active=Math.min(items.length-1,active+1); render(); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); active=Math.max(0,active-1); render(); }
+    else if(e.key==='Enter'){ e.preventDefault(); if(items[active]) choose(items[active]); }
+    else if(e.key==='Escape'){ close(); }
+  });
+  list.addEventListener('mousedown',function(e){ var li=e.target.closest('li'); if(li){ e.preventDefault(); choose(items[+li.dataset.i]); } });
+  input.addEventListener('blur',function(){ setTimeout(close,120); });
+  function choose(m){
+    picked=m; input.value=m.topic; close(); showNote(null); chips.hidden=true;
+    level=m.levels[Math.min(1,m.levels.length-1)].value;
+    levels.innerHTML=m.levels.map(function(l){ return '<button type="button" role="radio" aria-checked="'+(l.value===level)+'" data-v="'+esc(l.value)+'">'+esc(l.label)+'</button>'; }).join('');
+    levels.hidden=false;
+    levels.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ level=b.dataset.v; levels.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-checked', String(x===b)); }); plan(); }); });
+    plan();
+  }
+  async function plan(){
+    if(!picked) return;
+    err.hidden=true; out.classList.add('busy');
+    try{
+      var r=await fetch('/api/deck/try',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:picked.id,level:level})});
+      var d=await r.json(); if(!r.ok) throw new Error(d.error||'Try another topic.');
       document.getElementById('tryName').textContent=d.template.name;
-      document.getElementById('tryWhy').textContent=d.template.reasons.length?('Because '+d.template.reasons.slice(0,2).join(' and ')+'.'):'A good general shape for a first lesson.';
-      document.getElementById('tryLook').innerHTML='<i style="background:'+esc(d.look.accent)+'"></i>'+esc(d.look.theme)+' theme · '+esc(d.look.skin)+' style'+(d.level?' · '+esc(d.level):'')+(d.subject?' · '+esc(d.subject):'');
+      document.getElementById('tryWhy').textContent=d.template.reasons.length?('Because '+d.template.reasons.slice(0,2).join(' and ')+'.'):'A strong general shape for a first lesson on this topic.';
+      document.getElementById('tryLook').innerHTML='<i style="background:'+esc(d.look.accent)+'"></i>'+esc(d.look.theme)+' theme · '+esc(d.look.skin)+' style · '+esc(d.level)+' · '+esc(d.subject);
       cover.innerHTML='<style>'+d.cover.css+'</style>'+d.cover.html;
-      document.getElementById('tryPlan').innerHTML=d.plan.map(function(p,i){ return '<li style="animation-delay:'+(i*60)+'ms"><div class="n">SLIDE '+p.n+'</div><div class="k">'+esc(p.kind)+'</div><div class="w">'+esc(p.what)+'</div></li>'; }).join('');
+      document.getElementById('tryPlan').innerHTML=d.plan.map(function(p,i){ return '<li style="animation-delay:'+(i*55)+'ms"><div class="n">SLIDE '+p.n+'</div><div class="k">'+esc(p.kind)+'</div><div class="w">'+esc(p.what)+'</div></li>'; }).join('');
       out.hidden=false; requestAnimationFrame(fit);
     }catch(e){ err.textContent=e.message; err.hidden=false; }
-    finally{ btn.disabled=false; btn.innerHTML='Plan it &rarr;'; }
+    finally{ out.classList.remove('busy'); }
   }
-  form.addEventListener('submit',function(e){ e.preventDefault(); var t=input.value.trim(); if(t) run(t); });
-  document.querySelectorAll('.try-chips button').forEach(function(b){ b.addEventListener('click',function(){ input.value=b.dataset.topic; run(b.dataset.topic); }); });
+  chips.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ input.value=b.dataset.topic; search(b.dataset.topic, true); }); });
 })();
 </script>
 </body>
