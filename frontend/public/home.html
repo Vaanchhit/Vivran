@@ -1008,8 +1008,10 @@ details.more .lede{ margin-top:10px; }
 .tour-frame{ margin-top:28px; }
 .tour-frame iframe{ display:block; width:100%; height:760px; border:0; background:transparent; }
 @media (max-width:700px){ .tour-frame iframe{ height:1100px; } }
-.tour-foot{ margin-top:10px; font-size:.82rem; color:var(--vv-ink-2); }
-.tour-foot a{ color:var(--vv-accent); font-weight:600; }
+.tour-foot{ margin-top:4px; display:flex; justify-content:center; }
+.tour-full{ display:inline-flex; align-items:center; gap:8px; padding:11px 20px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:var(--vv-card); color:var(--vv-ink); font-weight:600; font-size:.9rem; text-decoration:none; transition:transform .25s cubic-bezier(.2,.8,.2,1), border-color .25s, box-shadow .25s; }
+.tour-full:hover{ transform:translateY(-2px); border-color:var(--vv-accent); box-shadow:0 10px 24px -14px rgba(40,28,16,.4); }
+.tour-full span{ color:var(--vv-accent); }
 
 /* ---- Time back (highlighted in the ledger) ---- */
 .ledger-pair{ display:grid; gap:12px; margin-top:26px; }
@@ -1058,11 +1060,147 @@ details.more .lede{ margin-top:10px; }
 .wk-stat{ padding:16px 18px; border-radius:18px; background:var(--vv-card); border:1px solid var(--vv-rule); display:flex; flex-direction:column; gap:4px; transition:transform .4s, box-shadow .4s; }
 .wk-k{ font-family:var(--disp); font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--vv-ink-3); }
 .wk-v{ font-family:var(--disp); font-weight:800; font-size:clamp(1.8rem,1.2rem + 2.4vw,3.2rem); line-height:1; letter-spacing:-.03em; color:var(--vv-ink); font-variant-numeric:lining-nums tabular-nums; }
+.wk-stat-back{ background:color-mix(in srgb, var(--vv-ok) 9%, var(--vv-card)); border-color:color-mix(in srgb, var(--vv-ok) 28%, transparent); }
+.wk-stat-back .wk-k{ color:var(--vv-ok); }
 .wk-stat-back .wk-v{ color:var(--vv-ok); }
-.wk[data-mode="vivran"] .wk-stat-back{ transform:translateY(-4px); box-shadow:0 22px 40px -26px color-mix(in srgb, var(--vv-ok) 80%, transparent); border-color:color-mix(in srgb, var(--vv-ok) 40%, transparent); }
+.wk[data-mode="vivran"] .wk-stat-back{ background:color-mix(in srgb, var(--vv-ok) 14%, var(--vv-card)); }
+.wk-k{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+@media (max-width:560px){ .wk-k{ font-size:.6rem; letter-spacing:.06em; } }
 .wk-note{ margin-top:14px; font-size:.8rem; color:var(--vv-ink-3); }
 @media (max-width:560px){ .wk-stat{ padding:12px; } .wk-toggle button{ padding:9px 14px; } }
 @media (prefers-reduced-motion:reduce){ .wk-seg, .wk-pill, .wk-stat{ transition:none; } .wk-back{ animation:none !important; } }
+
+/* ---- Features: who it serves ---- */
+.aud-bar{ display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-top:26px; }
+.aud-switch{ position:relative; display:inline-flex; padding:4px; border-radius:999px; background:var(--vv-card); border:1px solid var(--vv-rule-hi); }
+.aud-switch button{ position:relative; z-index:1; font:inherit; font-size:.88rem; font-weight:600; padding:9px 16px; border:0; background:transparent; color:var(--vv-ink-2); cursor:pointer; border-radius:999px; transition:color .3s; }
+.aud-switch button[aria-selected="true"]{ color:var(--vv-paper); }
+.aud-pill{ position:absolute; top:4px; bottom:4px; left:4px; border-radius:999px; background:var(--vv-brand); transition:transform .45s cubic-bezier(.2,.8,.2,1), width .45s cubic-bezier(.2,.8,.2,1); }
+.aud-status{ font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:4px 10px; border-radius:999px; background:color-mix(in srgb, var(--vv-ok) 13%, transparent); color:var(--vv-ok); }
+.aud-status.soon{ background:color-mix(in srgb, var(--vv-ink) 8%, transparent); color:var(--vv-ink-2); }
+#makes .ixlist{ animation:audIn .4s ease both; }
+#makesGrid .ixlist:not([data-aud="teacher"]){ display:none; }
+#makesGrid[data-aud="student"] .ixlist[data-aud="teacher"], #makesGrid[data-aud="institution"] .ixlist[data-aud="teacher"]{ display:none; }
+#makesGrid[data-aud="student"] .ixlist[data-aud="student"], #makesGrid[data-aud="institution"] .ixlist[data-aud="institution"]{ display:block; }
+#makesGrid .desk > .spec[data-aud]:not([data-aud="teacher"]){ display:none; }
+#makesGrid[data-aud="student"] .desk > .spec[data-aud="teacher"], #makesGrid[data-aud="institution"] .desk > .spec[data-aud="teacher"]{ display:none; }
+#makesGrid[data-aud="student"] .desk > .spec[data-aud="student"], #makesGrid[data-aud="institution"] .desk > .spec[data-aud="institution"]{ display:block; animation:audIn .5s cubic-bezier(.2,.8,.2,1) both; }
+#makesGrid .desk > .spec[data-aud]:nth-of-type(n){ animation-delay:calc(var(--k,0) * 70ms); }
+@keyframes audIn{ from{ opacity:0; transform:translateY(10px) rotate(var(--r,0deg)); } to{ opacity:1; transform:rotate(var(--r,0deg)); } }
+.spec-bar{ display:inline-block; vertical-align:middle; width:110px; height:6px; border-radius:6px; margin-right:8px; background:linear-gradient(90deg, var(--vv-accent) var(--w), var(--vv-rule-hi) var(--w)); }
+.sp-rev, .sp-prac, .sp-expl, .sp-prog, .sp-cov, .sp-heat, .sp-std, .sp-roll{ width:94%; }
+.sp-prac, .sp-heat{ align-self:flex-end; --r:.8deg; } .sp-rev, .sp-cov{ --r:-1deg; } .sp-expl, .sp-std{ align-self:flex-end; --r:1.4deg; } .sp-prog, .sp-roll{ --r:-.8deg; }
+@media (min-width:1160px){
+  #makesGrid[data-aud="student"] .desk, #makesGrid[data-aud="institution"] .desk{ height:640px; }
+  .sp-rev { left:0;   top:10px;  width:47%; z-index:3; }
+  .sp-prac{ left:49%; top:70px;  width:51%; z-index:5; }
+  .sp-expl{ left:3%;  top:250px; width:46%; z-index:4; }
+  .sp-prog{ left:50%; top:380px; width:46%; z-index:6; }
+  .sp-cov { left:0;   top:10px;  width:52%; z-index:3; }
+  .sp-heat{ left:42%; top:50px;  width:58%; z-index:5; }
+  .sp-std { left:4%;  top:300px; width:44%; z-index:4; }
+  .sp-roll{ left:52%; top:390px; width:44%; z-index:6; }
+}
+@media (prefers-reduced-motion:reduce){ #makes .ixlist, #makesGrid .desk > .spec{ animation:none !important; } .aud-pill{ transition:none; } }
+
+/* ---- Going to Login: a book turns its pages while the app loads ---- */
+.vv-go{ position:fixed; inset:0; z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; background:var(--vv-paper); color:var(--vv-ink-2); font-size:.78rem; letter-spacing:.04em; opacity:0; pointer-events:none; transition:opacity .25s ease; }
+.vv-go.on{ opacity:1; pointer-events:auto; }
+.vv-book{ position:relative; width:64px; height:64px; perspective:256px; color:var(--vv-ink); }
+.vv-book i{ position:absolute; top:13%; width:45%; height:74%; border:2.5px solid currentColor; box-sizing:border-box; }
+.vv-book .l{ left:5%; border-right-width:1.25px; border-radius:4px 1px 1px 4px; }
+.vv-book .r{ left:50%; border-left-width:1.25px; border-radius:1px 4px 4px 1px; }
+.vv-book .f{ background:color-mix(in srgb, currentColor 12%, var(--vv-paper)); transform-origin:left center; animation:vvTurn 1.3s cubic-bezier(.45,.05,.35,1) infinite; box-shadow:0 2px 8px color-mix(in srgb, currentColor 14%, transparent); }
+.vv-book .f2{ animation-delay:-.65s; }
+@keyframes vvTurn{ 0%{ transform:rotateY(0); opacity:1; } 70%{ transform:rotateY(-180deg); opacity:1; } 85%,100%{ transform:rotateY(-180deg); opacity:0; } }
+@media (prefers-reduced-motion:reduce){ .vv-book .f{ animation:none; opacity:0; } }
+
+/* ---- Institutions: the school-wide board ---- */
+.sp-rev .spec-cite, .sp-prac .spec-cite{ display:block; width:fit-content; }
+.ib{ display:none; }
+#makesGrid[data-aud="institution"]{ grid-template-columns:1fr; }
+#makesGrid[data-aud="institution"] > :not(.ib){ display:none !important; }
+#makesGrid[data-aud="institution"] > .ib{ display:block; animation:audIn .55s cubic-bezier(.2,.8,.2,1) both; }
+.ib{ --ib-bg:#15110D; --ib-bg-2:#1F1A14; --ib-fg:#F4EFE6; --ib-mut:rgba(244,239,230,.62); --ib-rule:rgba(244,239,230,.12); --ib-hot:#F0794F;
+  position:relative; overflow:hidden; border-radius:32px; background:var(--ib-bg); color:var(--ib-fg); padding:clamp(22px,4vw,48px);
+  box-shadow:0 40px 80px -40px rgba(20,12,4,.55); isolation:isolate; }
+.ib::before{ content:""; position:absolute; inset:-20% -10% auto auto; width:70%; height:90%; z-index:-1; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(240,121,79,.20), transparent 70%); animation:ibGlow 9s ease-in-out infinite alternate; }
+.ib::after{ content:""; position:absolute; inset:auto auto -30% -15%; width:60%; height:70%; z-index:-1; pointer-events:none;
+  background:radial-gradient(closest-side, rgba(124,211,164,.12), transparent 70%); }
+@keyframes ibGlow{ to{ transform:translate(-12%,10%) scale(1.1); } }
+.ib-k{ font-family:var(--disp); font-weight:600; font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ib-hot); }
+.ib-top{ display:grid; gap:28px; }
+@media (min-width:1000px){ .ib-top{ grid-template-columns:1.1fr 1fr; align-items:end; gap:48px; } }
+.ib-head h3{ font-family:var(--disp); font-weight:700; font-size:clamp(1.9rem,3.3vw,2.75rem); line-height:1.04; text-wrap:balance; letter-spacing:-.025em; margin:12px 0 14px; color:var(--ib-fg); }
+.ib-head h3 em{ font-style:normal; color:var(--ib-mut); }
+.ib-head p{ color:var(--ib-mut); max-width:46ch; line-height:1.55; margin:0; }
+.ib-kpis{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.ib-kpi{ background:rgba(244,239,230,.05); border:1px solid var(--ib-rule); border-radius:22px; padding:16px 16px 18px; display:flex; flex-direction:column; gap:8px; }
+.ib-note{ grid-column:1/-1; font-size:.68rem; color:var(--ib-mut); opacity:.8; text-align:right; }
+.ib-kpi b{ font-family:var(--disp); font-weight:700; font-size:clamp(1.5rem,2.6vw,2.1rem); letter-spacing:-.02em; font-variant-numeric:tabular-nums; }
+.ib-kpi > span{ font-size:.78rem; line-height:1.4; color:var(--ib-mut); }
+.ib-kpi:first-child b{ color:#9FE3BE; }
+.ib-main{ display:grid; gap:28px; margin-top:34px; }
+@media (min-width:1000px){ .ib-main{ grid-template-columns:1.35fr 1fr; gap:40px; align-items:start; } }
+.ib-map{ position:relative; margin:0; background:var(--ib-bg-2); border:1px solid var(--ib-rule); border-radius:26px; padding:18px 18px 20px; }
+.ib-map figcaption{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; font-size:.72rem; color:var(--ib-mut); margin-bottom:14px; }
+.ib-legend{ display:inline-flex; align-items:center; gap:4px; }
+.ib-legend i{ width:12px; height:8px; border-radius:3px; display:inline-block; }
+.ib-legend i:nth-child(1){ background:var(--ib-hot); margin-left:2px; } .ib-legend i:nth-child(2){ background:#B07A45; margin-left:6px; } .ib-legend i:nth-child(3){ background:#5E8F68; } .ib-legend i:nth-child(4){ background:#8ED4A8; margin-right:4px; }
+.ib-grid{ display:grid; grid-template-columns:44px repeat(8,minmax(0,1fr)); gap:5px; font-size:.64rem; color:var(--ib-mut); }
+.ib-grid .h{ writing-mode:vertical-rl; transform:rotate(180deg); justify-self:center; align-self:end; padding-bottom:4px; white-space:nowrap; height:84px; overflow:hidden; text-overflow:ellipsis; }
+.ib-grid .r{ align-self:center; font-weight:600; font-family:var(--disp); }
+.ib-grid .c{ aspect-ratio:1.5; border-radius:7px; background:var(--cc); opacity:0; transform:scale(.6); transition:opacity .5s ease, transform .5s cubic-bezier(.2,.8,.2,1); transition-delay:var(--d); }
+.ib.go .ib-grid .c{ opacity:1; transform:none; }
+.ib-grid .c.hot{ position:relative; box-shadow:0 0 0 2px var(--ib-bg-2), 0 0 0 4px var(--ib-hot); }
+.ib.go .ib-grid .c.hot{ animation:ibPulse 1.8s ease-in-out 1.6s infinite; }
+@keyframes ibPulse{ 50%{ box-shadow:0 0 0 2px var(--ib-bg-2), 0 0 0 4px var(--ib-hot), 0 0 22px 6px rgba(240,121,79,.45); } }
+.ib-call{ margin-top:14px; background:rgba(240,121,79,.10); border:1px solid rgba(240,121,79,.35); border-radius:18px; padding:12px 14px; display:flex; flex-direction:column; gap:3px; font-size:.8rem; color:var(--ib-mut); line-height:1.45;
+  opacity:0; transform:translateY(8px); transition:opacity .5s ease 1.4s, transform .5s ease 1.4s; }
+.ib.go .ib-call{ opacity:1; transform:none; }
+.ib-call b{ color:var(--ib-fg); font-family:var(--disp); font-size:.95rem; }
+.ib-call-k{ font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:var(--ib-hot); font-weight:600; }
+.ib-caps{ list-style:none; margin:0; padding:0; display:grid; gap:0; counter-reset:ib; }
+.ib-caps li{ counter-increment:ib; display:grid; grid-template-columns:34px 1fr; column-gap:10px; padding:13px 0; border-top:1px solid var(--ib-rule); }
+.ib-caps li:first-child{ border-top:0; padding-top:4px; }
+.ib-caps li::before{ content:counter(ib, decimal-leading-zero); grid-row:span 2; font-family:var(--disp); font-size:.7rem; color:var(--ib-hot); padding-top:3px; font-variant-numeric:tabular-nums; }
+.ib-caps b{ font-family:var(--disp); font-size:1.02rem; font-weight:600; }
+.ib-caps span{ font-size:.84rem; color:var(--ib-mut); line-height:1.5; margin-top:2px; }
+.ib-cases{ margin-top:34px; background:var(--ib-fg); color:#15110D; border-radius:26px; padding:clamp(18px,3vw,30px); }
+.ib-cases .ib-k{ color:#C6431E; }
+.ib-cases-hd{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
+.ib-tabs{ display:inline-flex; flex-wrap:wrap; gap:4px; padding:4px; border-radius:999px; background:rgba(21,17,13,.07); }
+.ib-tabs button{ font:inherit; font-size:.82rem; font-weight:600; padding:8px 14px; border:0; border-radius:999px; background:transparent; color:#4A443C; cursor:pointer; transition:background .25s, color .25s; }
+.ib-tabs button[aria-selected="true"]{ background:#15110D; color:#F4EFE6; }
+.ib-case{ display:grid; gap:18px 30px; margin-top:22px; animation:audIn .45s cubic-bezier(.2,.8,.2,1) both; }
+.ib-case[hidden]{ display:none; }
+@media (min-width:900px){ .ib-case{ grid-template-columns:1fr 1fr; } .ib-case-who, .ib-case-out{ grid-column:1/-1; } }
+.ib-case-who{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; }
+.ib-case-who b{ font-family:var(--disp); font-size:1.45rem; letter-spacing:-.015em; }
+.ib-case-who span{ color:#7A7165; font-size:.86rem; }
+.ib-case-k{ font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; font-weight:600; color:#7A7165; }
+.ib-case-col p{ margin:6px 0 0; line-height:1.55; color:#2C2620; font-size:.93rem; }
+.ib-case-out{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.ib-case-out div{ background:#fff; border:1px solid rgba(21,17,13,.1); border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:4px; }
+.ib-case-out b{ font-family:var(--disp); font-size:clamp(1.15rem,2vw,1.6rem); letter-spacing:-.02em; color:#C6431E; }
+.ib-case-out span{ font-size:.78rem; color:#4A443C; line-height:1.35; }
+.ib-foot{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-top:20px; padding-top:16px; border-top:1px solid rgba(21,17,13,.1); font-size:.76rem; color:#7A7165; }
+.ib-cta{ display:inline-flex; padding:11px 18px; border-radius:999px; background:#15110D; color:#F4EFE6 !important; font-weight:600; font-size:.88rem; text-decoration:none; transition:transform .25s; }
+.ib-cta:hover{ transform:translateY(-2px); }
+@media (max-width:700px){
+  .ib{ border-radius:26px; }
+  .ib-kpis{ grid-template-columns:1fr; }
+  .ib-kpi{ flex-direction:row; align-items:center; gap:14px; padding:12px 14px; }
+  .ib-kpi b{ flex:0 0 96px; }
+  .ib-grid{ grid-template-columns:30px repeat(8,minmax(0,1fr)); gap:3px; }
+  .ib-grid .h{ height:64px; font-size:.56rem; }
+  .ib-grid .c{ border-radius:5px; }
+  .ib-tabs{ flex-wrap:nowrap; width:100%; } .ib-tabs button{ flex:1 1 0; padding:8px 6px; font-size:.72rem; white-space:nowrap; }
+  .ib-case-out{ grid-template-columns:1fr; }
+  .ib-case-out div{ flex-direction:row; align-items:baseline; gap:10px; }
+}
+@media (prefers-reduced-motion:reduce){ .ib::before, .ib.go .ib-grid .c.hot{ animation:none; } .ib-grid .c, .ib-call{ transition:none; } }
 </style>
 </head>
 <body>
@@ -1203,7 +1341,7 @@ details.more .lede{ margin-top:10px; }
     <div class="wk-head">
       <div>
         <span class="eyebrow rv">Where a teacher&rsquo;s week goes</span>
-        <h2 class="rv d1">A 40-hour week.<br /><span class="wk-line" id="wkLine"><span class="wk-dim">Only</span> <span class="wk-hl">18 hours</span> <span class="wk-dim">of it teaching.</span></span></h2>
+        <h2 class="rv d1">A 40-hour week.<br /><span class="wk-line" id="wkLine"><span class="wk-hl">18 hours</span> <span class="wk-dim">in the classroom.</span></span></h2>
       </div>
       <div class="wk-toggle rv d2" role="tablist" aria-label="Compare a week">
         <span class="wk-pill" aria-hidden="true"></span>
@@ -1213,20 +1351,20 @@ details.more .lede{ margin-top:10px; }
     </div>
 
     <div class="wk rv d2" id="wk" data-mode="today">
-      <div class="wk-bar" id="wkBar" role="img" aria-label="An illustrative 40-hour teaching week. Today: 22 hours of preparation and 18 of teaching. With Vivran: about 7 hours of preparation, 18 of teaching, and 15 hours back.">
+      <div class="wk-bar" id="wkBar" role="img" aria-label="An illustrative 40-hour teaching week. Today: 22 hours of preparation and 18 in the classroom. With Vivran: about 7 hours of preparation, 18 in the classroom, and 15 more hours for students.">
         <div class="wk-seg" data-today="3" data-vivran="1" data-name="Syllabus planning" style="--c:#7C2E12"><span>Syllabus planning</span></div><div class="wk-seg" data-today="6" data-vivran="1.5" data-name="Slides" style="--c:#A4451F"><span>Slides</span></div><div class="wk-seg" data-today="3" data-vivran="1" data-name="Worksheets" style="--c:#BE6440"><span>Worksheets</span></div><div class="wk-seg" data-today="5" data-vivran="1.5" data-name="Paper setting" style="--c:#CE8A67"><span>Paper setting</span></div><div class="wk-seg" data-today="3" data-vivran="0.5" data-name="Answer keys" style="--c:#DCAE93"><span>Answer keys</span></div><div class="wk-seg" data-today="2" data-vivran="1.5" data-name="Re-checking" style="--c:#E8CFBE"><span>Re-checking</span></div>
-        <div class="wk-seg wk-teach" data-today="18" data-vivran="18" data-name="Teaching"><span>Teaching · 18h</span></div>
-        <div class="wk-seg wk-back" data-today="0" data-vivran="15" data-name="Time back"><span>Time back · 15h</span></div>
+        <div class="wk-seg wk-teach" data-today="18" data-vivran="18" data-name="In the classroom"><span>In the classroom · 18h</span></div>
+        <div class="wk-seg wk-back" data-today="0" data-vivran="15" data-name="Time for students"><span>Time for students · 15h</span></div>
       </div>
       <div class="wk-tip" id="wkTip" role="status" aria-live="polite"></div>
 
       <div class="wk-stats">
         <div class="wk-stat"><span class="wk-k">Preparation</span><span class="wk-v"><span id="wkPrep">22</span>h</span></div>
-        <div class="wk-stat"><span class="wk-k">Teaching</span><span class="wk-v">18h</span></div>
-        <div class="wk-stat wk-stat-back"><span class="wk-k">Back for students</span><span class="wk-v">+<span id="wkBack">0</span>h</span></div>
+        <div class="wk-stat"><span class="wk-k">In the classroom</span><span class="wk-v">18h</span></div>
+        <div class="wk-stat wk-stat-back"><span class="wk-k">Time for students</span><span class="wk-v">+<span id="wkBack">0</span>h</span></div>
       </div>
     </div>
-    <p class="wk-note rv">Illustrative week, from teachers we&rsquo;ve sat with. Tap or hover a block to see what changes.</p>
+    <p class="wk-note rv">An illustrative week, based on conversations with teachers. Tap or hover a block to see what changes.</p>
   </div>
 </section>
 
@@ -1244,7 +1382,7 @@ details.more .lede{ margin-top:10px; }
     <div class="tour-frame rv d2">
       <iframe id="tourFrame" title="Vivran demo" src="/demo?embed=1" loading="lazy" scrolling="no"></iframe>
     </div>
-    <p class="tour-foot rv">Sample data. Teacher features are live today; student and school views are a preview of what we&rsquo;re building next. <a href="/demo" target="_blank" rel="noopener">Open full screen &rarr;</a></p>
+    <p class="tour-foot rv"><a class="tour-full" href="/demo" target="_blank" rel="noopener">Open the demo full screen <span>&#8599;</span></a></p>
   </div>
 </section>
 
@@ -1256,15 +1394,25 @@ details.more .lede{ margin-top:10px; }
     <div class="sec-head">
       <span class="eyebrow rv">Features · built from your material</span>
       <h2 class="rv d1">Give Vivran what you already teach.<br />It takes care of the rest.</h2>
-      <p class="lede rv d2">
+      <p class="lede rv d2" id="audLede">
         Upload your syllabus, textbook, lecture, notes or existing material. Vivran helps turn it
         into the things you need for the classroom, without losing the way you teach.
       </p>
     </div>
 
-    <div class="makes-grid">
+    <div class="aud-bar rv d2">
+      <div class="aud-switch" role="tablist" aria-label="Who it is for">
+        <span class="aud-pill" aria-hidden="true"></span>
+        <button type="button" role="tab" aria-selected="true" data-aud="teacher">Teachers</button>
+        <button type="button" role="tab" aria-selected="false" data-aud="student">Students</button>
+        <button type="button" role="tab" aria-selected="false" data-aud="institution">Institutions</button>
+      </div>
+      <span class="aud-status" id="audStatus">Live today</span>
+    </div>
+
+    <div class="makes-grid" id="makesGrid" data-aud="teacher">
       <div class="rv d2">
-        <ol class="ixlist" id="ixlist">
+        <ol class="ixlist" id="ixlist" data-aud="teacher">
           <li class="ix-row" data-spec="sp-plan">
             <span class="ix-n">i</span><span class="ix-t">Course plans</span>
             <span class="ix-d">Know what comes next</span>
@@ -1290,14 +1438,20 @@ details.more .lede{ margin-top:10px; }
             <span class="ix-d">Take the lesson beyond the classroom</span>
           </li>
         </ol>
+        <ol class="ixlist" data-aud="student">
+          <li class="ix-row" data-spec="sp-rev"><span class="ix-n">i</span><span class="ix-t">Revision from class</span><span class="ix-d">Revise exactly what was taught</span></li>
+          <li class="ix-row" data-spec="sp-prac"><span class="ix-n">ii</span><span class="ix-t">Practice that explains</span><span class="ix-d">Every mistake explained, page linked</span></li>
+          <li class="ix-row" data-spec="sp-expl"><span class="ix-n">iii</span><span class="ix-t">Explain it simply</span><span class="ix-d">Hard ideas in everyday examples</span></li>
+          <li class="ix-row" data-spec="sp-prog"><span class="ix-n">iv</span><span class="ix-t">Progress</span><span class="ix-d">Know what to revisit before the test</span></li>
+        </ol>
         <p class="ixlist-note">
           Each one is built from your material, and each one keeps its sources attached.
         </p>
-        <p class="rail-hint m-only" aria-hidden="true">Swipe through seven of them &rarr;</p>
+        <p class="rail-hint m-only" aria-hidden="true">Swipe through them &rarr;</p>
       </div>
 
       <div class="desk" id="desk">
-        <article class="spec sp-plan" data-spec="sp-plan">
+        <article data-aud="teacher" class="spec sp-plan" data-spec="sp-plan">
           <div class="spec-hd"><span>Course plan · life sciences</span><span class="spec-mark">4 weeks</span></div>
           <div class="spec-t">Cell Structure and Transport</div>
           <div class="spec-b">
@@ -1307,7 +1461,7 @@ details.more .lede{ margin-top:10px; }
           </div>
         </article>
 
-        <article class="spec sp-slide" data-spec="sp-slide">
+        <article data-aud="teacher" class="spec sp-slide" data-spec="sp-slide">
           <div class="spec-hd"><span>Slide 07 of 14 · history</span><span class="spec-mark">with notes</span></div>
           <div class="spec-t">Partition and the map of 1947</div>
           <div class="spec-b">
@@ -1318,7 +1472,7 @@ details.more .lede{ margin-top:10px; }
           </div>
         </article>
 
-        <article class="spec sp-paper spec-lg" data-spec="sp-paper">
+        <article data-aud="teacher" class="spec sp-paper spec-lg" data-spec="sp-paper">
           <div class="spec-hd"><span>Exam paper · economics</span><span class="spec-mark">40 marks · 90 min</span></div>
           <div class="spec-t">Unit Assessment II: Markets and Price</div>
           <div class="spec-b">
@@ -1331,7 +1485,7 @@ details.more .lede{ margin-top:10px; }
           </div>
         </article>
 
-        <article class="spec sp-work" data-spec="sp-work">
+        <article data-aud="teacher" class="spec sp-work" data-spec="sp-work">
           <div class="spec-hd"><span>Worksheet · mathematics</span><span class="spec-mark">q4 of 10</span></div>
           <div class="spec-b" style="margin-top:0">
             Evaluate <b>∫ x · ln x dx</b>, stating your choice of u and dv.
@@ -1340,7 +1494,7 @@ details.more .lede{ margin-top:10px; }
           </div>
         </article>
 
-        <article class="spec sp-notes" data-spec="sp-notes">
+        <article data-aud="teacher" class="spec sp-notes" data-spec="sp-notes">
           <div class="spec-hd"><span>Lesson notes · literature</span><span class="spec-mark">section 2</span></div>
           <div class="spec-t">Voice and distance in Kamala Das</div>
           <div class="spec-b">
@@ -1350,7 +1504,7 @@ details.more .lede{ margin-top:10px; }
           </div>
         </article>
 
-        <article class="spec sp-audio" data-spec="sp-audio">
+        <article data-aud="teacher" class="spec sp-audio" data-spec="sp-audio">
           <div class="spec-hd"><span>Narration · spanish</span><span class="spec-mark">03:41</span></div>
           <div class="wave" aria-hidden="true">
             <i style="height:22%"></i><i style="height:48%"></i><i style="height:76%"></i><i style="height:40%"></i><i style="height:92%"></i><i style="height:58%"></i><i style="height:30%"></i><i style="height:70%"></i><i style="height:100%"></i><i style="height:44%"></i><i style="height:62%"></i><i style="height:26%"></i><i style="height:80%"></i><i style="height:52%"></i><i style="height:34%"></i><i style="height:66%"></i><i style="height:20%"></i><i style="height:56%"></i><i style="height:84%"></i><i style="height:38%"></i>
@@ -1358,6 +1512,101 @@ details.more .lede{ margin-top:10px; }
           <p class="spec-quote">"Empecemos con el pretérito, el tiempo de lo que ya terminó."</p>
         </article>
 
+        <article data-aud="student" class="spec sp-rev" data-spec="sp-rev">
+          <div class="spec-hd"><span>Revision · history</span><span class="spec-mark">card 4 of 12</span></div>
+          <div class="spec-t">What did the Tennis Court Oath promise?</div>
+          <div class="spec-b">Not to separate until France had a constitution.<span class="spec-cite">From Ms. Rao&rsquo;s deck · slide 5</span></div>
+        </article>
+        <article data-aud="student" class="spec sp-prac spec-lg" data-spec="sp-prac">
+          <div class="spec-hd"><span>Practice · economics</span><span class="spec-mark">q3 of 5</span></div>
+          <div class="spec-t">Why does a shortage appear when a price ceiling is set below equilibrium?</div>
+          <div class="spec-b">
+            <div class="spec-row"><span class="spec-k">You said</span><span class="spec-v">Because sellers stop producing completely.</span></div>
+            <div class="spec-row"><span class="spec-k">Not quite</span><span class="spec-v">Sellers offer <b>less</b>, buyers want <b>more</b>: the gap is the shortage.</span></div>
+            <span class="spec-cite">See Unit 5, Markets and Price.pdf · p. 18</span>
+          </div>
+        </article>
+        <article data-aud="student" class="spec sp-expl" data-spec="sp-expl">
+          <div class="spec-hd"><span>Explain it simply · finance</span><span class="spec-mark">everyday example</span></div>
+          <div class="spec-t">Compound interest, as a mango tree</div>
+          <div class="spec-b">Plant the seeds from this year&rsquo;s mangoes and next year you have more trees. Interest that earns interest grows the same way.</div>
+        </article>
+        <article data-aud="student" class="spec sp-prog" data-spec="sp-prog">
+          <div class="spec-hd"><span>Progress · Class 9B</span><span class="spec-mark">this week</span></div>
+          <div class="spec-b" style="margin-top:0">
+            <div class="spec-row"><span class="spec-k">88%</span><span class="spec-v">The three estates</span></div>
+            <div class="spec-row"><span class="spec-k">76%</span><span class="spec-v">Causes of 1789</span></div>
+            <div class="spec-row"><span class="spec-k">52%</span><span class="spec-v"><b>Timeline of events</b>, revisit next · 6 minutes</span></div>
+          </div>
+        </article>
+      </div>
+      <div class="ib" data-aud="institution" aria-label="Vivran for institutions">
+        <div class="ib-top">
+          <div class="ib-head">
+            <span class="ib-k">Vivran for institutions</span>
+            <h3>See every classroom.<br/><em>Act before the results do.</em></h3>
+            <p>Every lesson, paper and practice answer already passes through Vivran. Together they become a live picture of teaching and learning across the institution.</p>
+          </div>
+          <div class="ib-kpis">
+            <div class="ib-kpi"><b><span data-ib-count="930">0</span> h</b><span>of teacher time returned each week, across 62 teachers</span></div>
+            <div class="ib-kpi"><b><span data-ib-count="100">0</span>%</b><span>of sections visible: taught against plan, every week</span></div>
+            <div class="ib-kpi"><b><span data-ib-count="6">0</span> wks</b><span>earlier: struggling sections seen before the unit test, not after</span></div>
+            <span class="ib-note">Illustrative, for a school of 62 teachers</span>
+          </div>
+        </div>
+
+        <div class="ib-main">
+          <figure class="ib-map">
+            <figcaption><span>Learning map · Class 9 &amp; 10 · this term</span><span class="ib-legend"><i></i>needs help<i></i><i></i><i></i>secure</span></figcaption>
+            <div class="ib-grid" id="ibGrid" role="img" aria-label="A grid of classes by topic, coloured by how well each is understood. 9B on the Reign of Terror stands out at 41 percent."></div>
+            <div class="ib-call" id="ibCall">
+              <span class="ib-call-k">Flagged this week</span>
+              <b>9B · Reign of Terror · 41%</b>
+              <span>against 63% in 9A. Suggested: a 10-minute recap before Friday&rsquo;s test, already built from Ms. Rao&rsquo;s deck.</span>
+            </div>
+          </figure>
+          <ol class="ib-caps">
+            <li><b>Academic intelligence</b><span>Understanding by class, topic and student, from everyday practice rather than end-of-term exams.</span></li>
+            <li><b>Curriculum assurance</b><span>What was taught against what was planned, for every section, with gaps raised while there is still time.</span></li>
+            <li><b>Early intervention</b><span>Students who need help are surfaced early, with the recap or practice to run ready to go.</span></li>
+            <li><b>Shared standards</b><span>Department paper formats, rubrics and question banks that every teacher builds on.</span></li>
+            <li><b>Reporting, done already</b><span>Evidence for boards, accreditation and parents, compiled from the work already done through the term.</span></li>
+            <li><b>One rollout</b><span>Your board, textbooks and formats set up once. Roles, single sign-on, and your data stays yours.</span></li>
+          </ol>
+        </div>
+
+        <div class="ib-cases">
+          <div class="ib-cases-hd">
+            <span class="ib-k">What it looks like</span>
+            <div class="ib-tabs" role="tablist" aria-label="Kind of institution">
+              <button type="button" role="tab" aria-selected="true" data-case="0">K&ndash;12 school</button>
+              <button type="button" role="tab" aria-selected="false" data-case="1">Coaching network</button>
+              <button type="button" role="tab" aria-selected="false" data-case="2">College department</button>
+            </div>
+          </div>
+          <div class="ib-case" data-case="0">
+            <div class="ib-case-who"><b>A CBSE school</b><span>1,400 students · 62 teachers · Classes 6 to 12</span></div>
+            <div class="ib-case-col"><span class="ib-case-k">The challenge</span><p>Results arrive in March. By then, a section that lost its way in October cannot be helped, and every teacher has set papers in their own format.</p></div>
+            <div class="ib-case-col"><span class="ib-case-k">With Vivran</span><p>Teachers build from one shared syllabus. Practice runs every week. The academic head sees a learning map each Monday and assigns recaps in a click.</p></div>
+            <div class="ib-case-out"><div><b>930 h</b><span>a week back to teaching</span></div><div><b>Weekly</b><span>view of every section</span></div><div><b>1</b><span>paper format, 4 departments</span></div></div>
+          </div>
+          <div class="ib-case" data-case="1" hidden>
+            <div class="ib-case-who"><b>A coaching network</b><span>6 centres · 3,000 students · JEE and NEET</span></div>
+            <div class="ib-case-col"><span class="ib-case-k">The challenge</span><p>Each centre writes its own tests, quality varies, and head office only learns which batch is behind when mock results come in.</p></div>
+            <div class="ib-case-col"><span class="ib-case-k">With Vivran</span><p>One question bank, tagged to chapter and concept, feeds every centre. Every wrong answer is explained back to the page, and batches are compared side by side.</p></div>
+            <div class="ib-case-out"><div><b>1</b><span>question bank, 6 centres</span></div><div><b>Every</b><span>answer explained to the page</span></div><div><b>Daily</b><span>batch-by-batch view</span></div></div>
+          </div>
+          <div class="ib-case" data-case="2" hidden>
+            <div class="ib-case-who"><b>A college department</b><span>40 faculty · 1,100 students · accreditation year</span></div>
+            <div class="ib-case-col"><span class="ib-case-k">The challenge</span><p>Course-outcome evidence is assembled by hand in the weeks before the visit, from papers and slides spread across forty laptops.</p></div>
+            <div class="ib-case-col"><span class="ib-case-k">With Vivran</span><p>Every paper and lesson is mapped to course outcomes as it is made, so attainment builds up through the term and the file is ready when it is needed.</p></div>
+            <div class="ib-case-out"><div><b>CO&ndash;PO</b><span>mapping kept as you teach</span></div><div><b>1</b><span>accreditation file, always current</span></div><div><b>40</b><span>faculty on one standard</span></div></div>
+          </div>
+          <div class="ib-foot">
+            <span>Illustrative scenarios: the figures are what our pilots are designed to show, not results yet.</span>
+            <a class="ib-cta" href="mailto:info@vivran.co.in?subject=Vivran%20pilot%20for%20our%20institution">Talk to us about a pilot &rarr;</a>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -2104,8 +2353,8 @@ window.addEventListener('message', function(e){
     segs.forEach(function(sg){ var h=+sg.dataset[m]; sg.style.flexBasis=(h/40*100)+'%'; sg.classList.toggle('wide', h>=4); });
     var line=document.getElementById('wkLine');
     if(line){ line.classList.add('swap'); setTimeout(function(){
-      line.innerHTML = m==='today' ? '<span class="wk-dim">Only</span> <span class="wk-hl">18 hours</span> <span class="wk-dim">of it teaching.</span>'
-                                   : '<span class="wk-hl wk-ok">15 hours</span> <span class="wk-dim">back, every week.</span>';
+      line.innerHTML = m==='today' ? '<span class="wk-hl">18 hours</span> <span class="wk-dim">in the classroom.</span>'
+                                   : '<span class="wk-hl wk-ok">15 more hours</span> <span class="wk-dim">for students, every week.</span>';
       line.classList.remove('swap'); }, reduce?0:250); }
     var prep=m==='today'?22:7, back=m==='today'?0:15;
     count(prepEl, nums.prep, prep, 900); count(backEl, nums.back, back, 900); nums={prep:prep, back:back};
@@ -2115,8 +2364,8 @@ window.addEventListener('message', function(e){
   segs.forEach(function(sg){
     sg.addEventListener('mouseenter', function(){
       var a=+sg.dataset.today, v=+sg.dataset.vivran, n=sg.dataset.name;
-      tip.innerHTML = n==='Time back' ? '<b>Time back</b>: 15 hours a week for students, feedback and rest' :
-        n==='Teaching' ? '<b>Teaching</b>: 18 hours, the part that matters most, unchanged' :
+      tip.innerHTML = n==='Time for students' ? '<b>Time for students</b>: 15 hours a week for feedback, one-to-one help and better lessons' :
+        n==='In the classroom' ? '<b>In the classroom</b>: 18 hours, unchanged' :
         '<b>'+n+'</b>: '+a+'h today &rarr; '+v+'h with Vivran';
     });
     sg.addEventListener('mouseleave', function(){ tip.textContent=''; });
@@ -2135,6 +2384,82 @@ window.addEventListener('message', function(e){
     io.observe(wk);
   } else start();
   mode=null; requestAnimationFrame(function(){ mode='today'; movePill(); mode=null; });
+})();
+</script>
+
+<script>
+/* Features: switch who the section speaks to. Same material, three uses. */
+(function(){
+  var grid=document.getElementById('makesGrid'); if(!grid) return;
+  var sw=document.querySelector('.aud-switch'), pill=sw.querySelector('.aud-pill'), btns=[].slice.call(sw.querySelectorAll('button'));
+  var lede=document.getElementById('audLede'), status=document.getElementById('audStatus');
+  var LEDE={
+    teacher: lede.innerHTML,
+    student: 'The same material becomes revision and practice for students, built on exactly what was taught in class, with every answer linked back to the page.',
+    institution: 'For leadership, Vivran turns the everyday work of teaching into a clear view of the whole institution: what is taught, what is learned, and where to step in.'
+  };
+  function place(b){ pill.style.width=b.offsetWidth+'px'; pill.style.transform='translateX('+(b.offsetLeft-4)+'px)'; }
+  function pick(a){
+    grid.dataset.aud=a;
+    btns.forEach(function(b){ var on=b.dataset.aud===a; b.setAttribute('aria-selected',String(on)); if(on) place(b); });
+    lede.innerHTML=LEDE[a];
+    status.textContent = a==='teacher' ? 'Live today' : a==='institution' ? 'Pilots open' : 'Coming next';
+    if(a==='institution' && window.vvBoard) window.vvBoard();
+    status.classList.toggle('soon', a!=='teacher');
+    [].slice.call(grid.querySelectorAll('.desk > .spec[data-aud="'+a+'"]')).forEach(function(c,i){ c.style.setProperty('--k', i); });
+  }
+  btns.forEach(function(b){ b.addEventListener('click', function(){ pick(b.dataset.aud); }); });
+  window.addEventListener('resize', function(){ var on=btns.find(function(b){ return b.getAttribute('aria-selected')==='true'; }); if(on) place(on); });
+  requestAnimationFrame(function(){ place(btns[0]); });
+})();
+</script>
+
+<div class="vv-go" id="vvGo" aria-hidden="true"><span class="vv-book"><i class="l"></i><i class="r"></i><i class="r f"></i><i class="r f f2"></i></span><span>Opening Vivran&hellip;</span></div>
+<script>
+/* Login links: show the turning book at once, while the app loads. */
+(function(){
+  var go=document.getElementById('vvGo');
+  document.addEventListener('click', function(e){
+    var a=e.target.closest && e.target.closest('a[href^="/login"]');
+    if(!a || e.metaKey || e.ctrlKey || e.shiftKey || e.button!==0) return;
+    go.classList.add('on');
+  });
+  window.addEventListener('pageshow', function(){ go.classList.remove('on'); });
+})();
+</script>
+
+<script>
+/* Institutions board: build the learning map, count the numbers up, switch cases. */
+(function(){
+  var ib=document.querySelector('.ib'); if(!ib) return;
+  var grid=document.getElementById('ibGrid');
+  var topics=['Three estates','Causes of 1789','Tennis Court Oath','Reign of Terror','Napoleon','Socialism','Forest society','Pastoralists'];
+  var classes=['9A','9B','9C','9D','10A','10B'];
+  // fixed sample values (percent understood); 9B on the Reign of Terror is the one to see
+  var V=[[88,81,74,63,79,70,84,77],[84,76,69,41,72,66,80,71],[90,85,78,67,81,74,86,82],[79,72,64,58,70,61,75,69],[86,80,77,72,83,68,78,74],[82,74,70,66,76,59,73,70]];
+  function col(v){ var stops=[[40,[240,121,79]],[60,[176,122,69]],[75,[94,143,104]],[92,[142,212,168]]];
+    for(var i=1;i<stops.length;i++){ if(v<=stops[i][0]){ var a=stops[i-1],b=stops[i],t=Math.max(0,(v-a[0])/(b[0]-a[0]));
+      return 'rgb('+a[1].map(function(x,k){return Math.round(x+(b[1][k]-x)*t)}).join(',')+')'; } } return 'rgb(142,212,168)'; }
+  var h='<span></span>'; topics.forEach(function(t){ h+='<span class="h" title="'+t+'">'+t+'</span>'; });
+  classes.forEach(function(c,r){ h+='<span class="r">'+c+'</span>';
+    V[r].forEach(function(v,k){ var hot=(r===1&&k===3); h+='<span class="c'+(hot?' hot':'')+'" title="'+c+' · '+topics[k]+' · '+v+'%" style="--cc:'+col(v)+';--d:'+((r+k)*45)+'ms"></span>'; }); });
+  grid.innerHTML=h;
+  var done=false;
+  window.vvBoard=function(){
+    requestAnimationFrame(function(){ ib.classList.add('go'); });
+    if(done) return; done=true;
+    var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    [].slice.call(ib.querySelectorAll('[data-ib-count]')).forEach(function(el){
+      var to=+el.dataset.ibCount; if(reduce){ el.textContent=to.toLocaleString('en-IN'); return; }
+      var t0=performance.now(), dur=1400;
+      (function tick(t){ var p=Math.min(1,(t-t0)/dur), e=1-Math.pow(1-p,3); el.textContent=Math.round(to*e).toLocaleString('en-IN'); if(p<1) requestAnimationFrame(tick); })(t0);
+    });
+  };
+  var tabs=[].slice.call(ib.querySelectorAll('.ib-tabs button')), cases=[].slice.call(ib.querySelectorAll('.ib-case'));
+  tabs.forEach(function(b){ b.addEventListener('click', function(){
+    tabs.forEach(function(x){ x.setAttribute('aria-selected', String(x===b)); });
+    cases.forEach(function(c){ c.hidden = c.dataset.case!==b.dataset.case; });
+  }); });
 })();
 </script>
 </body>

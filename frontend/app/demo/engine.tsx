@@ -8,6 +8,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import { BrandMark } from "@/app/components/brand-mark";
 
 export interface Scene {
   id: string;
@@ -96,7 +97,7 @@ export function TourShell({ roles, embed }: { roles: Role[]; embed: boolean }) {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div ref={rootRef} className={embed ? "p-1 sm:p-2" : "max-w-6xl mx-auto px-4 py-8 sm:py-12"}>
+      <div ref={rootRef} className={embed ? "px-3 sm:px-6 pt-1 pb-10" : "max-w-6xl mx-auto px-4 py-8 sm:py-12"}>
         {/* Role switch, with the thread that links them */}
         <div className="flex justify-center">
           <div role="tablist" aria-label="Who is using Vivran" className="relative inline-flex p-1 rounded-full bg-card border border-border">
@@ -106,7 +107,6 @@ export function TourShell({ roles, embed }: { roles: Role[]; embed: boolean }) {
                 {i === ri && <motion.span layoutId="tour-role" className="absolute inset-0 -z-10 rounded-full bg-surface shadow-sm border border-border" transition={{ type: "spring", damping: 30, stiffness: 380 }} />}
                 <span className={i === ri ? "text-accent" : ""}>{r.icon}</span>
                 {r.label}
-                {r.preview && <span className="hidden sm:inline text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-chrome-soft text-chrome border border-chrome-line">Preview</span>}
               </button>
             ))}
           </div>
@@ -114,22 +114,24 @@ export function TourShell({ roles, embed }: { roles: Role[]; embed: boolean }) {
         <p className="text-center text-sm text-muted mt-3 max-w-xl mx-auto">{role.tagline}</p>
 
         {/* The app window */}
-        <div className="mt-5 rounded-[28px] border border-border bg-surface shadow-panel overflow-hidden"
+        <div className="mt-6 rounded-[28px] border border-border bg-surface overflow-hidden shadow-[0_1px_2px_rgba(40,28,16,0.05),0_28px_60px_-28px_rgba(40,28,16,0.30)]"
           onPointerDown={takeOver} onKeyDown={takeOver}>
-          <div className="flex items-center gap-3 px-4 h-10 border-b border-border bg-card">
+          <div className="flex items-center gap-3 px-5 h-12 border-b border-border bg-card">
             <span className="flex gap-1.5"><i className="w-2.5 h-2.5 rounded-full bg-[#ED6A5E]" /><i className="w-2.5 h-2.5 rounded-full bg-[#F5BF4F]" /><i className="w-2.5 h-2.5 rounded-full bg-[#61C554]" /></span>
-            <span className="flex-1 min-w-0 truncate text-center text-[11px] text-muted font-mono">{scene.url}</span>
-            <span className="hidden sm:inline text-[10px] text-faint">Sample data</span>
+            <span className="flex-1 min-w-0 flex justify-center">
+              <span className="max-w-full truncate px-4 py-1 rounded-full bg-surface border border-border text-[11px] text-muted font-mono">{scene.url}</span>
+            </span>
+            <span className="hidden sm:inline text-[10px] text-faint px-2 py-0.5 rounded-full border border-border">Sample data</span>
           </div>
-          <div className="flex min-h-[340px] sm:min-h-[520px]">
-            <aside className="hidden md:flex w-48 shrink-0 flex-col gap-1 p-3 border-r border-border bg-surface-2">
-              <div className="flex items-center gap-2 px-2 py-2 mb-2 text-sm font-extrabold font-display text-foreground">VIVRAN</div>
+          <div className="flex min-h-[340px] sm:min-h-[470px]">
+            <aside className="hidden md:flex w-52 shrink-0 flex-col gap-1 p-3 border-r border-border bg-surface-2">
+              <div className="flex items-center gap-2 px-2 py-2 mb-2 text-sm font-extrabold font-display text-foreground"><BrandMark className="w-5 h-5" /> Vivran</div>
               {role.nav.map((n, i) => (
-                <div key={n.label} className={`flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs ${i === si ? "bg-accent-soft text-foreground font-semibold border border-accent-line" : "text-muted"}`}>
+                <div key={n.label} className={`flex items-center gap-2.5 px-3 py-2 rounded-full text-xs transition-colors ${i === si ? "bg-accent-soft text-foreground font-semibold border border-accent-line" : "text-muted border border-transparent"}`}>
                   {n.icon} {n.label}
                 </div>
               ))}
-              {role.preview && <div className="mt-auto text-[10px] leading-snug text-muted p-2 rounded-xl border border-dashed border-border">Coming next. This is a preview with sample data.</div>}
+              {role.preview && <div className="mt-auto text-[10px] leading-snug text-muted p-3 rounded-2xl border border-dashed border-border">Coming next. This is a preview with sample data.</div>}
             </aside>
             <div className="flex-1 min-w-0 p-4 sm:p-6 relative">
               <AnimatePresence mode="wait">
@@ -142,11 +144,11 @@ export function TourShell({ roles, embed }: { roles: Role[]; embed: boolean }) {
         </div>
 
         {/* Scene rail and controls */}
-        <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="mt-4 flex items-center gap-3 sm:gap-4 rounded-full border border-border bg-card/80 p-1.5 pr-4 sm:pr-5">
           <div className="flex items-center gap-1.5">
             <button type="button" aria-label="Previous" disabled={si === 0} onClick={() => { takeOver(); goScene(si - 1); }} className="p-2 rounded-full border border-border text-muted hover:text-foreground disabled:opacity-30"><ChevronLeft className="w-4 h-4" /></button>
             {!reduce && (
-              <button type="button" aria-label={playing ? "Pause" : "Play"} onClick={() => { if (!playing && atEnd) goScene(0); setPlaying(!playing); }} className="p-2 rounded-full border border-border text-foreground hover:border-accent-line">
+              <button type="button" aria-label={playing ? "Pause" : "Play"} onClick={() => { if (!playing && atEnd) goScene(0); setPlaying(!playing); }} className="p-2 rounded-full bg-foreground text-background hover:opacity-85">
                 {playing ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
               </button>
             )}
@@ -159,16 +161,16 @@ export function TourShell({ roles, embed }: { roles: Role[]; embed: boolean }) {
                   <motion.div className="h-full bg-accent" initial={false}
                     animate={{ width: i < si ? "100%" : i > si ? "0%" : `${((shownStep + 1) / s.steps.length) * 100}%` }} transition={{ duration: 0.4 }} />
                 </div>
-                <div className={`mt-1.5 text-[11px] truncate ${i === si ? "text-foreground font-semibold" : "text-muted group-hover:text-foreground"}`}>{s.title}</div>
+                <div className={`hidden sm:block mt-1.5 text-[11px] truncate ${i === si ? "text-foreground font-semibold" : "text-muted group-hover:text-foreground"}`}>{s.title}</div>
               </button>
             ))}
           </div>
         </div>
-        <div className="mt-3 min-h-[2.5rem] flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted">{scene.caption}</p>
+        <div className="mt-3 px-2 flex items-start justify-between gap-4">
+          <p className="text-[13px] leading-relaxed text-muted max-w-2xl"><span className="sm:hidden font-semibold text-foreground">{scene.title}. </span>{scene.caption}</p>
           {atEnd && ri < roles.length - 1 && (
-            <button type="button" onClick={() => goRole(ri + 1)} className="btn-primary px-4 py-2 rounded-2xl text-xs font-semibold inline-flex items-center gap-2">
-              Next: {roles[ri + 1].label} <ArrowRight className="w-3.5 h-3.5" />
+            <button type="button" onClick={() => goRole(ri + 1)} className="shrink-0 inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline">
+              {roles[ri + 1].label} <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
         </div>

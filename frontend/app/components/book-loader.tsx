@@ -16,3 +16,13 @@ export function BookLoader({ className = "w-4 h-4", label }: { className?: strin
     </span>
   );
 }
+
+/** Full-screen loading: a large book turning its pages, with a line under it. */
+export function PageLoader({ text = "Opening your workspace…" }: { text?: string }) {
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 text-muted">
+      <BookLoader className="book-loader-lg w-16 h-16 text-foreground" label="Loading Vivran" />
+      <span className="text-xs tracking-wide">{text}</span>
+    </div>
+  );
+}

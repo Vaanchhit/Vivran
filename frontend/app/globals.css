@@ -242,6 +242,11 @@ html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible 
   backface-visibility: visible;
   animation: bl-turn 1.3s cubic-bezier(0.45, 0.05, 0.35, 1) infinite;
 }
+/* The large, full-screen variant: heavier lines, and the pages cast a soft shade. */
+.book-loader-lg .bl-half { border-width: 2.5px; border-radius: 3px; }
+.book-loader-lg .bl-left { border-right-width: 1.25px; border-radius: 4px 1px 1px 4px; }
+.book-loader-lg .bl-right { border-left-width: 1.25px; border-radius: 1px 4px 4px 1px; }
+.book-loader-lg .bl-flip { background: color-mix(in srgb, currentColor 12%, var(--bg, #fff)); box-shadow: 0 2px 8px color-mix(in srgb, currentColor 14%, transparent); }
 .book-loader .bl-flip-2 {
   animation-delay: -0.65s;
 }

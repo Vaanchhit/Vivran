@@ -3,7 +3,7 @@
 // /demo: Vivran end to end, for one lesson, as a teacher, a student and a school
 // would see it. A frontend-only proxy of the product with sample data (story.ts);
 // it makes no API calls. ?embed=1 drops the page chrome for the landing page iframe.
-import React, { Suspense } from "react";
+import React, { Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Building2, GraduationCap, Presentation } from "lucide-react";
 import { TourShell, type Role } from "./engine";
@@ -18,8 +18,14 @@ const ROLES: Role[] = [
 
 function Demo() {
   const embed = useSearchParams().get("embed") === "1";
+  // Embedded, the landing page shows through, so the frame has no edge of its own.
+  useEffect(() => {
+    if (!embed) return;
+    document.documentElement.style.background = "transparent";
+    document.body.style.background = "transparent";
+  }, [embed]);
   return (
-    <div className={embed ? "bg-background" : "min-h-screen bg-background"}>
+    <div className={embed ? "" : "min-h-screen bg-background"}>
       {!embed && (
         <header className="max-w-6xl mx-auto px-4 pt-10 text-center">
           <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Demo · sample data</div>

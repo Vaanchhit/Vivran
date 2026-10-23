@@ -7,16 +7,14 @@ import { verifyReferralCode } from "@/services/api";
 import { WAITLIST_EMAIL, REQUEST_ACCESS_MAILTO } from "@/lib/constants";
 import type { Role } from "@/types";
 import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound, User } from "lucide-react";
-import { BookLoader } from "@/app/components/book-loader";
+import { BookLoader, PageLoader } from "@/app/components/book-loader";
 import { BrandMark } from "@/app/components/brand-mark";
 
 export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex items-center justify-center gap-2 text-muted">
-          <BookLoader className="w-5 h-5" /> Loading...
-        </div>
+        <PageLoader text="Opening Vivran…" />
       }
     >
       <LoginForm />
@@ -134,12 +132,12 @@ function LoginForm() {
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md max-w-lg z-10">
         {/* Brand logo */}
-        <div className="vv-mark-host flex items-center justify-center gap-3 mb-6">
+        <a href="/" aria-label="Vivran home" className="vv-mark-host flex w-fit mx-auto items-center justify-center gap-3 mb-6 rounded-2xl px-2 py-1 transition-opacity hover:opacity-80">
           <BrandMark className="w-12 h-12" />
           <span className="font-display font-extrabold text-2xl tracking-tight text-foreground">
             Vivran <span className="text-muted text-base font-normal">विवरण</span>
           </span>
-        </div>
+        </a>
 
         <h2 className="text-center text-3xl font-extrabold font-display tracking-tight text-foreground">
           {mode === "signup" ? "Create Your Workspace" : "Enter Your Workspace"}
