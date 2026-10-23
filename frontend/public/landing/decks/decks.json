@@ -1,0 +1,117 @@
+[
+ {
+  "id": "photosynthesis",
+  "title": "Photosynthesis",
+  "level": "Class 7",
+  "subject": "Science",
+  "template": "How It Works",
+  "accent": "2E7D4F",
+  "dark": "0F2A1B",
+  "slides": 8,
+  "credits": [
+   {
+    "author": "Aurr123",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Sunlight_on_a_green_leaf_(India,_2016).jpg"
+   },
+   {
+    "author": "Kelvinsong",
+    "license": "CC BY 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Moss_chloroplasts_100%C3%97_objective.jpg"
+   },
+   {
+    "author": "McKay Savage",
+    "license": "CC BY 2.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Women_Harvesting_Rice_Paddy.jpg"
+   }
+  ]
+ },
+ {
+  "id": "french-revolution",
+  "title": "The French Revolution",
+  "level": "Class 9",
+  "subject": "History",
+  "template": "Story of an Era",
+  "accent": "9E2A2B",
+  "dark": "14172E",
+  "slides": 8,
+  "credits": [
+   {
+    "author": "Jean-Pierre Houël",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Prise_de_la_Bastille_clean.jpg"
+   },
+   {
+    "author": "Jacques-Louis David",
+    "license": "CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Jacques-Louis_David_-_Serment_du_Jeu_de_paume,_le_20_juin_1789_-_P67_-_mus%C3%A9e_Carnavalet_-_0.jpg"
+   },
+   {
+    "author": "Unknown",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Declaration_of_the_Rights_of_Man_and_of_the_Citizen_in_1789.jpg"
+   }
+  ]
+ },
+ {
+  "id": "mitosis-meiosis",
+  "title": "Mitosis vs Meiosis",
+  "level": "Class 11",
+  "subject": "Biology",
+  "template": "Compare & Contrast",
+  "accent": "0F8B8D",
+  "dark": "0E2433",
+  "slides": 8,
+  "credits": [
+   {
+    "author": "Catfaster",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Onion_Root_Tip_Cells_Mitosis.jpg"
+   }
+  ]
+ },
+ {
+  "id": "demand-supply",
+  "title": "Demand and Supply",
+  "level": "Class 11",
+  "subject": "Economics",
+  "template": "Concept Explorer",
+  "accent": "E2574C",
+  "dark": "1F2A55",
+  "slides": 7,
+  "credits": [
+   {
+    "author": "Whispyhistory",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Vegetable_market,_Bulandshahr.jpg"
+   },
+   {
+    "author": "Iijjccoo at Dutch Wikipedia",
+    "license": "Public domain",
+    "source": "https://commons.wikimedia.org/wiki/File:Market_Hyderabad.jpg"
+   },
+   {
+    "author": "Advay m",
+    "license": "CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Onion_Vendor_taking_a_Mid-day_break.jpg"
+   }
+  ]
+ },
+ {
+  "id": "python-loops",
+  "title": "for loops in Python",
+  "level": "BCA, Year 1",
+  "subject": "Computer Science",
+  "template": "Code Walkthrough",
+  "accent": "2F6DB5",
+  "dark": "0D1117",
+  "slides": 8,
+  "credits": [
+   {
+    "author": "MCPearson",
+    "license": "CC BY-SA 3.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Work_in_the_computer_lab.JPG"
+   }
+  ]
+ }
+]

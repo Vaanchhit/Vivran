@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Mic, Sparkles, CheckCircle2, AlertCircle, ArrowRight, X, Plus, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { BookLoader } from "@/app/components/book-loader";
-import { isBlocked } from "@/lib/slidekit/try-topics";
+import { isBlocked } from "@/lib/slidekit/language-guard";
 import { OutlineEditor } from "@/app/components/outline-editor";
 import { useAuth } from "@/lib/auth-context";
 import { getLiveValue, noticeIfAway, useLiveState, useOnScreen, useTabState } from "@/lib/tab-state";

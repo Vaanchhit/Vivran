@@ -1003,51 +1003,37 @@ details.more .lede{ margin-top:10px; }
 @keyframes moreIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
 @media (prefers-reduced-motion:reduce){ details.more > :not(summary){ animation:none; } details.more > summary::after{ transition:none; } }
 
-/* ---- Try it ---- */
-.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-.try-form{ display:flex; gap:10px; margin-top:26px; max-width:640px; }
-.try-form input{ flex:1; min-width:0; font:inherit; font-size:1rem; padding:13px 16px; border-radius:12px; border:1px solid var(--vv-rule-hi); background:var(--vv-card); color:var(--vv-ink); }
-.try-form input:focus{ outline:none; border-color:var(--vv-accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--vv-accent) 18%, transparent); }
-.try-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-#try [hidden]{ display:none !important; }
-.try-chips button{ font:inherit; font-size:.82rem; padding:6px 12px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink-2); cursor:pointer; transition:border-color .15s, color .15s; }
-.try-chips button:hover{ border-color:var(--vv-accent); color:var(--vv-ink); }
-.try-out{ margin-top:28px; }
-.try-pick{ display:grid; grid-template-columns:minmax(0,1fr); gap:20px; align-items:center; }
-@media (min-width:820px){ .try-pick{ grid-template-columns:minmax(0,420px) minmax(0,1fr); } }
-.try-cover{ aspect-ratio:16/9; border-radius:12px; overflow:hidden; border:1px solid var(--vv-rule); box-shadow:0 18px 40px -24px rgba(20,16,12,.35); position:relative; }
-.try-cover-in{ position:absolute; left:0; top:0; transform-origin:0 0; }
-.try-k{ font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--vv-ink-3, var(--vv-ink-2)); }
-.try-name{ font-family:var(--disp); font-weight:700; font-size:clamp(1.3rem,1.1rem + .8vw,1.8rem); margin-top:4px; }
-.try-why{ margin-top:8px; color:var(--vv-ink-2); line-height:1.55; }
-.try-look{ margin-top:8px; font-size:.86rem; color:var(--vv-ink-2); display:flex; align-items:center; gap:8px; }
-.try-look i{ width:14px; height:14px; border-radius:4px; display:inline-block; }
-.try-plan{ list-style:none; margin:22px 0 0; padding:0; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
-@media (min-width:820px){ .try-plan{ grid-template-columns:repeat(4,minmax(0,1fr)); } }
-.try-plan li{ border:1px solid var(--vv-rule); background:var(--vv-card); border-radius:10px; padding:10px 12px; opacity:0; transform:translateY(8px); animation:tryIn .4s cubic-bezier(.22,.7,.3,1) forwards; }
-.try-plan .n{ font-size:.72rem; color:var(--vv-accent); font-weight:700; letter-spacing:.04em; }
-.try-plan .k{ font-weight:650; margin-top:2px; font-size:.92rem; }
-.try-plan .w{ font-size:.8rem; color:var(--vv-ink-2); margin-top:2px; line-height:1.35; }
-.try-foot{ margin-top:16px; font-size:.86rem; color:var(--vv-ink-2); }
-.try-err{ margin-top:16px; color:var(--vv-risk); }
-@keyframes tryIn{ to{ opacity:1; transform:none; } }
-@media (prefers-reduced-motion:reduce){ .try-plan li{ animation:none; opacity:1; transform:none; } }
 
-.try-box{ margin-top:26px; max-width:640px; }
-.try-combo{ position:relative; }
-.try-combo input{ width:100%; font:inherit; font-size:1rem; padding:14px 16px; border-radius:12px; border:1px solid var(--vv-rule-hi); background:var(--vv-card); color:var(--vv-ink); }
-.try-combo input:focus{ outline:none; border-color:var(--vv-accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--vv-accent) 18%, transparent); }
-.try-list{ position:absolute; z-index:20; left:0; right:0; top:calc(100% + 6px); margin:0; padding:6px; list-style:none; background:var(--vv-card); border:1px solid var(--vv-rule-hi); border-radius:12px; box-shadow:0 18px 40px -20px rgba(20,16,12,.35); animation:moreIn .16s ease-out; }
-.try-list li{ display:flex; justify-content:space-between; gap:12px; padding:10px 12px; border-radius:8px; cursor:pointer; }
-.try-list li[aria-selected="true"], .try-list li:hover{ background:var(--vv-paper-2, rgba(20,16,12,.04)); }
-.try-list .t{ font-weight:600; color:var(--vv-ink); }
-.try-list .s{ font-size:.8rem; color:var(--vv-ink-2); white-space:nowrap; }
-.try-levels{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
-.try-levels button{ font:inherit; font-size:.85rem; padding:7px 14px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink-2); cursor:pointer; transition:all .15s; }
-.try-levels button[aria-checked="true"]{ background:var(--vv-brand); color:var(--vv-paper); border-color:var(--vv-brand); }
-.try-note{ margin-top:12px; font-size:.9rem; color:var(--vv-ink-2); }
-.try-note .try-ex{ font:inherit; font-size:.85rem; margin:4px 4px 0 0; padding:4px 10px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink); cursor:pointer; }
-.try-out.busy{ opacity:.55; transition:opacity .15s; }
+/* ---- Example decks ---- */
+.dk{ margin-top:30px; }
+.dk-tabs{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+.dk-tabs::-webkit-scrollbar{ display:none; }
+.dk-tabs button{ flex:0 0 auto; font:inherit; font-size:.88rem; padding:9px 15px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink-2); cursor:pointer; transition:background .2s, color .2s, border-color .2s; }
+.dk-tabs button small{ color:var(--vv-ink-3, var(--vv-ink-2)); margin-left:6px; font-size:.78rem; }
+.dk-tabs button[aria-selected="true"]{ background:var(--vv-brand); color:var(--vv-paper); border-color:var(--vv-brand); }
+.dk-tabs button[aria-selected="true"] small{ color:inherit; opacity:.7; }
+.dk-stage{ position:relative; margin-top:16px; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#111; box-shadow:0 30px 60px -32px rgba(20,16,12,.45); outline:none; }
+.dk-stage:focus-visible{ box-shadow:0 0 0 3px var(--vv-accent); }
+.dk-stage img{ width:100%; height:100%; display:block; object-fit:cover; transition:opacity .28s ease; }
+.dk-stage img.fade{ opacity:0; }
+.dk-nav{ position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; border-radius:50%; border:0; background:rgba(255,255,255,.92); color:#14100C; font-size:28px; line-height:1; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.18); opacity:0; transition:opacity .2s, transform .2s; }
+.dk-stage:hover .dk-nav, .dk-stage:focus-within .dk-nav{ opacity:1; }
+.dk-nav:hover{ transform:translateY(-50%) scale(1.06); }
+.dk-nav.prev{ left:14px; } .dk-nav.next{ right:14px; }
+.dk-nav:disabled{ opacity:0 !important; pointer-events:none; }
+@media (hover:none){ .dk-nav{ opacity:1; width:38px; height:38px; font-size:24px; } }
+.dk-count{ position:absolute; right:14px; bottom:12px; font-size:.75rem; letter-spacing:.06em; color:#fff; background:rgba(0,0,0,.45); padding:4px 10px; border-radius:999px; }
+.dk-thumbs{ display:flex; gap:8px; margin-top:12px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:thin; }
+.dk-thumbs button{ flex:0 0 auto; width:128px; aspect-ratio:16/9; padding:0; border:2px solid transparent; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--vv-card); opacity:.75; transition:opacity .2s, border-color .2s; }
+.dk-thumbs button img{ width:100%; height:100%; display:block; object-fit:cover; }
+.dk-thumbs button[aria-current="true"]{ border-color:var(--vv-accent); opacity:1; }
+.dk-thumbs button:hover{ opacity:1; }
+@media (max-width:640px){ .dk-thumbs button{ width:96px; } }
+.dk-foot{ display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:16px; }
+.dk-meta{ font-size:.88rem; color:var(--vv-ink-2); }
+.dk-note{ margin-top:14px; font-size:.8rem; color:var(--vv-ink-2); max-width:78ch; line-height:1.55; }
+.dk-note a{ color:inherit; }
+@media (prefers-reduced-motion:reduce){ .dk-stage img{ transition:none; } }
 </style>
 </head>
 <body>
@@ -1071,7 +1057,7 @@ details.more .lede{ margin-top:10px; }
     <div class="nav-links">
       <a href="#ledger">Problem</a>
       <a href="#makes">Features</a>
-      <a href="#try">Try it</a>
+      <a href="#decks">Examples</a>
       <a href="#grounding">Demo</a>
       <a href="#proof">Team</a>
       <a href="#pricing">Pricing</a>
@@ -1091,7 +1077,7 @@ details.more .lede{ margin-top:10px; }
 <div class="mobile-menu" id="mobile-menu">
   <a href="#ledger">Problem</a>
   <a href="#makes">Features</a>
-      <a href="#try">Try it</a>
+      <a href="#decks">Examples</a>
   <a href="#grounding">Demo</a>
   <a href="#proof">Team</a>
   <a href="#pricing">Pricing</a>
@@ -1349,45 +1335,29 @@ details.more .lede{ margin-top:10px; }
 
 <hr class="hr" />
 
-<!-- ============================ TRY IT ============================ -->
-<section class="sec" id="try">
+<!-- ============================ EXAMPLE DECKS ============================ -->
+<section class="sec" id="decks">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow rv">Try it, no sign-up</span>
-      <h2 class="rv d1">What are you teaching next?</h2>
-      <p class="lede rv d2">Pick a topic and a class. See the lesson shape Vivran chooses and the slides it plans. Instant, and no AI involved.</p>
+      <span class="eyebrow rv">Ready to teach</span>
+      <h2 class="rv d1">Flip through a real lesson.</h2>
+      <p class="lede rv d2">Five complete lessons, the kind of deck Vivran builds for you. Download any one and teach it tomorrow.</p>
     </div>
-    <div class="try-box rv d2">
-      <div class="try-combo" id="tryCombo">
-        <label class="sr-only" for="tryTopic">Topic</label>
-        <input id="tryTopic" type="text" role="combobox" aria-expanded="false" aria-controls="tryList" aria-autocomplete="list"
-               maxlength="80" placeholder="Start typing a topic, like photosynthesis" spellcheck="false" />
-        <ul class="try-list" id="tryList" role="listbox" hidden></ul>
+    <div class="dk rv d2" id="dk">
+      <div class="dk-tabs" id="dkTabs" role="tablist" aria-label="Example lessons"></div>
+      <div class="dk-stage" id="dkStage" tabindex="0" aria-roledescription="carousel" aria-label="Slides">
+        <img id="dkImg" alt="" width="1600" height="900" />
+        <button class="dk-nav prev" id="dkPrev" type="button" aria-label="Previous slide">&#8249;</button>
+        <button class="dk-nav next" id="dkNext" type="button" aria-label="Next slide">&#8250;</button>
+        <span class="dk-count" id="dkCount" aria-live="polite"></span>
       </div>
-      <div class="try-levels" id="tryLevels" role="radiogroup" aria-label="Class" hidden></div>
-      <p class="try-note" id="tryNote" hidden></p>
-      <div class="try-chips" id="tryChips" aria-label="Or start from one of these">
-        <button type="button" data-id="mitosis-vs-meiosis" data-topic="Mitosis vs meiosis">Mitosis vs meiosis</button>
-        <button type="button" data-id="the-revolt-of-1857" data-topic="The Revolt of 1857">Revolt of 1857</button>
-        <button type="button" data-id="python-for-loops" data-topic="Python for loops">Python loops</button>
-        <button type="button" data-id="equations-of-motion" data-topic="Equations of motion">A derivation</button>
-        <button type="button" data-id="active-and-passive-voice" data-topic="Active and passive voice">A grammar lesson</button>
+      <div class="dk-thumbs" id="dkThumbs"></div>
+      <div class="dk-foot">
+        <a class="btn btn-primary" id="dkDl" href="#" download>Download PowerPoint</a>
+        <span class="dk-meta" id="dkMeta"></span>
       </div>
+      <p class="dk-note">Example lessons written and designed by the Vivran team, with real photos from Wikimedia Commons. Yours are built from your own material, in your format. <span id="dkCredits"></span></p>
     </div>
-    <div class="try-out" id="tryOut" aria-live="polite" hidden>
-      <div class="try-pick">
-        <div class="try-cover"><div class="try-cover-in" id="tryCover"></div></div>
-        <div>
-          <span class="try-k">Lesson shape</span>
-          <div class="try-name" id="tryName"></div>
-          <p class="try-why" id="tryWhy"></p>
-          <p class="try-look" id="tryLook"></p>
-        </div>
-      </div>
-      <ol class="try-plan" id="tryPlan"></ol>
-      <p class="try-foot">Inside Vivran, you edit this plan, then it writes every slide from your own material and you export to PowerPoint or PDF.</p>
-    </div>
-    <p class="try-err" id="tryErr" role="alert" hidden></p>
   </div>
 </section>
 
@@ -2121,79 +2091,47 @@ details.more .lede{ margin-top:10px; }
 })();
 </script>
 
+
+
 <script>
-/* Try it: a guided picker over a curated syllabus list (app/api/deck/try).
-   Typo-tolerant suggestions; only listed topics can be planned. No model, no login. */
+/* Example decks: real slides, rendered from the .pptx each one downloads as. */
 (function(){
-  var input=document.getElementById('tryTopic'); if(!input) return;
-  var list=document.getElementById('tryList'), levels=document.getElementById('tryLevels'), note=document.getElementById('tryNote');
-  var chips=document.getElementById('tryChips'), out=document.getElementById('tryOut'), err=document.getElementById('tryErr'), cover=document.getElementById('tryCover');
+  var root=document.getElementById('dk'); if(!root) return;
+  var tabs=document.getElementById('dkTabs'), img=document.getElementById('dkImg'), thumbs=document.getElementById('dkThumbs');
+  var prev=document.getElementById('dkPrev'), next=document.getElementById('dkNext'), count=document.getElementById('dkCount');
+  var dl=document.getElementById('dkDl'), meta=document.getElementById('dkMeta'), credits=document.getElementById('dkCredits'), stage=document.getElementById('dkStage');
+  var decks=[], deck=null, i=0, base='/landing/decks/';
   var esc=function(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; };
-  var items=[], active=-1, picked=null, level=null, timer=null, seq=0;
-  function fit(){ var box=cover.parentElement; cover.style.transform='scale('+(box.clientWidth/1920)+')'; }
-  window.addEventListener('resize', fit);
-  function close(){ list.hidden=true; input.setAttribute('aria-expanded','false'); active=-1; }
-  function render(){
-    list.innerHTML=items.map(function(m,i){ return '<li role="option" id="tryOpt'+i+'" aria-selected="'+(i===active)+'" data-i="'+i+'"><span class="t">'+esc(m.topic)+'</span><span class="s">'+esc(m.subject)+'</span></li>'; }).join('');
-    list.hidden=!items.length; input.setAttribute('aria-expanded', String(!!items.length));
-    if(active>=0) input.setAttribute('aria-activedescendant','tryOpt'+active); else input.removeAttribute('aria-activedescendant');
+  var src=function(d,n,t){ return base+d.id+'/'+(t?'t':'')+String(n).padStart(2,'0')+'.jpg'; };
+  function show(n){
+    i=Math.max(0,Math.min(deck.slides-1,n));
+    var url=src(deck,i+1);
+    img.classList.add('fade');
+    var pre=new Image(); pre.onload=pre.onerror=function(){ img.src=url; img.alt=deck.title+', slide '+(i+1)+' of '+deck.slides; img.classList.remove('fade'); }; pre.src=url;
+    if(i+1<deck.slides){ new Image().src=src(deck,i+2); }
+    count.textContent=(i+1)+' / '+deck.slides; prev.disabled=i===0; next.disabled=i===deck.slides-1;
+    thumbs.querySelectorAll('button').forEach(function(b,k){ b.setAttribute('aria-current',String(k===i)); if(k===i) b.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'}); });
   }
-  function showNote(text, examples){
-    if(!text){ note.hidden=true; return; }
-    note.innerHTML=esc(text)+(examples?' '+examples.map(function(e){ return '<button type="button" class="try-ex">'+esc(e)+'</button>'; }).join(' '):'');
-    note.hidden=false;
-    note.querySelectorAll('.try-ex').forEach(function(b){ b.addEventListener('click',function(){ input.value=b.textContent; search(b.textContent, true); }); });
+  function pick(k){
+    deck=decks[k];
+    tabs.querySelectorAll('button').forEach(function(b,j){ b.setAttribute('aria-selected',String(j===k)); });
+    thumbs.innerHTML=Array.from({length:deck.slides},function(_,n){ return '<button type="button" aria-label="Slide '+(n+1)+'"><img loading="lazy" alt="" src="'+src(deck,n+1,true)+'"></button>'; }).join('');
+    thumbs.querySelectorAll('button').forEach(function(b,n){ b.addEventListener('click',function(){ show(n); }); });
+    dl.href=base+deck.id+'.pptx'; dl.setAttribute('download', deck.id+'.pptx');
+    meta.textContent=deck.level+' · '+deck.subject+' · '+deck.slides+' slides · speaker notes included';
+    credits.innerHTML='Photos: '+deck.credits.map(function(c){ return '<a href="'+esc(c.source)+'" target="_blank" rel="noreferrer">'+esc(c.author)+'</a> ('+esc(c.license)+')'; }).join(', ')+'.';
+    show(0);
   }
-  async function search(q, pickFirst){
-    var my=++seq;
-    try{
-      var r=await fetch('/api/deck/try?q='+encodeURIComponent(q)); var d=await r.json();
-      if(my!==seq) return;
-      items=d.matches||[]; active=items.length?0:-1;
-      showNote(d.note, d.examples);
-      if(pickFirst && items.length){ choose(items[0]); return; }
-      render();
-    }catch(e){}
-  }
-  input.addEventListener('input',function(){
-    picked=null; levels.hidden=true; chips.hidden=false; clearTimeout(timer);
-    var q=input.value.trim();
-    if(q.length<2){ items=[]; render(); showNote(null); return; }
-    timer=setTimeout(function(){ search(q,false); },140);
-  });
-  input.addEventListener('keydown',function(e){
-    if(list.hidden) { if(e.key==='Enter' && input.value.trim()){ e.preventDefault(); search(input.value.trim(), true); } return; }
-    if(e.key==='ArrowDown'){ e.preventDefault(); active=Math.min(items.length-1,active+1); render(); }
-    else if(e.key==='ArrowUp'){ e.preventDefault(); active=Math.max(0,active-1); render(); }
-    else if(e.key==='Enter'){ e.preventDefault(); if(items[active]) choose(items[active]); }
-    else if(e.key==='Escape'){ close(); }
-  });
-  list.addEventListener('mousedown',function(e){ var li=e.target.closest('li'); if(li){ e.preventDefault(); choose(items[+li.dataset.i]); } });
-  input.addEventListener('blur',function(){ setTimeout(close,120); });
-  function choose(m){
-    picked=m; input.value=m.topic; close(); showNote(null); chips.hidden=true;
-    level=m.levels[Math.min(1,m.levels.length-1)].value;
-    levels.innerHTML=m.levels.map(function(l){ return '<button type="button" role="radio" aria-checked="'+(l.value===level)+'" data-v="'+esc(l.value)+'">'+esc(l.label)+'</button>'; }).join('');
-    levels.hidden=false;
-    levels.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ level=b.dataset.v; levels.querySelectorAll('button').forEach(function(x){ x.setAttribute('aria-checked', String(x===b)); }); plan(); }); });
-    plan();
-  }
-  async function plan(){
-    if(!picked) return;
-    err.hidden=true; out.classList.add('busy');
-    try{
-      var r=await fetch('/api/deck/try',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:picked.id,level:level})});
-      var d=await r.json(); if(!r.ok) throw new Error(d.error||'Try another topic.');
-      document.getElementById('tryName').textContent=d.template.name;
-      document.getElementById('tryWhy').textContent=d.template.reasons.length?('Because '+d.template.reasons.slice(0,2).join(' and ')+'.'):'A strong general shape for a first lesson on this topic.';
-      document.getElementById('tryLook').innerHTML='<i style="background:'+esc(d.look.accent)+'"></i>'+esc(d.look.theme)+' theme · '+esc(d.look.skin)+' style · '+esc(d.level)+' · '+esc(d.subject);
-      cover.innerHTML='<style>'+d.cover.css+'</style>'+d.cover.html;
-      document.getElementById('tryPlan').innerHTML=d.plan.map(function(p,i){ return '<li style="animation-delay:'+(i*55)+'ms"><div class="n">SLIDE '+p.n+'</div><div class="k">'+esc(p.kind)+'</div><div class="w">'+esc(p.what)+'</div></li>'; }).join('');
-      out.hidden=false; requestAnimationFrame(fit);
-    }catch(e){ err.textContent=e.message; err.hidden=false; }
-    finally{ out.classList.remove('busy'); }
-  }
-  chips.querySelectorAll('button').forEach(function(b){ b.addEventListener('click',function(){ input.value=b.dataset.topic; search(b.dataset.topic, true); }); });
+  prev.addEventListener('click',function(){ show(i-1); }); next.addEventListener('click',function(){ show(i+1); });
+  stage.addEventListener('keydown',function(e){ if(e.key==='ArrowRight'){ e.preventDefault(); show(i+1); } if(e.key==='ArrowLeft'){ e.preventDefault(); show(i-1); } });
+  var x0=null; stage.addEventListener('touchstart',function(e){ x0=e.touches[0].clientX; },{passive:true});
+  stage.addEventListener('touchend',function(e){ if(x0===null) return; var dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>40) show(i+(dx<0?1:-1)); x0=null; });
+  fetch(base+'decks.json').then(function(r){ return r.json(); }).then(function(list){
+    decks=list;
+    tabs.innerHTML=list.map(function(d,k){ return '<button type="button" role="tab" aria-selected="false">'+esc(d.title)+'<small>'+esc(d.level)+'</small></button>'; }).join('');
+    tabs.querySelectorAll('button').forEach(function(b,k){ b.addEventListener('click',function(){ pick(k); }); });
+    pick(0);
+  }).catch(function(){ root.hidden=true; });
 })();
 </script>
 </body>
