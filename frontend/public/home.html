@@ -1010,6 +1010,22 @@ details.more .lede{ margin-top:10px; }
 @media (max-width:700px){ .tour-frame iframe{ height:1100px; } }
 .tour-foot{ margin-top:10px; font-size:.82rem; color:var(--vv-ink-2); }
 .tour-foot a{ color:var(--vv-accent); font-weight:600; }
+
+/* ---- Time back (highlighted in the ledger) ---- */
+.ledger-pair{ display:grid; gap:12px; margin-top:26px; }
+@media (min-width:860px){ .ledger-pair{ grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); } }
+.ledger-pair .ledger-out{ margin-top:0; border-radius:16px; align-items:center; align-content:center; justify-content:flex-start; }
+.ledger-back{ display:flex; flex-direction:column; gap:6px; padding:22px 24px; border-radius:16px; background:var(--vv-accent); color:#fff; box-shadow:0 22px 44px -26px color-mix(in srgb, var(--vv-accent) 70%, transparent); }
+.lb-k{ font-family:var(--disp); font-weight:700; font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; opacity:.9; }
+.lb-big{ font-family:var(--disp); font-weight:800; font-size:clamp(2.6rem,1.8rem + 3vw,4rem); line-height:1; letter-spacing:-.03em; font-variant-numeric:lining-nums tabular-nums; }
+.lb-big small{ font-size:.42em; font-weight:700; letter-spacing:0; margin-left:4px; }
+.lb-cap{ font-size:.95rem; line-height:1.5; opacity:.95; max-width:46ch; }
+[data-theme="dark"] .ledger-back{ color:#1D1813; }
+/* ---- Features: two parts, one block ---- */
+.feat{ background:var(--vv-paper-2, rgba(20,16,12,.025)); }
+.feat-1{ padding-bottom:calc(var(--sec) * .5); }
+.feat-2{ padding-top:calc(var(--sec) * .5); }
+.anchor-alias{ position:relative; top:calc(-1 * var(--nav-h)); }
 </style>
 </head>
 <body>
@@ -1032,9 +1048,8 @@ details.more .lede{ margin-top:10px; }
     </div>
     <div class="nav-links">
       <a href="#ledger">Problem</a>
+      <a href="#demo">Demo</a>
       <a href="#makes">Features</a>
-      <a href="#tour">Tour</a>
-      <a href="#grounding">Demo</a>
       <a href="#proof">Team</a>
       <a href="#pricing">Pricing</a>
     </div>
@@ -1052,9 +1067,8 @@ details.more .lede{ margin-top:10px; }
 </nav>
 <div class="mobile-menu" id="mobile-menu">
   <a href="#ledger">Problem</a>
+  <a href="#demo">Demo</a>
   <a href="#makes">Features</a>
-      <a href="#tour">Tour</a>
-  <a href="#grounding">Demo</a>
   <a href="#proof">Team</a>
   <a href="#pricing">Pricing</a>
   <a class="btn btn-primary" href="/login">Login</a>
@@ -1076,7 +1090,7 @@ details.more .lede{ margin-top:10px; }
         Vivran brings lessons, questions, students and classrooms together, starting with the teacher.
       </p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#tour">See it in action &rarr;</a>
+        <a class="btn btn-primary" href="#demo">See it in action &rarr;</a>
         <a class="btn btn-ghost" href="mailto:info@vivran.co.in?subject=Vivran%20access%20request&body=Name%3A%20%0ACollege%20%2F%20school%3A%20%0ASubject(s)%20you%20teach%3A%20%0A">Request access</a>
       </div>
       <div class="hero-meta">
@@ -1150,7 +1164,7 @@ details.more .lede{ margin-top:10px; }
 <section class="sec band" id="ledger">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow rv">The way education works today</span>
+      <span class="eyebrow rv">Where a teacher&rsquo;s week goes</span>
       <h2 class="rv d1">We know what was taught.<br />We know what was tested.<br />We still don&rsquo;t always know what was learned.</h2>
       <p class="lede rv d2">These pieces rarely come together.</p>
       <details class="more rv d2">
@@ -1184,9 +1198,16 @@ details.more .lede{ margin-top:10px; }
         <div class="lkey"><i style="background:#E8CFBE"></i> Re-checking <b>2h</b></div>
       </div>
 
-      <div class="ledger-out">
-        <span class="big" id="ledgerNum">18</span>
-        <span class="cap">of 40 hours spent actually teaching</span>
+      <div class="ledger-pair">
+        <div class="ledger-out">
+          <span class="big" id="ledgerNum">18</span>
+          <span class="cap">of 40 hours spent actually teaching</span>
+        </div>
+        <div class="ledger-back">
+          <span class="lb-k">Where Vivran gives time back</span>
+          <span class="lb-big">22<small> hours</small></span>
+          <span class="lb-cap">of preparation every week. With Vivran, each plan, deck, worksheet and paper starts from your own chapter and takes minutes, not evenings.</span>
+        </div>
       </div>
       <p class="ledger-take">A lot of the work around teaching happens before, after and outside the classroom. Very little of it is connected.</p>
       <p class="ledger-note">Illustrative: a composite week described by teachers we have sat with. Not a measured statistic.</p>
@@ -1196,11 +1217,29 @@ details.more .lede{ margin-top:10px; }
 
 <hr class="hr" />
 
-<!-- ============================ 03. WHAT IT MAKES — THE DESK ============================ -->
-<section class="sec" id="makes">
+<!-- ============================ DEMO ============================ -->
+<section class="sec" id="demo">
+  <span id="tour" class="anchor-alias"></span>
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow rv">Starting with the teacher</span>
+      <span class="eyebrow rv">Demo</span>
+      <h2 class="rv d1">One lesson, three people.</h2>
+      <p class="lede rv d2">Follow one Class 9 unit from the teacher who plans it, to the students who learn it, to the school that needs to know how it went.</p>
+    </div>
+    <div class="tour-frame rv d2">
+      <iframe id="tourFrame" title="Vivran demo" src="/demo?embed=1" loading="lazy" scrolling="no"></iframe>
+    </div>
+    <p class="tour-foot rv">Sample data. Teacher features are live today; student and school views are a preview of what we&rsquo;re building next. <a href="/demo" target="_blank" rel="noopener">Open full screen &rarr;</a></p>
+  </div>
+</section>
+
+<hr class="hr" />
+
+<!-- ============================ 03. WHAT IT MAKES — THE DESK ============================ -->
+<section class="sec feat feat-1" id="makes">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow rv">Features · built from your material</span>
       <h2 class="rv d1">Give Vivran what you already teach.<br />It takes care of the rest.</h2>
       <p class="lede rv d2">
         Upload your syllabus, textbook, lecture, notes or existing material. Vivran helps turn it
@@ -1309,30 +1348,11 @@ details.more .lede{ margin-top:10px; }
   </div>
 </section>
 
-<hr class="hr" />
-
-<!-- ============================ PRODUCT TOUR ============================ -->
-<section class="sec" id="tour">
-  <div class="wrap">
-    <div class="sec-head">
-      <span class="eyebrow rv">See it work</span>
-      <h2 class="rv d1">One lesson, three people.</h2>
-      <p class="lede rv d2">Follow one Class 9 unit from the teacher who plans it, to the students who learn it, to the school that needs to know how it went.</p>
-    </div>
-    <div class="tour-frame rv d2">
-      <iframe id="tourFrame" title="Vivran product tour" src="/tour?embed=1" loading="lazy" scrolling="no"></iframe>
-    </div>
-    <p class="tour-foot rv">Sample data. Teacher features are live today; student and school views are a preview of what we&rsquo;re building next. <a href="/tour" target="_blank" rel="noopener">Open full screen &rarr;</a></p>
-  </div>
-</section>
-
-<hr class="hr" />
-
 <!-- ============================ 04. GROUNDING ============================ -->
-<section class="sec band" id="grounding">
+<section class="sec feat feat-2" id="grounding">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow rv">Built around what you actually teach</span>
+      <span class="eyebrow rv">Features · traceable by design</span>
       <h2 class="rv d1">Nothing should appear out of nowhere.</h2>
       <p class="lede rv d2">
         When Vivran writes a question, it knows which page, slide or moment in a lecture it came from.
@@ -1588,7 +1608,7 @@ details.more .lede{ margin-top:10px; }
     <h2 class="rv">We think education can work differently.</h2>
     <p class="final-sub rv d1">Less disconnected work.<br />More understanding.<br />Better teaching. Better learning.</p>
     <div class="hero-cta final-btns rv d2">
-      <a class="btn btn-primary" href="#tour">See it in action &rarr;</a>
+      <a class="btn btn-primary" href="#demo">See it in action &rarr;</a>
       <a class="btn btn-ghost" href="mailto:info@vivran.co.in?subject=Vivran%20access%20request&body=Name%3A%20%0ACollege%20%2F%20school%3A%20%0ASubject(s)%20you%20teach%3A%20%0A">Request access</a>
     </div>
   </div>
@@ -1619,7 +1639,7 @@ details.more .lede{ margin-top:10px; }
           <div class="foot-links">
             <a href="#ledger">Problem</a>
             <a href="#makes">Features</a>
-            <a href="#grounding">Demo</a>
+            <a href="#demo">Demo</a>
             <a href="#proof">Team</a>
             <a href="#pricing">Pricing</a>
             <a href="mailto:info@vivran.co.in">Contact</a>

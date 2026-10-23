@@ -1,6 +1,6 @@
 "use client";
 
-// /tour: Vivran end to end, for one lesson, as a teacher, a student and a school
+// /demo: Vivran end to end, for one lesson, as a teacher, a student and a school
 // would see it. A frontend-only proxy of the product with sample data (story.ts);
 // it makes no API calls. ?embed=1 drops the page chrome for the landing page iframe.
 import React, { Suspense } from "react";
@@ -16,13 +16,13 @@ const ROLES: Role[] = [
   { id: "institution", label: "School", icon: <Building2 className="w-4 h-4" />, preview: true, tagline: "Coming next. The school sees what is taught, what is learned, and where to help, before the final marks.", nav: INSTITUTION_NAV, scenes: INSTITUTION_SCENES },
 ];
 
-function Tour() {
+function Demo() {
   const embed = useSearchParams().get("embed") === "1";
   return (
     <div className={embed ? "bg-background" : "min-h-screen bg-background"}>
       {!embed && (
         <header className="max-w-6xl mx-auto px-4 pt-10 text-center">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Product tour · sample data</div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Demo · sample data</div>
           <h1 className="text-3xl sm:text-4xl font-extrabold font-display text-foreground mt-2">One lesson, three people</h1>
           <p className="text-sm text-muted mt-2">Follow Class 9&rsquo;s French Revolution unit from the teacher, to the students, to the school.</p>
         </header>
@@ -32,6 +32,6 @@ function Tour() {
   );
 }
 
-export default function TourPage() {
-  return <Suspense fallback={null}><Tour /></Suspense>;
+export default function DemoPage() {
+  return <Suspense fallback={null}><Demo /></Suspense>;
 }

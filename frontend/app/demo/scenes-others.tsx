@@ -30,12 +30,12 @@ const cards: Scene = {
           return (
             <div key={c.q} className="relative h-44 [perspective:900px]">
               <motion.div className="absolute inset-0 [transform-style:preserve-3d]" animate={{ rotateY: flipped ? 180 : 0 }} transition={{ duration: 0.6 }}>
-                <div className="absolute inset-0 p-4 rounded-xl bg-surface border border-border flex flex-col justify-between [backface-visibility:hidden]">
+                <div className="absolute inset-0 p-4 rounded-2xl bg-surface border border-border flex flex-col justify-between [backface-visibility:hidden]">
                   <div className="text-[10px] uppercase tracking-wider text-muted">Card {i + 1} of 12</div>
                   <div className="text-sm font-semibold text-foreground">{c.q}</div>
                   <div className="text-[10px] text-faint">Tap to reveal</div>
                 </div>
-                <div className="absolute inset-0 p-4 rounded-xl bg-accent-soft border border-accent-line flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)]">
+                <div className="absolute inset-0 p-4 rounded-2xl bg-accent-soft border border-accent-line flex flex-col justify-between [backface-visibility:hidden] [transform:rotateY(180deg)]">
                   <div className="text-xs text-foreground leading-relaxed">{c.a}</div>
                   <From>{c.from} of {S.teacher.short}&rsquo;s deck</From>
                 </div>
@@ -57,21 +57,21 @@ const practice: Scene = {
     return (
       <div>
         <Head title="Practice · The French Revolution" sub="5 questions · written from the same chapter your teacher used" />
-        <div className="p-4 rounded-xl bg-surface border border-border">
+        <div className="p-4 rounded-2xl bg-surface border border-border">
           <div className="text-sm font-semibold text-foreground">{P.q}</div>
           <div className="mt-3 grid sm:grid-cols-2 gap-2">
             {P.options.map((o, i) => {
               const chosenWrong = st >= 1 && i === P.wrong, right = st >= 3 && i === P.answer;
               return (
                 <motion.div key={o} animate={chosenWrong && st === 1 ? { x: [0, -5, 5, -3, 0] } : {}} transition={{ duration: 0.4 }}
-                  className={`p-2.5 rounded-lg border text-xs flex gap-2 ${right ? "border-success-line bg-success-soft text-foreground" : chosenWrong ? "border-danger-line bg-danger-soft text-foreground" : "border-border bg-card text-foreground"}`}>
+                  className={`p-2.5 rounded-xl border text-xs flex gap-2 ${right ? "border-success-line bg-success-soft text-foreground" : chosenWrong ? "border-danger-line bg-danger-soft text-foreground" : "border-border bg-card text-foreground"}`}>
                   <b className="text-muted">{"ABCD"[i]}</b>{o}
                 </motion.div>
               );
             })}
           </div>
           {st >= 2 && (
-            <motion.div {...rise} className="mt-3 p-3 rounded-lg bg-warning-soft border border-warning-line text-xs space-y-1.5">
+            <motion.div {...rise} className="mt-3 p-3 rounded-xl bg-warning-soft border border-warning-line text-xs space-y-1.5">
               <div className="font-semibold text-foreground">Not quite, and it&rsquo;s a common mix-up</div>
               <div className="text-muted leading-relaxed">{P.misconception}</div>
               <From>{P.see}</From>
@@ -91,13 +91,13 @@ const stuck: Scene = {
   render: (st) => (
     <div>
       <Head title="Why did bread start a revolution?" sub="You asked while revising Slide 3" />
-      <motion.span animate={st === 0 ? { scale: [1, 0.95, 1] } : {}} transition={{ delay: 0.8 }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl btn-primary text-xs font-semibold"><Lightbulb className="w-3.5 h-3.5" /> Explain it simply</motion.span>
+      <motion.span animate={st === 0 ? { scale: [1, 0.95, 1] } : {}} transition={{ delay: 0.8 }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-2xl btn-primary text-xs font-semibold"><Lightbulb className="w-3.5 h-3.5" /> Explain it simply</motion.span>
       {st >= 1 && (
-        <motion.div {...rise} className="mt-4 p-4 rounded-xl bg-accent-soft border border-accent-line max-w-xl">
+        <motion.div {...rise} className="mt-4 p-4 rounded-2xl bg-accent-soft border border-accent-line max-w-xl">
           <p className="text-sm text-foreground leading-relaxed">{S.explain.story}</p>
           <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
             {S.explain.rows.map((r) => (
-              <div key={r.label} className="p-2 rounded-lg bg-surface border border-border"><div className="text-muted text-[10px] leading-tight">{r.label}</div><div className="mt-1 font-bold text-foreground">{r.before} → <span className={r.after === "₹0" ? "text-danger" : ""}>{r.after}</span></div></div>
+              <div key={r.label} className="p-2 rounded-xl bg-surface border border-border"><div className="text-muted text-[10px] leading-tight">{r.label}</div><div className="mt-1 font-bold text-foreground">{r.before} → <span className={r.after === "₹0" ? "text-danger" : ""}>{r.after}</span></div></div>
             ))}
           </div>
           <p className="text-xs text-muted mt-3">{S.explain.oneLine}</p>
@@ -125,7 +125,7 @@ const progress: Scene = {
         ))}
       </div>
       {st >= 1 && (
-        <motion.div {...rise} className="mt-5 inline-flex items-center gap-2 p-3 rounded-xl bg-surface border border-border text-xs">
+        <motion.div {...rise} className="mt-5 inline-flex items-center gap-2 p-3 rounded-2xl bg-surface border border-border text-xs">
           <RotateCcw className="w-4 h-4 text-accent" /><span><b className="text-foreground">Revisit next:</b> Timeline of events · 6 minutes · from Slide 4</span>
         </motion.div>
       )}
@@ -143,7 +143,7 @@ const coverage: Scene = {
       <Head title={`${S.school} · History, Class 9`} sub="Unit 4 · The French Revolution · this term" />
       <div className="space-y-3 max-w-2xl">
         {S.coverage.map((c, i) => (
-          <div key={c.cls} className="p-3 rounded-xl bg-surface border border-border">
+          <div key={c.cls} className="p-3 rounded-2xl bg-surface border border-border">
             <div className="flex justify-between text-xs"><span className="font-semibold text-foreground">{c.cls}</span><span className="text-muted">{c.taught} of {c.planned} lessons taught</span></div>
             <div className="mt-2 flex gap-1">
               {Array.from({ length: c.planned }, (_, k) => (
@@ -174,14 +174,14 @@ const struggle: Scene = {
               <tr key={r.cls}><td className="font-semibold text-foreground pr-2">{r.cls}</td>
                 {r.v.map((v, ci) => (
                   <td key={ci}><motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: (ri * 5 + ci) * 0.04 }}
-                    className={`px-2 py-2.5 rounded-lg text-center font-semibold ${tone(v)} ${st >= 1 && r.cls === "9B" && ci === 4 ? "ring-2 ring-danger" : ""}`}>{v}%</motion.div></td>
+                    className={`px-2 py-2.5 rounded-xl text-center font-semibold ${tone(v)} ${st >= 1 && r.cls === "9B" && ci === 4 ? "ring-2 ring-danger" : ""}`}>{v}%</motion.div></td>
                 ))}
               </tr>
             ))}</tbody>
           </table>
         </div>
         {st >= 1 && (
-          <motion.div {...rise} className="mt-3 p-3 rounded-xl bg-surface border border-border text-xs flex items-start gap-2 max-w-xl">
+          <motion.div {...rise} className="mt-3 p-3 rounded-2xl bg-surface border border-border text-xs flex items-start gap-2 max-w-xl">
             <Target className="w-4 h-4 text-danger shrink-0 mt-0.5" />
             <span><b className="text-foreground">9B, the Reign of Terror: 41%.</b> Most chose “bread prices” for why the deputies took the oath. Suggested: a 10-minute recap with the everyday example before the unit test.</span>
           </motion.div>
@@ -218,7 +218,7 @@ const standard: Scene = {
   render: (st) => (
     <div>
       <Head title="Department standards" sub="Formats teachers have shared with the department" />
-      <div className="p-4 rounded-xl bg-surface border border-accent-line max-w-xl">
+      <div className="p-4 rounded-2xl bg-surface border border-accent-line max-w-xl">
         <div className="flex items-start justify-between gap-3">
           <div><div className="text-sm font-semibold text-foreground">{S.standard.title}</div><div className="text-xs text-muted mt-1">{S.standard.detail}</div><div className="text-[11px] text-muted mt-1">Shared by {S.teacher.name}</div></div>
           <Layers className="w-5 h-5 text-accent shrink-0" />
@@ -229,7 +229,7 @@ const standard: Scene = {
           ))}</div>
           <span className="text-xs text-muted">{st >= 1 ? S.standard.adopted : 3} of {S.standard.of} teachers use it</span>
         </div>
-        <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg btn-primary text-xs font-semibold"><Share2 className="w-3.5 h-3.5" /> Share with department</div>
+        <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl btn-primary text-xs font-semibold"><Share2 className="w-3.5 h-3.5" /> Share with department</div>
       </div>
     </div>
   ),
