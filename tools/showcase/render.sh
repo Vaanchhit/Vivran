@@ -2,7 +2,8 @@
 # Render every deck through Keynote to PDF, then rasterise at 1920 px (QA + website images).
 set -e
 HERE=$(cd "$(dirname "$0")" && pwd); WORK=${WORK:-$HERE/work/render}; mkdir -p "$WORK"
-for f in "$HERE"/out/*.pptx; do
+SRC=${SRC:-$HERE/out}; DST=${DST:-$HERE/out/png}
+for f in "$SRC"/*.pptx; do
   id=$(basename "$f" .pptx); cp "$f" "$WORK/$id.pptx"; rm -f "$WORK/$id.pdf"
   osascript -e "with timeout of 300 seconds
 tell application \"Keynote\"
@@ -12,7 +13,7 @@ tell application \"Keynote\"
   close d saving no
 end tell
 end timeout" >/dev/null
-  "$HERE/.venv/bin/python" - "$WORK/$id.pdf" "$HERE/out/png/$id" <<'PY'
+  "$HERE/.venv/bin/python" - "$WORK/$id.pdf" "$DST/$id" <<'PY'
 import pymupdf as fitz, sys, os
 pdf, out = sys.argv[1], sys.argv[2]; os.makedirs(out, exist_ok=True)
 doc = fitz.open(pdf)

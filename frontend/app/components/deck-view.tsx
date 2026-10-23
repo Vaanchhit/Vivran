@@ -14,6 +14,9 @@ import type { DeckReady } from "@/services/api";
 type ThemeChoice = { id: string } | { custom: string; dark: boolean };
 const STORAGE_KEY = "vivran_deck_theme";
 const SKIN_KEY = "vivran_deck_skin";
+const PPT_KEY = "vivran_ppt_design";
+/** The classroom designs a PowerPoint can come out in (lib/slidekit/designer.ts). "auto" picks by subject. */
+const PPT_DESIGNS: [string, string][] = [["auto", "Design: matches subject"], ["forest", "Forest"], ["revolution", "Revolution"], ["cells", "Cells"], ["market", "Market"], ["code", "Code"]];
 
 function loadSkin(): Skin | null {
   try {
@@ -100,6 +103,11 @@ export function DeckView({ deck }: { deck: DeckReady }) {
   // The deck as the teacher has edited it (memes added or removed); saved back to the library.
   const [placements, setPlacements] = useState<Placement[]>(deck.placements);
   const [skin, setSkin] = useState<Skin>("classic");
+  const [pptDesign, setPptDesign] = useState("auto");
+  useEffect(() => {
+    try { const v = localStorage.getItem(PPT_KEY); if (v && PPT_DESIGNS.some(([id]) => id === v)) setPptDesign(v); } catch {}
+  }, []);
+  const pickPpt = (v: string) => { setPptDesign(v); try { localStorage.setItem(PPT_KEY, v); } catch {} };
   const [composing, setComposing] = useState(false);
   const [saveNote, setSaveNote] = useState<string | null>(null);
 
@@ -199,22 +207,32 @@ export function DeckView({ deck }: { deck: DeckReady }) {
           >
             <Laugh className="w-3.5 h-3.5 text-accent" /> Add meme
           </button>
-          <button
-            type="button"
-            disabled={exporting}
-            onClick={async () => {
-              setExporting(true);
-              try {
-                const { exportPptx } = await import("@/lib/slidekit/pptx");
-                await exportPptx(placements, title, theme, `${title.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "vivran-slides"}.pptx`, skin);
-              } finally {
-                setExporting(false);
-              }
-            }}
-            className="btn-primary px-4 py-2 text-xs font-semibold rounded-xl flex items-center gap-2 disabled:opacity-60"
-          >
-            <Presentation className="w-3.5 h-3.5" /> {exporting ? "Preparing…" : "Export PowerPoint"}
-          </button>
+          {/* PowerPoint comes out in one of the classroom designs (the showcase lessons), chosen by subject or by the teacher. */}
+          <div className="flex items-stretch rounded-xl overflow-hidden">
+            <button
+              type="button"
+              disabled={exporting}
+              onClick={async () => {
+                setExporting(true);
+                try {
+                  const { exportDesigned, DESIGNS, designFor } = await import("@/lib/slidekit/designer");
+                  const subjectLabel = deck.context.subject.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                  const meta = { title, level: deck.context.gradeLabel, subject: subjectLabel };
+                  await exportDesigned(placements, meta, DESIGNS[pptDesign] ?? designFor(subjectLabel),
+                    { file: `${title.replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "vivran-slides"}.pptx` });
+                } finally {
+                  setExporting(false);
+                }
+              }}
+              className="btn-primary px-4 py-2 text-xs font-semibold flex items-center gap-2 disabled:opacity-60"
+            >
+              <Presentation className="w-3.5 h-3.5" /> {exporting ? "Designing…" : "Export PowerPoint"}
+            </button>
+            <select aria-label="PowerPoint design" value={pptDesign} onChange={(e) => pickPpt(e.target.value)}
+              className="btn-primary border-l border-white/20 px-2 text-xs font-semibold bg-transparent cursor-pointer">
+              {PPT_DESIGNS.map(([id, label]) => <option key={id} value={id} className="text-black">{label}</option>)}
+            </select>
+          </div>
           <button
             type="button"
             onClick={() => printDeck(title, slides, css, theme.bg)}

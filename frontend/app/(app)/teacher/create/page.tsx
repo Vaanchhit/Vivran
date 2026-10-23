@@ -18,6 +18,7 @@ import {
 import { SmartCreationBox, type SmartCreationArtifactType } from "@/app/components/smart-creation-box";
 import { DeckView } from "@/app/components/deck-view";
 import { FeatureExplainer } from "@/app/components/feature-explainer";
+import { ReadyLessons } from "@/app/components/ready-lessons";
 import { getLiveValue, noticeIfAway, setLiveValue, setTabValue, useLiveState, useOnScreen, useTabState } from "@/lib/tab-state";
 import { stage } from "@/lib/catalog";
 
@@ -298,8 +299,17 @@ function CreatePageInner() {
         })}
       </div>
 
+      {(!active || active === "slides") && (
+        <ReadyLessons onMake={(d) => {
+          // Prefill the slides request with the same lesson; the teacher edits it for their class before anything is made.
+          setTabValue("create:slides:prompt", `${d.title} for my class, in the style of the ready-made ${d.subject.toLowerCase()} lesson, with a quick quiz at the end`, "");
+          setActive("slides");
+          setTimeout(() => document.getElementById("create-workspace")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+        }} />
+      )}
+
       {active && (
-        <div
+        <div id="create-workspace"
           className={
             SMART_CREATION_TYPES.has(active)
               ? "space-y-4"
