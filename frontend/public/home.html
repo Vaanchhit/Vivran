@@ -1004,36 +1004,12 @@ details.more .lede{ margin-top:10px; }
 @media (prefers-reduced-motion:reduce){ details.more > :not(summary){ animation:none; } details.more > summary::after{ transition:none; } }
 
 
-/* ---- Example decks ---- */
-.dk{ margin-top:30px; }
-.dk-tabs{ display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
-.dk-tabs::-webkit-scrollbar{ display:none; }
-.dk-tabs button{ flex:0 0 auto; font:inherit; font-size:.88rem; padding:9px 15px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink-2); cursor:pointer; transition:background .2s, color .2s, border-color .2s; }
-.dk-tabs button small{ color:var(--vv-ink-3, var(--vv-ink-2)); margin-left:6px; font-size:.78rem; }
-.dk-tabs button[aria-selected="true"]{ background:var(--vv-brand); color:var(--vv-paper); border-color:var(--vv-brand); }
-.dk-tabs button[aria-selected="true"] small{ color:inherit; opacity:.7; }
-.dk-stage{ position:relative; margin-top:16px; aspect-ratio:16/9; border-radius:14px; overflow:hidden; background:#111; box-shadow:0 30px 60px -32px rgba(20,16,12,.45); outline:none; }
-.dk-stage:focus-visible{ box-shadow:0 0 0 3px var(--vv-accent); }
-.dk-stage img{ width:100%; height:100%; display:block; object-fit:cover; transition:opacity .28s ease; }
-.dk-stage img.fade{ opacity:0; }
-.dk-nav{ position:absolute; top:50%; transform:translateY(-50%); width:46px; height:46px; border-radius:50%; border:0; background:rgba(255,255,255,.92); color:#14100C; font-size:28px; line-height:1; cursor:pointer; box-shadow:0 6px 18px rgba(0,0,0,.18); opacity:0; transition:opacity .2s, transform .2s; }
-.dk-stage:hover .dk-nav, .dk-stage:focus-within .dk-nav{ opacity:1; }
-.dk-nav:hover{ transform:translateY(-50%) scale(1.06); }
-.dk-nav.prev{ left:14px; } .dk-nav.next{ right:14px; }
-.dk-nav:disabled{ opacity:0 !important; pointer-events:none; }
-@media (hover:none){ .dk-nav{ opacity:1; width:38px; height:38px; font-size:24px; } }
-.dk-count{ position:absolute; right:14px; bottom:12px; font-size:.75rem; letter-spacing:.06em; color:#fff; background:rgba(0,0,0,.45); padding:4px 10px; border-radius:999px; }
-.dk-thumbs{ display:flex; gap:8px; margin-top:12px; overflow-x:auto; padding:2px 2px 6px; scrollbar-width:thin; }
-.dk-thumbs button{ flex:0 0 auto; width:128px; aspect-ratio:16/9; padding:0; border:2px solid transparent; border-radius:8px; overflow:hidden; cursor:pointer; background:var(--vv-card); opacity:.75; transition:opacity .2s, border-color .2s; }
-.dk-thumbs button img{ width:100%; height:100%; display:block; object-fit:cover; }
-.dk-thumbs button[aria-current="true"]{ border-color:var(--vv-accent); opacity:1; }
-.dk-thumbs button:hover{ opacity:1; }
-@media (max-width:640px){ .dk-thumbs button{ width:96px; } }
-.dk-foot{ display:flex; flex-wrap:wrap; align-items:center; gap:14px; margin-top:16px; }
-.dk-meta{ font-size:.88rem; color:var(--vv-ink-2); }
-.dk-note{ margin-top:14px; font-size:.8rem; color:var(--vv-ink-2); max-width:78ch; line-height:1.55; }
-.dk-note a{ color:inherit; }
-@media (prefers-reduced-motion:reduce){ .dk-stage img{ transition:none; } }
+/* ---- Product tour ---- */
+.tour-frame{ margin-top:28px; }
+.tour-frame iframe{ display:block; width:100%; height:760px; border:0; background:transparent; }
+@media (max-width:700px){ .tour-frame iframe{ height:1100px; } }
+.tour-foot{ margin-top:10px; font-size:.82rem; color:var(--vv-ink-2); }
+.tour-foot a{ color:var(--vv-accent); font-weight:600; }
 </style>
 </head>
 <body>
@@ -1057,7 +1033,7 @@ details.more .lede{ margin-top:10px; }
     <div class="nav-links">
       <a href="#ledger">Problem</a>
       <a href="#makes">Features</a>
-      <a href="#decks">Examples</a>
+      <a href="#tour">Tour</a>
       <a href="#grounding">Demo</a>
       <a href="#proof">Team</a>
       <a href="#pricing">Pricing</a>
@@ -1077,7 +1053,7 @@ details.more .lede{ margin-top:10px; }
 <div class="mobile-menu" id="mobile-menu">
   <a href="#ledger">Problem</a>
   <a href="#makes">Features</a>
-      <a href="#decks">Examples</a>
+      <a href="#tour">Tour</a>
   <a href="#grounding">Demo</a>
   <a href="#proof">Team</a>
   <a href="#pricing">Pricing</a>
@@ -1100,7 +1076,7 @@ details.more .lede{ margin-top:10px; }
         Vivran brings lessons, questions, students and classrooms together, starting with the teacher.
       </p>
       <div class="hero-cta">
-        <a class="btn btn-primary" href="#vision">See what we&rsquo;re building &rarr;</a>
+        <a class="btn btn-primary" href="#tour">See it in action &rarr;</a>
         <a class="btn btn-ghost" href="mailto:info@vivran.co.in?subject=Vivran%20access%20request&body=Name%3A%20%0ACollege%20%2F%20school%3A%20%0ASubject(s)%20you%20teach%3A%20%0A">Request access</a>
       </div>
       <div class="hero-meta">
@@ -1335,29 +1311,18 @@ details.more .lede{ margin-top:10px; }
 
 <hr class="hr" />
 
-<!-- ============================ EXAMPLE DECKS ============================ -->
-<section class="sec" id="decks">
+<!-- ============================ PRODUCT TOUR ============================ -->
+<section class="sec" id="tour">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow rv">Ready to teach</span>
-      <h2 class="rv d1">Flip through a real lesson.</h2>
-      <p class="lede rv d2">Five complete lessons, the kind of deck Vivran builds for you. Download any one and teach it tomorrow.</p>
+      <span class="eyebrow rv">See it work</span>
+      <h2 class="rv d1">One lesson, three people.</h2>
+      <p class="lede rv d2">Follow one Class 9 unit from the teacher who plans it, to the students who learn it, to the school that needs to know how it went.</p>
     </div>
-    <div class="dk rv d2" id="dk">
-      <div class="dk-tabs" id="dkTabs" role="tablist" aria-label="Example lessons"></div>
-      <div class="dk-stage" id="dkStage" tabindex="0" aria-roledescription="carousel" aria-label="Slides">
-        <img id="dkImg" alt="" width="1600" height="900" />
-        <button class="dk-nav prev" id="dkPrev" type="button" aria-label="Previous slide">&#8249;</button>
-        <button class="dk-nav next" id="dkNext" type="button" aria-label="Next slide">&#8250;</button>
-        <span class="dk-count" id="dkCount" aria-live="polite"></span>
-      </div>
-      <div class="dk-thumbs" id="dkThumbs"></div>
-      <div class="dk-foot">
-        <a class="btn btn-primary" id="dkDl" href="#" download>Download PowerPoint</a>
-        <span class="dk-meta" id="dkMeta"></span>
-      </div>
-      <p class="dk-note">Example lessons written and designed by the Vivran team, with real photos from Wikimedia Commons. Yours are built from your own material, in your format. <span id="dkCredits"></span></p>
+    <div class="tour-frame rv d2">
+      <iframe id="tourFrame" title="Vivran product tour" src="/tour?embed=1" loading="lazy" scrolling="no"></iframe>
     </div>
+    <p class="tour-foot rv">Sample data. Teacher features are live today; student and school views are a preview of what we&rsquo;re building next. <a href="/tour" target="_blank" rel="noopener">Open full screen &rarr;</a></p>
   </div>
 </section>
 
@@ -1623,7 +1588,7 @@ details.more .lede{ margin-top:10px; }
     <h2 class="rv">We think education can work differently.</h2>
     <p class="final-sub rv d1">Less disconnected work.<br />More understanding.<br />Better teaching. Better learning.</p>
     <div class="hero-cta final-btns rv d2">
-      <a class="btn btn-primary" href="#vision">See what we&rsquo;re building &rarr;</a>
+      <a class="btn btn-primary" href="#tour">See it in action &rarr;</a>
       <a class="btn btn-ghost" href="mailto:info@vivran.co.in?subject=Vivran%20access%20request&body=Name%3A%20%0ACollege%20%2F%20school%3A%20%0ASubject(s)%20you%20teach%3A%20%0A">Request access</a>
     </div>
   </div>
@@ -2094,45 +2059,11 @@ details.more .lede{ margin-top:10px; }
 
 
 <script>
-/* Example decks: real slides, rendered from the .pptx each one downloads as. */
-(function(){
-  var root=document.getElementById('dk'); if(!root) return;
-  var tabs=document.getElementById('dkTabs'), img=document.getElementById('dkImg'), thumbs=document.getElementById('dkThumbs');
-  var prev=document.getElementById('dkPrev'), next=document.getElementById('dkNext'), count=document.getElementById('dkCount');
-  var dl=document.getElementById('dkDl'), meta=document.getElementById('dkMeta'), credits=document.getElementById('dkCredits'), stage=document.getElementById('dkStage');
-  var decks=[], deck=null, i=0, base='/landing/decks/';
-  var esc=function(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; };
-  var src=function(d,n,t){ return base+d.id+'/'+(t?'t':'')+String(n).padStart(2,'0')+'.jpg'; };
-  function show(n){
-    i=Math.max(0,Math.min(deck.slides-1,n));
-    var url=src(deck,i+1);
-    img.classList.add('fade');
-    var pre=new Image(); pre.onload=pre.onerror=function(){ img.src=url; img.alt=deck.title+', slide '+(i+1)+' of '+deck.slides; img.classList.remove('fade'); }; pre.src=url;
-    if(i+1<deck.slides){ new Image().src=src(deck,i+2); }
-    count.textContent=(i+1)+' / '+deck.slides; prev.disabled=i===0; next.disabled=i===deck.slides-1;
-    thumbs.querySelectorAll('button').forEach(function(b,k){ b.setAttribute('aria-current',String(k===i)); if(k===i) b.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'}); });
-  }
-  function pick(k){
-    deck=decks[k];
-    tabs.querySelectorAll('button').forEach(function(b,j){ b.setAttribute('aria-selected',String(j===k)); });
-    thumbs.innerHTML=Array.from({length:deck.slides},function(_,n){ return '<button type="button" aria-label="Slide '+(n+1)+'"><img loading="lazy" alt="" src="'+src(deck,n+1,true)+'"></button>'; }).join('');
-    thumbs.querySelectorAll('button').forEach(function(b,n){ b.addEventListener('click',function(){ show(n); }); });
-    dl.href=base+deck.id+'.pptx'; dl.setAttribute('download', deck.id+'.pptx');
-    meta.textContent=deck.level+' · '+deck.subject+' · '+deck.slides+' slides · speaker notes included';
-    credits.innerHTML='Photos: '+deck.credits.map(function(c){ return '<a href="'+esc(c.source)+'" target="_blank" rel="noreferrer">'+esc(c.author)+'</a> ('+esc(c.license)+')'; }).join(', ')+'.';
-    show(0);
-  }
-  prev.addEventListener('click',function(){ show(i-1); }); next.addEventListener('click',function(){ show(i+1); });
-  stage.addEventListener('keydown',function(e){ if(e.key==='ArrowRight'){ e.preventDefault(); show(i+1); } if(e.key==='ArrowLeft'){ e.preventDefault(); show(i-1); } });
-  var x0=null; stage.addEventListener('touchstart',function(e){ x0=e.touches[0].clientX; },{passive:true});
-  stage.addEventListener('touchend',function(e){ if(x0===null) return; var dx=e.changedTouches[0].clientX-x0; if(Math.abs(dx)>40) show(i+(dx<0?1:-1)); x0=null; });
-  fetch(base+'decks.json').then(function(r){ return r.json(); }).then(function(list){
-    decks=list;
-    tabs.innerHTML=list.map(function(d,k){ return '<button type="button" role="tab" aria-selected="false">'+esc(d.title)+'<small>'+esc(d.level)+'</small></button>'; }).join('');
-    tabs.querySelectorAll('button').forEach(function(b,k){ b.addEventListener('click',function(){ pick(k); }); });
-    pick(0);
-  }).catch(function(){ root.hidden=true; });
-})();
+/* The tour iframe reports its height so it never shows a scrollbar of its own. */
+window.addEventListener('message', function(e){
+  if (e.origin !== location.origin || !e.data || e.data.type !== 'vivran-tour-height') return;
+  var f = document.getElementById('tourFrame'); if (f) f.style.height = Math.ceil(e.data.height) + 'px';
+});
 </script>
 </body>
 </html>
