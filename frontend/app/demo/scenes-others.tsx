@@ -135,7 +135,7 @@ const progress: Scene = {
 
 // ── Institution ─────────────────────────────────────────────
 const coverage: Scene = {
-  id: "coverage", title: "Taught vs planned", url: "app.vivran.co.in/school/coverage",
+  id: "coverage", title: "Taught vs planned", url: "app.vivran.co.in/institution/coverage",
   caption: "See how far each section has got through the syllabus, without asking for a report.",
   steps: [2400, 2200],
   render: (st) => (
@@ -159,7 +159,7 @@ const coverage: Scene = {
 };
 
 const struggle: Scene = {
-  id: "struggle", title: "Where students struggle", url: "app.vivran.co.in/school/insights",
+  id: "struggle", title: "Where students struggle", url: "app.vivran.co.in/institution/insights",
   caption: `Built from ${S.answersThisWeek} practice answers this week, so help arrives before the final marks, not after.`,
   steps: [2200, 2800],
   render: (st) => {
@@ -192,7 +192,7 @@ const struggle: Scene = {
 };
 
 const time: Scene = {
-  id: "time", title: "Time back for teaching", url: "app.vivran.co.in/school/overview",
+  id: "time", title: "Time back for teaching", url: "app.vivran.co.in/institution/overview",
   caption: "Preparation time saved across the department, so teachers spend it with students instead.",
   steps: [2600],
   render: () => (
@@ -212,7 +212,7 @@ const time: Scene = {
 };
 
 const standard: Scene = {
-  id: "standard", title: "One standard, shared", url: "app.vivran.co.in/school/standards",
+  id: "standard", title: "One standard, shared", url: "app.vivran.co.in/institution/standards",
   caption: `${S.teacher.short}'s paper format becomes the department's, adopted in one click, so every section is tested the same way.`,
   steps: [1800, 2600],
   render: (st) => (

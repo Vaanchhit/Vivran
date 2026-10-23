@@ -141,10 +141,10 @@ function LoginForm() {
         </a>
 
         <h2 className="text-center text-3xl font-extrabold font-display tracking-tight text-foreground">
-          {mode === "signup" ? "Create Your Workspace" : "Enter Your Workspace"}
+          {mode === "signup" ? "Create your workspace" : "Welcome back"}
         </h2>
         <p className="mt-2 text-center text-sm text-muted">
-          AI-powered teacher workflow & content creation platform
+          Your teaching, with the busywork done.
         </p>
       </div>
 
@@ -348,7 +348,7 @@ function LoginForm() {
               {submitting && <BookLoader className="w-4 h-4" />}
               {submitting
                 ? mode === "signup" ? "Creating account..." : "Signing in..."
-                : mode === "signup" ? "Create Account" : "Enter Teacher Terminal"}{" "}
+                : mode === "signup" ? "Create account" : "Continue"}{" "}
               {!submitting && <ArrowRight className="w-4 h-4" />}
             </button>
           </form>

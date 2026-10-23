@@ -614,7 +614,7 @@ p{ margin:0; text-wrap:pretty; }
 .support-card.dark{ background:#0D0C0B; border-color:#0D0C0B; }
 .support-card img{ max-height:44px; width:auto; object-fit:contain; }
 .support-card .gcrop{ width:100%; max-width:230px; height:40px; overflow:hidden; display:flex; align-items:center; justify-content:center; }
-.support-card .gcrop img{ width:250px; max-height:none; transform:scale(1.3); }
+.support-card .gcrop img{ width:250px; max-height:none; transform:scale(1.3); mix-blend-mode:multiply; }
 .support-card img.eleven{ width:158px; max-height:30px; }
 .support-card img.cart{ width:180px; max-height:30px; }
 .support-lbl{
@@ -785,6 +785,7 @@ p{ margin:0; text-wrap:pretty; }
   font-size:0.672rem; color:rgba(251,248,243,.42);
 }
 .foot-bot .foot-line{ text-transform:none; letter-spacing:0; font-weight:500; font-size:.86rem; color:rgba(251,248,243,.62); }
+.foot-bot .foot-line span{ font:inherit; letter-spacing:inherit; text-transform:none; color:inherit; }
 
 /* ============================ CHALK CANVAS ============================ */
 #chalk{
@@ -1119,7 +1120,7 @@ details.more .lede{ margin-top:10px; }
 @media (prefers-reduced-motion:reduce){ .vv-book .f{ animation:none; opacity:0; } }
 
 /* ---- Institutions: the school-wide board ----
-   Always the inverse of the page: a dark board on the paper site, a paper board on the dark site. */
+   A dark board in both themes: warm ink on the paper site, deep green-black on the dark site. */
 .sp-rev .spec-cite, .sp-prac .spec-cite{ display:block; width:fit-content; }
 .ib{ display:none; }
 #makesGrid[data-aud="institution"]{ grid-template-columns:1fr; }
@@ -1128,9 +1129,8 @@ details.more .lede{ margin-top:10px; }
 .ib{ --ib-bg:#15110D; --ib-bg-2:#1F1A14; --ib-fg:#F4EFE6; --ib-mut:rgba(244,239,230,.62); --ib-rule:rgba(244,239,230,.12); --ib-tile:rgba(244,239,230,.05);
   --ib-hot:#F0794F; --ib-good:#9FE3BE; --ib-shadow:0 40px 80px -40px rgba(20,12,4,.55); --ib-glow:rgba(240,121,79,.20);
   --ic-bg:#F4EFE6; --ic-fg:#15110D; --ic-mut:#7A7165; --ic-body:#2C2620; --ic-tile:#FFFFFF; --ic-rule:rgba(21,17,13,.10); --ic-acc:#C6431E; --ic-tabs:rgba(21,17,13,.07); }
-[data-theme="dark"] .ib{ --ib-bg:#F4EFE6; --ib-bg-2:#FFFFFF; --ib-fg:#15110D; --ib-mut:#6B6357; --ib-rule:rgba(21,17,13,.10); --ib-tile:#FFFFFF;
-  --ib-hot:#C6431E; --ib-good:#1A7F5A; --ib-shadow:0 40px 90px -40px rgba(0,0,0,.75); --ib-glow:rgba(198,67,30,.10);
-  --ic-bg:#1D2823; --ic-fg:#F1EFE8; --ic-mut:rgba(241,239,232,.6); --ic-body:rgba(241,239,232,.86); --ic-tile:rgba(241,239,232,.06); --ic-rule:rgba(241,239,232,.12); --ic-acc:#F08A66; --ic-tabs:rgba(241,239,232,.08); }
+[data-theme="dark"] .ib{ --ib-bg:#111814; --ib-bg-2:#18221D; --ib-fg:#F1EFE8; --ib-mut:rgba(241,239,232,.6); --ib-rule:rgba(241,239,232,.13); --ib-tile:rgba(241,239,232,.05);
+  --ib-hot:#F08A66; --ib-good:#7CD3A4; --ib-shadow:0 0 0 1px rgba(241,239,232,.10), 0 40px 90px -40px rgba(0,0,0,.8); --ib-glow:rgba(124,211,164,.13); }
 .ib{ position:relative; overflow:hidden; border-radius:32px; background:var(--ib-bg); color:var(--ib-fg); padding:clamp(22px,4vw,48px); box-shadow:var(--ib-shadow); isolation:isolate; }
 .ib::before{ content:""; position:absolute; inset:-20% -10% auto auto; width:70%; height:90%; z-index:-1; pointer-events:none;
   background:radial-gradient(closest-side, var(--ib-glow), transparent 70%); animation:ibGlow 9s ease-in-out infinite alternate; }
@@ -1247,29 +1247,7 @@ details.more .lede{ margin-top:10px; }
 .ib-chips{ display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; }
 .ib-chips span{ font-size:.74rem; padding:6px 12px; border-radius:999px; border:1px solid var(--ib-rule); background:var(--ib-tile); }
 
-/* cases */
-.ib-cases{ margin-top:30px; background:var(--ic-bg); color:var(--ic-fg); border-radius:26px; padding:clamp(18px,3vw,30px); border:1px solid var(--ic-rule); }
-.ib-cases .ib-k{ color:var(--ic-acc); }
-.ib-cases-hd{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; }
-.ib-tabs{ display:inline-flex; gap:4px; padding:4px; border-radius:999px; background:var(--ic-tabs); }
-.ib-tabs button{ font:inherit; font-size:.82rem; font-weight:600; padding:8px 14px; border:0; border-radius:999px; background:transparent; color:var(--ic-mut); cursor:pointer; transition:background .25s, color .25s; }
-.ib-tabs button[aria-selected="true"]{ background:var(--ic-fg); color:var(--ic-bg); }
-.ib-case{ display:grid; gap:18px; margin-top:20px; animation:audIn .45s cubic-bezier(.2,.8,.2,1) both; }
-.ib-case[hidden]{ display:none; }
-.ib-case-who{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; }
-.ib-case-who b{ font-family:var(--disp); font-size:1.4rem; letter-spacing:-.015em; color:var(--ic-fg); }
-.ib-case-who span{ color:var(--ic-mut); font-size:.86rem; }
-.ib-ba{ display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:16px; }
-.ib-ba > i{ font-style:normal; font-size:1.3rem; color:var(--ic-acc); }
-.ib-ba p{ margin:4px 0 0; font-size:1.02rem; color:var(--ic-body); line-height:1.4; }
-.ib-ba > div:last-child p{ color:var(--ic-fg); font-weight:600; }
-.ib-case-k{ font-size:.64rem; letter-spacing:.1em; text-transform:uppercase; font-weight:600; color:var(--ic-mut); }
-.ib-case-out{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
-.ib-case-out div{ background:var(--ic-tile); border:1px solid var(--ic-rule); border-radius:18px; padding:14px; display:flex; flex-direction:column; gap:4px; }
-.ib-case-out b{ font-family:var(--disp); font-size:clamp(1.15rem,2vw,1.6rem); letter-spacing:-.02em; color:var(--ic-acc); }
-.ib-case-out span{ font-size:.78rem; color:var(--ic-mut); line-height:1.35; }
-.ib-foot{ display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-top:18px; padding-top:16px; border-top:1px solid var(--ic-rule); font-size:.74rem; color:var(--ic-mut); }
-.ib-cta{ display:inline-flex; padding:11px 18px; border-radius:999px; background:var(--ic-fg); color:var(--ic-bg) !important; font-weight:600; font-size:.88rem; text-decoration:none; transition:transform .25s; }
+.ib-cta{ display:inline-flex; margin-top:20px; padding:11px 18px; border-radius:999px; background:var(--ib-fg); color:var(--ib-bg) !important; font-weight:600; font-size:.88rem; text-decoration:none; transition:transform .25s; }
 .ib-cta:hover{ transform:translateY(-2px); }
 @media (max-width:999px){
   .ib-lenses{ flex-direction:row; overflow-x:auto; scroll-snap-type:x mandatory; padding-bottom:2px; scrollbar-width:none; }
@@ -1290,9 +1268,6 @@ details.more .lede{ margin-top:10px; }
   .ib-dept{ grid-template-columns:70px 1fr; } .ib-dept > span:last-child{ display:none; }
   .ib-crowd{ grid-template-columns:repeat(12,minmax(0,1fr)); gap:5px; }
   .ib-bar{ grid-template-columns:34px 1fr 74px; gap:8px; font-size:.72rem; }
-  .ib-tabs{ width:100%; } .ib-tabs button{ flex:1 1 0; padding:8px 6px; font-size:.74rem; white-space:nowrap; }
-  .ib-ba{ grid-template-columns:1fr; gap:8px; } .ib-ba > i{ transform:rotate(90deg); justify-self:start; }
-  .ib-case-out{ grid-template-columns:1fr; } .ib-case-out div{ flex-direction:row; align-items:baseline; gap:10px; }
 }
 @media (prefers-reduced-motion:reduce){ .ib::before, .ib-live i, .ib-stage[data-lens="help"] .ib-grid .c.hot{ animation:none !important; } .ib *{ transition-duration:0s !important; transition-delay:0s !important; } .ib-view.on{ animation:none; } }
 
@@ -1476,7 +1451,7 @@ details.more .lede{ margin-top:10px; }
     <div class="sec-head">
       <span class="eyebrow rv">Demo</span>
       <h2 class="rv d1">One lesson, three people.</h2>
-      <p class="lede rv d2">Follow one Class 9 unit from the teacher who plans it, to the students who learn it, to the school that needs to know how it went.</p>
+      <p class="lede rv d2">Follow one Class 9 unit from the teacher who plans it, to the students who learn it, to the institution that needs to know how it went.</p>
     </div>
     <div class="tour-frame rv d2">
       <iframe id="tourFrame" title="Vivran demo" src="/demo?embed=1" loading="lazy" scrolling="no"></iframe>
@@ -1645,6 +1620,7 @@ details.more .lede{ margin-top:10px; }
             <span class="ib-k">Vivran for institutions</span>
             <h3>See every classroom.<br/><em>Act before the results do.</em></h3>
             <p>Everyday teaching, turned into a live view of the whole institution.</p>
+            <a class="ib-cta" href="mailto:info@vivran.co.in?subject=Vivran%20pilot%20for%20our%20institution">Talk to us about a pilot &rarr;</a>
           </div>
           <div class="ib-kpis">
             <div class="ib-kpi"><b><span data-ib-count="930">0</span> h</b><span>teacher hours back, every week</span></div>
@@ -1699,35 +1675,6 @@ details.more .lede{ margin-top:10px; }
           </div>
         </div>
 
-        <div class="ib-cases">
-          <div class="ib-cases-hd">
-            <span class="ib-k">What it looks like</span>
-            <div class="ib-tabs" role="tablist" aria-label="Kind of institution">
-              <button type="button" role="tab" aria-selected="true" data-case="0">K&ndash;12 school</button>
-              <button type="button" role="tab" aria-selected="false" data-case="1">Coaching network</button>
-              <button type="button" role="tab" aria-selected="false" data-case="2">College</button>
-            </div>
-          </div>
-          <div class="ib-case" data-case="0">
-            <div class="ib-case-who"><b>A CBSE school</b><span>1,400 students · 62 teachers</span></div>
-            <div class="ib-ba"><div><span class="ib-case-k">Before</span><p>Problems show up in March results.</p></div><i aria-hidden="true">&rarr;</i><div><span class="ib-case-k">With Vivran</span><p>A learning map every Monday.</p></div></div>
-            <div class="ib-case-out"><div><b>930 h</b><span>a week back to teaching</span></div><div><b>Weekly</b><span>view of every section</span></div><div><b>1</b><span>paper format, 4 departments</span></div></div>
-          </div>
-          <div class="ib-case" data-case="1" hidden>
-            <div class="ib-case-who"><b>A coaching network</b><span>6 centres · 3,000 students · JEE and NEET</span></div>
-            <div class="ib-ba"><div><span class="ib-case-k">Before</span><p>Every centre tests differently.</p></div><i aria-hidden="true">&rarr;</i><div><span class="ib-case-k">With Vivran</span><p>One question bank, compared batch by batch.</p></div></div>
-            <div class="ib-case-out"><div><b>1</b><span>question bank, 6 centres</span></div><div><b>Every</b><span>answer explained to the page</span></div><div><b>Daily</b><span>batch-by-batch view</span></div></div>
-          </div>
-          <div class="ib-case" data-case="2" hidden>
-            <div class="ib-case-who"><b>A college department</b><span>40 faculty · accreditation year</span></div>
-            <div class="ib-ba"><div><span class="ib-case-k">Before</span><p>Evidence gathered by hand, before the visit.</p></div><i aria-hidden="true">&rarr;</i><div><span class="ib-case-k">With Vivran</span><p>Outcomes mapped as you teach.</p></div></div>
-            <div class="ib-case-out"><div><b>CO&ndash;PO</b><span>mapping kept as you teach</span></div><div><b>1</b><span>accreditation file, always current</span></div><div><b>40</b><span>faculty on one standard</span></div></div>
-          </div>
-          <div class="ib-foot">
-            <span>Illustrative scenarios: what our pilots are designed to show, not results yet.</span>
-            <a class="ib-cta" href="mailto:info@vivran.co.in?subject=Vivran%20pilot%20for%20our%20institution">Talk to us about a pilot &rarr;</a>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -2016,7 +1963,7 @@ details.more .lede{ margin-top:10px; }
           <div class="foot-links">
             <a href="mailto:info@vivran.co.in?subject=Demo%20request%3A%20Vivran%20for%20my%20teaching&amp;body=Dear%20Vivran%20team%2C%0A%0AI%20am%20a%20teacher%20and%20would%20like%20to%20request%20a%20demo%20of%20Vivran.%0A%0AName%3A%0AInstitution%3A%0ASubject%28s%29%20I%20teach%3A%0AClass%20%2F%20year%20I%20teach%3A%0A%0AI%20would%20like%20to%20see%20how%20Vivran%20could%20help%20me%20prepare%20course%20plans%2C%20lessons%2C%20worksheets%20and%20assessments%20from%20my%20own%20teaching%20material.%0A%0APlease%20let%20me%20know%20a%20convenient%20time%20for%20a%20demo.%0A%0AKind%20regards%2C%0A">As a teacher</a>
             <a href="mailto:info@vivran.co.in?subject=Demo%20request%3A%20Vivran%20for%20students&amp;body=Dear%20Vivran%20team%2C%0A%0AI%20am%20a%20student%20and%20would%20like%20to%20learn%20more%20about%20Vivran%20and%20request%20a%20demo.%0A%0AName%3A%0ASchool%20%2F%20college%3A%0AClass%20%2F%20year%20and%20course%3A%0A%0AI%20am%20interested%20in%20how%20Vivran%20could%20help%20me%20learn%20and%20revise%20from%20what%20is%20actually%20taught%20in%20my%20classes.%0A%0APlease%20let%20me%20know%20a%20convenient%20time%20for%20a%20demo.%0A%0AKind%20regards%2C%0A">As a student</a>
-            <a href="mailto:info@vivran.co.in?subject=Demo%20request%3A%20Vivran%20for%20our%20institution&amp;body=Dear%20Vivran%20team%2C%0A%0AI%20am%20writing%20on%20behalf%20of%20my%20institution%20to%20request%20a%20demo%20of%20Vivran.%0A%0AName%3A%0ARole%3A%0AInstitution%3A%0AApproximate%20number%20of%20teachers%20and%20students%3A%0A%0AWe%20would%20like%20to%20understand%20how%20Vivran%20could%20support%20our%20teachers%20and%20give%20us%20a%20clearer%20view%20of%20teaching%20and%20learning%20across%20our%20classrooms.%0A%0APlease%20let%20us%20know%20a%20convenient%20time%20for%20a%20call.%0A%0AKind%20regards%2C%0A">As a school</a>
+            <a href="mailto:info@vivran.co.in?subject=Demo%20request%3A%20Vivran%20for%20our%20institution&amp;body=Dear%20Vivran%20team%2C%0A%0AI%20am%20writing%20on%20behalf%20of%20my%20institution%20to%20request%20a%20demo%20of%20Vivran.%0A%0AName%3A%0ARole%3A%0AInstitution%3A%0AApproximate%20number%20of%20teachers%20and%20students%3A%0A%0AWe%20would%20like%20to%20understand%20how%20Vivran%20could%20support%20our%20teachers%20and%20give%20us%20a%20clearer%20view%20of%20teaching%20and%20learning%20across%20our%20classrooms.%0A%0APlease%20let%20us%20know%20a%20convenient%20time%20for%20a%20call.%0A%0AKind%20regards%2C%0A">As an institution</a>
           </div>
         </div>
         <div class="foot-col">
@@ -2035,8 +1982,8 @@ details.more .lede{ margin-top:10px; }
       </div>
     </div>
     <div class="foot-bot">
-      <span>© <span id="yr">2026</span> Vivran Technologies</span>
-      <span class="foot-line">Built for the teachers who stay late, and the students they stay for &middot; New Delhi</span>
+      <span class="foot-line">&copy; <span id="yr">2026</span> Vivran (<span lang="hi">विवरण</span>) &mdash; built for teachers, students &amp; institutions.</span>
+      <span>SRCC, New Delhi</span>
     </div>
   </div>
 </footer>
@@ -2605,11 +2552,6 @@ window.addEventListener('message', function(e){
     if(counted) return; counted=true;
     [].slice.call(ib.querySelectorAll('[data-ib-count]')).forEach(function(el){ count(el,+el.dataset.ibCount,1400); });
   };
-  var tabs=[].slice.call(ib.querySelectorAll('.ib-tabs button')), cases=[].slice.call(ib.querySelectorAll('.ib-case'));
-  tabs.forEach(function(x){ x.addEventListener('click', function(){
-    tabs.forEach(function(y){ y.setAttribute('aria-selected', String(y===x)); });
-    cases.forEach(function(cs){ cs.hidden = cs.dataset.case!==x.dataset.case; });
-  }); });
 })();
 </script>
 </body>
