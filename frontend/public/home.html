@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Vivran | What if education could learn from itself?</title>
-<meta name="description" content="Vivran brings lessons, questions, students and classrooms together, starting with the teacher: course plans, slides, worksheets and papers built from your own material, each one pointing back to the page it came from." />
+<title>Vivran | One platform for teachers, students and institutions</title>
+<meta name="description" content="Vivran is one platform for teachers, students and institutions. Teachers turn their own material into lessons, slides and papers, each traced to its source. Students learn from exactly what was taught. Institutions see what is taught and learned across every classroom, and where students need help." />
 <link rel="canonical" href="/" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="Vivran" />
-<meta property="og:title" content="What if education could learn from itself?" />
-<meta property="og:description" content="Vivran brings lessons, questions, students and classrooms together, starting with the teacher: course plans, slides, worksheets and papers built from your own material, each one pointing back to the page it came from." />
+<meta property="og:title" content="Vivran: one platform for teachers, students and institutions" />
+<meta property="og:description" content="Vivran is one platform for teachers, students and institutions. Teachers turn their own material into lessons, slides and papers, each traced to its source. Students learn from exactly what was taught. Institutions see what is taught and learned across every classroom, and where students need help." />
 <meta name="twitter:card" content="summary" />
-<meta name="twitter:title" content="What if education could learn from itself?" />
-<meta name="twitter:description" content="Vivran brings lessons, questions, students and classrooms together, starting with the teacher: course plans, slides, worksheets and papers built from your own material, each one pointing back to the page it came from." />
+<meta name="twitter:title" content="Vivran: one platform for teachers, students and institutions" />
+<meta name="twitter:description" content="Vivran is one platform for teachers, students and institutions. Teachers turn their own material into lessons, slides and papers, each traced to its source. Students learn from exactly what was taught. Institutions see what is taught and learned across every classroom, and where students need help." />
 <!-- ?v= busts browsers' favicon cache; bump it whenever the icons change. -->
 <link rel="icon" href="/icon.svg?v=2" type="image/svg+xml" />
 <link rel="icon" href="/icon.png?v=2" type="image/png" sizes="256x256" />
@@ -1010,7 +1010,41 @@ details.more .lede{ margin-top:10px; }
 @media (max-width:700px){ .tour-frame iframe{ height:1100px; } }
 .tour-foot{ margin-top:10px; font-size:.82rem; color:var(--vv-ink-2); }
 .tour-foot a{ color:var(--vv-accent); font-weight:600; }
+
+/* ---- Who it's for ---- */
+.who-strip{ list-style:none; margin:28px 0 0; padding:0; display:grid; gap:8px; }
+@media (min-width:640px){ .who-strip{ grid-template-columns:repeat(3,minmax(0,1fr)); } }
+.who-strip a{ display:flex; flex-direction:column; gap:3px; padding:12px 14px; border:1px solid var(--vv-rule-hi); border-radius:12px; background:var(--vv-card); color:inherit; text-decoration:none; transition:border-color .2s, transform .2s; height:100%; }
+.who-strip a:hover{ border-color:var(--vv-accent); transform:translateY(-1px); }
+.who-strip b{ font-family:var(--disp); font-size:.98rem; color:var(--vv-ink); }
+.who-strip span{ font-size:.8rem; color:var(--vv-ink-2); line-height:1.35; }
+.st{ font-style:normal; align-self:flex-start; margin-top:4px; font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:999px; }
+.st.live{ background:color-mix(in srgb, var(--vv-ok) 14%, transparent); color:var(--vv-ok); }
+.st.next{ background:color-mix(in srgb, var(--vv-ink) 8%, transparent); color:var(--vv-ink-2); }
+.st.pilot{ background:color-mix(in srgb, var(--vv-accent) 14%, transparent); color:var(--vv-accent); }
+.who{ display:grid; gap:16px; margin-top:34px; }
+@media (min-width:980px){ .who{ grid-template-columns:1fr 1fr 1.35fr; align-items:start; } }
+.who-card{ display:flex; flex-direction:column; padding:24px; border-radius:16px; border:1px solid var(--vv-rule-hi); background:var(--vv-card); scroll-margin-top:calc(var(--nav-h) + 20px); }
+.who-top{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:8px; }
+.who-k{ font-size:.74rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--vv-accent); }
+.who-card h3{ font-family:var(--disp); font-size:clamp(1.15rem,1rem + .5vw,1.4rem); line-height:1.25; margin:14px 0 0; color:var(--vv-ink); letter-spacing:-.01em; }
+.who-card ul{ margin:14px 0 0; padding:0 0 0 18px; display:grid; gap:7px; color:var(--vv-ink-2); font-size:.93rem; line-height:1.45; }
+.who-link{ margin-top:18px; font-weight:600; font-size:.9rem; color:var(--vv-accent); text-decoration:none; }
+.who-inst{ background:var(--vv-brand); border-color:var(--vv-brand); }
+.who-inst h3{ color:var(--vv-paper); }
+.who-inst ul{ color:color-mix(in srgb, var(--vv-paper) 80%, transparent); }
+.who-inst .who-k{ color:#F2A07B; }
+.who-inst .st.pilot{ background:rgba(242,160,123,.18); color:#F2A07B; }
+.who-cta{ margin-top:auto; padding-top:20px; display:flex; flex-direction:column; gap:10px; }
+.who-inst .btn-primary{ background:var(--vv-paper); color:var(--vv-brand); border-color:var(--vv-paper); align-self:flex-start; }
+.who-note{ font-size:.78rem; color:color-mix(in srgb, var(--vv-paper) 65%, transparent); line-height:1.45; }
 </style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Vivran","url":"https://vivran.co.in","applicationCategory":"EducationalApplication","operatingSystem":"Web",
+ "description":"Vivran is one platform for teachers, students and institutions. Teachers turn their own material into lessons, slides and papers, each traced to its source. Students learn from exactly what was taught. Institutions see what is taught and learned across every classroom, and where students need help.",
+ "audience":[{"@type":"EducationalAudience","educationalRole":"teacher"},{"@type":"EducationalAudience","educationalRole":"student"},{"@type":"Audience","audienceType":"Schools, colleges and universities"}],
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"INR","description":"Free for teachers"}}
+</script>
 </head>
 <body>
 
@@ -1031,11 +1065,10 @@ details.more .lede{ margin-top:10px; }
       </div>
     </div>
     <div class="nav-links">
-      <a href="#ledger">Problem</a>
-      <a href="#makes">Features</a>
+      <a href="#for-teachers">Teachers</a>
+      <a href="#for-students">Students</a>
+      <a href="#for-institutions">Institutions</a>
       <a href="#tour">Tour</a>
-      <a href="#grounding">Demo</a>
-      <a href="#proof">Team</a>
       <a href="#pricing">Pricing</a>
     </div>
     <div class="nav-right">
@@ -1051,11 +1084,10 @@ details.more .lede{ margin-top:10px; }
   </div>
 </nav>
 <div class="mobile-menu" id="mobile-menu">
-  <a href="#ledger">Problem</a>
-  <a href="#makes">Features</a>
-      <a href="#tour">Tour</a>
-  <a href="#grounding">Demo</a>
-  <a href="#proof">Team</a>
+  <a href="#for-teachers">Teachers</a>
+  <a href="#for-students">Students</a>
+  <a href="#for-institutions">Institutions</a>
+  <a href="#tour">Tour</a>
   <a href="#pricing">Pricing</a>
   <a class="btn btn-primary" href="/login">Login</a>
 </div>
@@ -1067,21 +1099,24 @@ details.more .lede{ margin-top:10px; }
 <header class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">Teachers · Students · Schools</span>
+      <span class="eyebrow">For teachers · students · institutions</span>
       <h1>
-        What if education
-        <span class="l2 hero-serif">could finally learn from itself?</span>
+        One platform for the whole classroom.
+        <span class="l2 hero-serif">Connected by what was actually taught.</span>
       </h1>
       <p class="lede hero-sub">
-        Vivran brings lessons, questions, students and classrooms together, starting with the teacher.
+        Teachers build lessons and papers from their own material. Students learn from exactly what was taught.
+        Institutions see what&rsquo;s taught, what&rsquo;s learned, and where to help, across every classroom.
       </p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="#tour">See it in action &rarr;</a>
-        <a class="btn btn-ghost" href="mailto:info@vivran.co.in?subject=Vivran%20access%20request&body=Name%3A%20%0ACollege%20%2F%20school%3A%20%0ASubject(s)%20you%20teach%3A%20%0A">Request access</a>
+        <a class="btn btn-ghost" href="/institution">For institutions</a>
       </div>
-      <div class="hero-meta">
-        <span>Starting with the classroom. Building for all of education.</span>
-      </div>
+      <ul class="who-strip" aria-label="Who Vivran is for">
+        <li><a href="#for-teachers"><b>Teachers</b><span>Plan, teach and assess from your own material</span><em class="st live">Live</em></a></li>
+        <li><a href="#for-students"><b>Students</b><span>Revise and practise what was taught</span><em class="st next">Coming next</em></a></li>
+        <li><a href="#for-institutions"><b>Institutions</b><span>One view of teaching and learning</span><em class="st pilot">Pilots open</em></a></li>
+      </ul>
     </div>
 
     <div>
@@ -1143,6 +1178,56 @@ details.more .lede{ margin-top:10px; }
     </div>
   </div>
 </header>
+
+<hr class="hr" />
+
+<!-- ============================ WHO IT IS FOR ============================ -->
+<section class="sec" id="who">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow rv">Who it&rsquo;s for</span>
+      <h2 class="rv d1">Three people in every lesson.<br />One shared picture.</h2>
+      <p class="lede rv d2">What a teacher teaches shapes what a student practises, and what students practise shows the institution where to help. Vivran connects all three.</p>
+    </div>
+    <div class="who rv d2">
+      <article class="who-card" id="for-teachers">
+        <div class="who-top"><span class="who-k">For teachers</span><em class="st live">Live today · free</em></div>
+        <h3>Prepare in minutes, from what you already teach.</h3>
+        <ul>
+          <li>Course plans, slides, worksheets and papers from your own chapter</li>
+          <li>Every question points back to its page</li>
+          <li>Learns your format: your marks, your sections, your style</li>
+        </ul>
+        <a class="who-link" href="/login">Start teaching with Vivran &rarr;</a>
+      </article>
+      <article class="who-card" id="for-students">
+        <div class="who-top"><span class="who-k">For students</span><em class="st next">Coming next</em></div>
+        <h3>Learn from exactly what your teacher taught.</h3>
+        <ul>
+          <li>Revision built from your class&rsquo;s own lessons</li>
+          <li>Practice that explains mistakes and links to the page</li>
+          <li>Hard ideas explained with everyday examples</li>
+        </ul>
+        <a class="who-link" href="/student">See what&rsquo;s coming &rarr;</a>
+      </article>
+      <article class="who-card who-inst" id="for-institutions">
+        <div class="who-top"><span class="who-k">For schools, colleges &amp; universities</span><em class="st pilot">Pilots open</em></div>
+        <h3>See teaching and learning across every classroom, before the final marks.</h3>
+        <ul>
+          <li>Give every teacher Vivran, set up for your syllabus and board</li>
+          <li>Coverage by class and section: taught vs planned</li>
+          <li>Where students struggle, from their practice, topic by topic</li>
+          <li>Shared paper formats and standards across departments</li>
+          <li>Your institution&rsquo;s data stays yours, handled under India&rsquo;s DPDP Act</li>
+        </ul>
+        <div class="who-cta">
+          <a class="btn btn-primary" href="/institution">Bring Vivran to your institution</a>
+          <span class="who-note">Today, every teacher in your institution can use Vivran. The institution dashboard is built with our first pilot partners.</span>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
 
 <hr class="hr" />
 
