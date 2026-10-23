@@ -21,8 +21,17 @@ function Demo() {
   // Embedded, the landing page shows through, so the frame has no edge of its own.
   useEffect(() => {
     if (!embed) return;
+    document.documentElement.classList.add("vv-embed");
     document.documentElement.style.background = "transparent";
     document.body.style.background = "transparent";
+    // Follow the landing page's theme, so light and dark never meet at the frame's edge.
+    const onMsg = (e: MessageEvent) => {
+      if (e.origin !== location.origin || e.data?.type !== "vivran-theme") return;
+      document.documentElement.setAttribute("data-theme", e.data.theme === "dark" ? "dark" : "light");
+    };
+    window.addEventListener("message", onMsg);
+    window.parent?.postMessage({ type: "vivran-theme-ask" }, location.origin);
+    return () => window.removeEventListener("message", onMsg);
   }, [embed]);
   return (
     <div className={embed ? "" : "min-h-screen bg-background"}>

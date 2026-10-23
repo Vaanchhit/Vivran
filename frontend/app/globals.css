@@ -163,6 +163,14 @@
     opacity: var(--noise-opacity);
   }
 
+  /* Embedded in the landing page, which brings its own grain. */
+  html.vv-embed body::before { display: none; }
+  /* ...and its own dark palette (the board green), so the frame matches the page around it. */
+  html.vv-embed[data-theme="dark"] {
+    --bg: #1D2823; --surface: #25322C; --surface-2: #212D27; --bg-card: rgba(241, 239, 232, 0.05);
+    --border: rgba(241, 239, 232, 0.12); --border-hi: rgba(241, 239, 232, 0.26);
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     letter-spacing: -0.03em;

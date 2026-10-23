@@ -36,6 +36,7 @@ function LoginForm() {
   const [referralCode, setReferralCode] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [signupSuccessMessage, setSignupSuccessMessage] = useState("");
 
   const authError = searchParams.get("error");
@@ -330,9 +331,18 @@ function LoginForm() {
               </div>
             )}
 
+            <label className="flex items-start gap-2.5 text-xs text-muted cursor-pointer select-none">
+              <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)}
+                className="mt-0.5 w-4 h-4 shrink-0 rounded border-border accent-[var(--accent-1)] cursor-pointer" />
+              <span>
+                I agree to the <a href="/terms" target="_blank" className="underline hover:text-foreground">Terms</a> and{" "}
+                <a href="/privacy" target="_blank" className="underline hover:text-foreground">Privacy policy</a>.
+              </span>
+            </label>
+
             <button
               type="submit"
-              disabled={selectedRole !== "teacher" || submitting}
+              disabled={selectedRole !== "teacher" || submitting || !agreed}
               className="w-full h-11 btn-primary font-medium text-sm rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting && <BookLoader className="w-4 h-4" />}
@@ -343,10 +353,6 @@ function LoginForm() {
             </button>
           </form>
 
-          <p className="mt-3 text-center text-[11px] text-muted">
-            By continuing you agree to the <a href="/terms" className="underline hover:text-foreground">Terms</a> and{" "}
-            <a href="/privacy" className="underline hover:text-foreground">Privacy policy</a>.
-          </p>
 
           <div className="mt-4 text-center text-xs text-muted">
             {mode === "signup" ? (
@@ -378,7 +384,8 @@ function LoginForm() {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            disabled={selectedRole !== "teacher"}
+            disabled={selectedRole !== "teacher" || !agreed}
+            title={agreed ? undefined : "Agree to the Terms and Privacy policy first"}
             className="w-full h-11 bg-card border border-border rounded-xl text-sm font-medium text-foreground hover:bg-surface-2 hover:border-border-hi transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
