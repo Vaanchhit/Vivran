@@ -2,7 +2,8 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, X, Plus } from "lucide-react";
+import { Mic, Sparkles, Sliders, CheckCircle2, AlertCircle, ArrowRight, X, Plus, ChevronDown } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { BookLoader } from "@/app/components/book-loader";
 import { OutlineEditor } from "@/app/components/outline-editor";
 import { useAuth } from "@/lib/auth-context";
@@ -399,6 +400,7 @@ export function SmartCreationBox({
   // this box's scope, so leaving the page (or refreshing) never loses it.
   const k = (name: string) => `${scope}:${name}`;
   const [promptText, setPromptText] = useTabState(k("prompt"), "");
+  const [moreOpen, setMoreOpen] = useTabState(k("moreOpen"), false);
   // A request typed for the teacher by the assistant or "reuse this prompt"
   // arrives here once, waiting to be read and sent by them. Nothing is submitted.
   useEffect(() => {
@@ -931,9 +933,10 @@ export function SmartCreationBox({
         <div className={`mt-4 pt-4 border-t border-border ${hasCustomizationControls ? "" : "hidden"}`}>
           <div className="text-[11px] text-muted font-medium mb-2.5 flex items-center gap-1.5">
             <Sliders className="w-3.5 h-3.5 text-accent" />
-            Customize — the more you set here, the less your prompt has to spell out
+            The essentials. Set these and your request only needs the topic.
           </div>
 
+          {/* Essentials stay in view; everything else waits behind "More options". */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
             {!lockedArtifactType && (
               <div>
@@ -1003,26 +1006,8 @@ export function SmartCreationBox({
                     />
                   )}
                 </div>
-                <div>
-                  <FieldLabel note={noteFor("difficulty")}>Difficulty</FieldLabel>
-                  <select
-                    aria-label="Difficulty"
-                    value={difficulty}
-                    onChange={(e) => {
-                      setDifficulty(e.target.value);
-                      markTeacherSet("difficulty");
-                    }}
-                    className={FIELD_CLS}
-                  >
-                    <option value="">— Any</option>
-                    {DIFFICULTY_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
               </>
             )}
-
             {artifactType === "slides" && (
               <div>
                 <FieldLabel note={noteFor("slideCount")}>Slides</FieldLabel>
@@ -1085,6 +1070,65 @@ export function SmartCreationBox({
               </div>
             )}
 
+          </div>
+
+          {(() => {
+            const extras = [
+              language && artifactType !== "narration" ? language : null,
+              artifactType === "assessment" && difficulty ? DIFFICULTY_OPTIONS.find((o) => o.value === difficulty)?.label ?? difficulty : null,
+              artifactType === "assessment" && questionPlan.length ? `${questionPlan.length} question type${questionPlan.length > 1 ? "s" : ""}` : null,
+              artifactType === "assessment" && materialId ? "source picked" : null,
+            ].filter(Boolean) as string[];
+            const hasMore = artifactType !== "narration";
+            if (!hasMore) return null;
+            return (
+              <div className="mt-3">
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen(!moreOpen)}
+                  aria-expanded={moreOpen}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-muted hover:text-foreground"
+                >
+                  <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${moreOpen ? "rotate-180" : ""}`} />
+                  {moreOpen ? "Fewer options" : "More options"}
+                  {!moreOpen && extras.length > 0 && <span className="text-accent">· {extras.join(" · ")}</span>}
+                  {!moreOpen && extras.length === 0 && (
+                    <span className="text-faint">{artifactType === "assessment" ? "· language, difficulty, question types, source" : "· language"}</span>
+                  )}
+                </button>
+                <AnimatePresence initial={false}>
+                  {moreOpen && (
+                    <motion.div
+                      key="more"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.2, 0.7, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 pt-3">
+            {artifactType === "assessment" && (
+              <>
+                <div>
+                  <FieldLabel note={noteFor("difficulty")}>Difficulty</FieldLabel>
+                  <select
+                    aria-label="Difficulty"
+                    value={difficulty}
+                    onChange={(e) => {
+                      setDifficulty(e.target.value);
+                      markTeacherSet("difficulty");
+                    }}
+                    className={FIELD_CLS}
+                  >
+                    <option value="">— Any</option>
+                    {DIFFICULTY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
             {artifactType !== "narration" && (
               <div>
                 <FieldLabel note={noteFor("language")}>Language</FieldLabel>
@@ -1122,7 +1166,13 @@ export function SmartCreationBox({
                 </select>
               </div>
             )}
-          </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })()}
         </div>
 
         <div className="mt-4 flex justify-end">

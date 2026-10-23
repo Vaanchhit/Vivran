@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BookMarked, ChevronLeft, ChevronRight, FileDown, Laugh, Palette, Presentation, Shapes, Trash2, Wand2 } from "lucide-react";
 import { MemeComposer } from "@/app/components/meme-composer";
+import { AnimatePresence, motion } from "framer-motion";
 import { SKINS, SKIN_LABELS, type Skin } from "@/lib/slidekit/skin";
 import type { Placement } from "@/lib/slidekit/matcher";
 import { saveDeckEdit } from "@/services/api";
@@ -154,7 +155,11 @@ export function DeckView({ deck }: { deck: DeckReady }) {
     [placements, theme, skin, title],
   );
   const total = slides.length;
-  const go = useCallback((i: number) => setCurrent(Math.max(0, Math.min(total - 1, i))), [total]);
+  const [dir, setDir] = useState(1);
+  const go = useCallback((i: number) => {
+    setDir(i >= current ? 1 : -1);
+    setCurrent(Math.max(0, Math.min(total - 1, i)));
+  }, [total, current]);
 
   useEffect(() => {
     setCurrent(0);
@@ -231,7 +236,9 @@ export function DeckView({ deck }: { deck: DeckReady }) {
         </div>
       )}
 
+      <AnimatePresence>
       {composing && (
+        <motion.div key="composer" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden">
         <MemeComposer
           topic={title}
           grade={deck.context.gradeLabel}
@@ -246,7 +253,9 @@ export function DeckView({ deck }: { deck: DeckReady }) {
             commit([...placements.slice(0, current + 1), p, ...placements.slice(current + 1)], current + 1);
           }}
         />
+        </motion.div>
       )}
+      </AnimatePresence>
 
       {/* Style: the template's look (drawn in the margins only), switchable. */}
       <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -320,7 +329,16 @@ export function DeckView({ deck }: { deck: DeckReady }) {
       {/* Viewer: one slide at a time, capped by both width and screen height. */}
       <div tabIndex={0} onKeyDown={onKey} className="outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-xl" aria-label="Slide viewer. Use the left and right arrow keys to move between slides.">
         <div className="mx-auto" style={{ width: "min(100%, calc((100vh - 320px) * 16 / 9))", minWidth: "min(100%, 480px)" }}>
-          <Slide html={slides[current] ?? ""} className="rounded-lg border border-border shadow-sm" />
+          <div className="relative">
+            {/* Moving between slides slides the next one in from the side you're heading. */}
+            <AnimatePresence initial={false} mode="popLayout" custom={dir}>
+              <motion.div key={current} custom={dir}
+                variants={{ enter: (d: number) => ({ opacity: 0, x: d * 24 }), center: { opacity: 1, x: 0 }, exit: (d: number) => ({ opacity: 0, x: d * -24 }) }}
+                initial="enter" animate="center" exit="exit" transition={{ duration: 0.2, ease: [0.2, 0.7, 0.2, 1] }}>
+                <Slide html={slides[current] ?? ""} className="rounded-lg border border-border shadow-sm" />
+              </motion.div>
+            </AnimatePresence>
+          </div>
           <div className="flex items-center justify-between mt-2 text-xs text-muted">
             <button type="button" onClick={() => go(current - 1)} disabled={current === 0} className="p-1.5 rounded-lg border border-border disabled:opacity-40 hover:text-foreground" aria-label="Previous slide">
               <ChevronLeft className="w-4 h-4" />
@@ -350,9 +368,10 @@ export function DeckView({ deck }: { deck: DeckReady }) {
             onClick={() => go(i)}
             aria-label={`Go to slide ${i + 1}`}
             aria-current={i === current}
-            className={`shrink-0 w-32 rounded-md border-2 overflow-hidden transition-colors ${i === current ? "border-accent" : "border-transparent hover:border-border"}`}
+            className="relative shrink-0 w-32 rounded-md border-2 border-transparent hover:border-border overflow-hidden transition-colors"
           >
             <Slide html={html} />
+            {i === current && <motion.span layoutId="thumb-ring" className="absolute inset-0 rounded-[5px] ring-2 ring-accent pointer-events-none" transition={{ duration: 0.2 }} />}
           </button>
         ))}
       </div>

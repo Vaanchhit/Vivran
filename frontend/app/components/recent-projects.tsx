@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, Check, Clock, FolderKanban, Pencil, Trash2, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { BookLoader } from "@/app/components/book-loader";
 import { deleteLibraryItem, libraryHref, listLibrary, renameLibraryItem, type LibraryEntry } from "@/services/api";
 import { KIND_LABELS, LIBRARY_KINDS } from "@/lib/catalog";
@@ -186,17 +187,22 @@ export function RecentProjects({ limit, manage = false }: { limit?: number; mana
           {kinds.map((k) => chip(k.kind, k.label, counts.get(k.kind) ?? 0))}
         </div>
       )}
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {shown.map((item) => (
-        <ItemCard
-          key={item.id}
-          item={item}
-          manage={manage}
-          onRenamed={(title) => setItems((rows) => rows?.map((r) => (r.id === item.id ? { ...r, title } : r)) ?? rows)}
-          onDeleted={() => setItems((rows) => rows?.filter((r) => r.id !== item.id) ?? rows)}
-        />
-      ))}
-    </div>
+    <motion.div layout className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Cards arrive in turn, and filtering or deleting slides the rest into place. */}
+      <AnimatePresence initial={true} mode="popLayout">
+        {shown.map((item, i) => (
+          <motion.div key={item.id} layout initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0, transition: { delay: Math.min(i, 8) * 0.04, duration: 0.22 } }}
+            exit={{ opacity: 0, scale: 0.97, transition: { duration: 0.15 } }}>
+            <ItemCard
+              item={item}
+              manage={manage}
+              onRenamed={(title) => setItems((rows) => rows?.map((r) => (r.id === item.id ? { ...r, title } : r)) ?? rows)}
+              onDeleted={() => setItems((rows) => rows?.filter((r) => r.id !== item.id) ?? rows)}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
+    </motion.div>
     </div>
   );
 }

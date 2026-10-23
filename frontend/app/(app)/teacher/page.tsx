@@ -19,6 +19,8 @@ import { RecentProjects } from "@/app/components/recent-projects";
 import { useAuth } from "@/lib/auth-context";
 import { setTabValue } from "@/lib/tab-state";
 import { getRecentPrompts, getTeachingMemory, getUsualSetup, listSources, type RecentPrompt, type Source, type StyleTrait, type UsualSetup } from "@/services/api";
+import { BookLoader } from "@/app/components/book-loader";
+import { Item, Stagger } from "@/app/components/motion";
 
 function greeting(d: Date) {
   const h = d.getHours();
@@ -99,7 +101,8 @@ export default function TeacherHome() {
           </section>
         </div>
 
-        <aside className="space-y-4 min-w-0">
+        <Stagger className="space-y-4 min-w-0" delay={0.08}>
+          <Item>
           {/* 4. For you */}
           <Card title="For you" icon={<Sparkles className="w-4 h-4 text-accent" />}>
             <div className="space-y-2">
@@ -133,11 +136,12 @@ export default function TeacherHome() {
               )}
             </div>
           </Card>
-
+          </Item>
+          <Item>
           {/* 5. Sources */}
           <Card title="My sources" icon={<FolderOpen className="w-4 h-4 text-accent" />} href="/teacher/materials">
             {sources === null ? (
-              <div className="text-xs text-muted">Loading…</div>
+              <div className="flex items-center gap-2 text-xs text-muted"><BookLoader className="w-4 h-4" /> Loading…</div>
             ) : sources.length === 0 ? (
               <div className="space-y-2.5">
                 <p className="text-xs text-muted leading-relaxed">
@@ -156,7 +160,8 @@ export default function TeacherHome() {
               </div>
             )}
           </Card>
-
+          </Item>
+          <Item>
           {/* 6. Explain simply */}
           <Link href="/teacher/create?type=example"
             className="block p-4 rounded-2xl border border-accent-line bg-accent-soft hover:shadow-sm transition-shadow">
@@ -168,7 +173,8 @@ export default function TeacherHome() {
             </p>
             <span className="inline-flex items-center gap-1 text-xs font-semibold text-accent mt-2">Try it <ArrowRight className="w-3.5 h-3.5" /></span>
           </Link>
-        </aside>
+          </Item>
+        </Stagger>
       </div>
     </div>
   );

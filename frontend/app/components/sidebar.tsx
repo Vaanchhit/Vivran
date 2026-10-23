@@ -45,7 +45,7 @@ export function TeacherSidebar() {
   ];
 
   return (
-    <aside className="w-64 border-r border-border bg-surface-2 flex flex-col h-screen sticky top-0 z-20">
+    <aside className="hidden lg:flex w-64 border-r border-border bg-surface-2 flex-col h-screen sticky top-0 z-20">
       {/* Brand Header */}
       <div className="p-5 border-b border-border flex items-center justify-between">
         <Link href="/teacher" className="vv-mark-host flex items-center gap-2.5">

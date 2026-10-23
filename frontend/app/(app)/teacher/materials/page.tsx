@@ -17,6 +17,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AlertCircle, BookOpenCheck, CheckCircle2, FileText, FolderOpen, Link2, PenLine, RotateCcw, Sparkles, Trash2, Upload, XCircle, Youtube,
 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { BookLoader } from "@/app/components/book-loader";
 import { TraitCard } from "@/app/components/trait-card";
 import { PREFILL_KEY } from "@/app/components/ask-vivran";
@@ -190,8 +191,9 @@ function Sources() {
       <div role="tablist" className="flex gap-1 p-1 rounded-xl bg-card border border-border w-full sm:w-fit">
         {([["files", "Files"], ["style", `Style${counts.pending ? ` (${counts.pending})` : ""}`], ["habits", "Habits"]] as [Tab, string][]).map(([id, label]) => (
           <button key={id} role="tab" aria-selected={tab === id} type="button" onClick={() => switchTab(id)}
-            className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${tab === id ? "bg-surface text-foreground shadow-sm border border-border" : "text-muted hover:text-foreground"}`}>
-            {label}
+            className={`relative flex-1 sm:flex-none px-4 py-2 rounded-lg text-xs font-semibold transition-colors ${tab === id ? "text-foreground" : "text-muted hover:text-foreground"}`}>
+            {tab === id && <motion.span layoutId="sources-tab" className="absolute inset-0 rounded-lg bg-surface shadow-sm border border-border" transition={{ type: "spring", damping: 30, stiffness: 380 }} />}
+            <span className="relative">{label}</span>
           </button>
         ))}
       </div>
@@ -277,14 +279,16 @@ function Sources() {
           </section>
 
           <section className="space-y-2">
-            {sources === null && !loadError && <div className="text-xs text-muted">Loading…</div>}
+            {sources === null && !loadError && <div className="flex items-center gap-2 text-xs text-muted"><BookLoader className="w-4 h-4" /> Loading your sources…</div>}
             {sources?.length === 0 && (
               <div className="p-4 rounded-xl bg-card border border-border text-xs text-muted">
                 Nothing here yet. Start with the chapter you&rsquo;re teaching next, and one paper you set last term.
               </div>
             )}
-            {sources?.map((s) => (
-              <div key={s.id} className="p-3.5 rounded-xl bg-surface border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <AnimatePresence initial={false}>
+            {sources?.map((s, i) => (
+              <motion.div key={s.id} layout initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0, transition: { delay: Math.min(i, 10) * 0.03 } }}
+                exit={{ opacity: 0, height: 0, marginTop: 0, transition: { duration: 0.18 } }} className="p-3.5 rounded-xl bg-surface border border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-start gap-3 min-w-0">
                   {s.type === "youtube" ? <Link2 className="w-4 h-4 text-chrome shrink-0 mt-0.5" /> : <FileText className="w-4 h-4 text-chrome shrink-0 mt-0.5" />}
                   <div className="min-w-0">
@@ -295,15 +299,17 @@ function Sources() {
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                   <JobChip on={!!s.facts} label={s.facts?.status === "PROCESSING" ? "Facts: indexing" : s.facts?.status === "FAILED" ? "Facts: failed" : `Facts${s.facts?.chunks ? ` · ${s.facts.chunks} passages` : ""}`}
-                    tone={s.facts?.status === "FAILED" ? "danger" : "success"} />
+                    tone={s.facts?.status === "PROCESSING" ? "warning" : s.facts?.status === "FAILED" ? "danger" : "success"}
+                    busy={s.facts?.status === "PROCESSING"} />
                   <JobChip on={!!s.style} label={s.style ? `Style · ${KIND_LABEL[s.style.kind] ?? s.style.kind}` : "Style"} tone="accent" />
                   {s.facts && s.style && (
                     <button type="button" onClick={() => stopStyle(s)} className="px-2 py-1 rounded-lg text-muted hover:text-foreground">Stop style</button>
                   )}
                   <button type="button" onClick={() => remove(s)} aria-label={`Remove ${s.title}`} className="p-1.5 rounded-lg text-muted hover:text-danger"><Trash2 className="w-4 h-4" /></button>
                 </div>
-              </div>
+              </motion.div>
             ))}
+            </AnimatePresence>
           </section>
         </>
       )}
@@ -394,10 +400,16 @@ function Stat({ icon, label, highlight }: { icon: React.ReactNode; label: string
   );
 }
 
-function JobChip({ on, label, tone }: { on: boolean; label: string; tone: "success" | "accent" | "danger" }) {
+function JobChip({ on, label, tone, busy }: { on: boolean; label: string; tone: "success" | "accent" | "warning" | "danger"; busy?: boolean }) {
   const cls = !on ? "text-faint bg-card border-border line-through decoration-faint/50"
     : tone === "success" ? "text-success bg-success-soft border-success-line"
+    : tone === "warning" ? "text-warning bg-warning-soft border-warning-line"
     : tone === "danger" ? "text-danger bg-danger-soft border-danger-line"
     : "text-accent bg-accent-soft border-accent-line";
-  return <span className={`px-2 py-0.5 rounded-full border text-[10.5px] font-medium ${cls}`}>{label}</span>;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10.5px] font-medium ${cls}`}>
+      {busy && <BookLoader className="w-3 h-3" />}
+      {label}
+    </span>
+  );
 }

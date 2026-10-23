@@ -8,6 +8,7 @@ import { OnboardingWizard } from "@/app/components/onboarding-wizard";
 import { ReferralGate } from "@/app/components/referral-gate";
 import { Notices } from "@/app/components/notices";
 import { AskVivran } from "@/app/components/ask-vivran";
+import { MobileNav } from "@/app/components/mobile-nav";
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -40,7 +41,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
   const showChrome = !showReferralGate && !showOnboarding;
 
   return (
-    <div className="relative flex min-h-screen bg-background">
+    <div className="relative flex flex-col lg:flex-row min-h-screen bg-background">
       {/* decorative radial accents like landing */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-36 -top-24 w-96 h-96 rounded-full bg-glow-1" />
@@ -48,7 +49,8 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
       </div>
 
       {showChrome && <TeacherSidebar />}
-      <main className="flex-1 min-w-0 p-8 overflow-y-auto">
+      {showChrome && <MobileNav />}
+      <main className={`flex-1 min-w-0 px-4 py-5 sm:p-6 lg:p-8 overflow-y-auto ${showChrome ? "pb-28 lg:pb-8" : ""}`}>
         <div className="max-w-6xl mx-auto relative z-10">
           {showReferralGate ? <ReferralGate /> : showOnboarding ? <OnboardingWizard /> : children}
         </div>

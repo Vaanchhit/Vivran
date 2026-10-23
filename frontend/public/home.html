@@ -994,6 +994,48 @@ body::after{
   .why-turn, .why-ask{ margin-top:36px; }
   .why-seen li{ padding:16px 0; }
 }
+
+/* ---- Decluttering: secondary detail sits behind "Read more" ---- */
+details.more{ margin-top:14px; }
+details.more > summary{ cursor:pointer; list-style:none; display:inline-flex; align-items:center; gap:6px; font-size:.92rem; font-weight:600; color:var(--vv-accent); }
+details.more > summary::-webkit-details-marker{ display:none; }
+details.more > summary::after{ content:""; width:7px; height:7px; border-right:2px solid currentColor; border-bottom:2px solid currentColor; transform:rotate(45deg) translateY(-2px); transition:transform .2s; }
+details.more[open] > summary::after{ transform:rotate(-135deg) translateY(-1px); }
+details.more > :not(summary){ animation:moreIn .28s cubic-bezier(.22,.7,.3,1); }
+details.more .lede{ margin-top:10px; }
+.why-more{ margin:18px 0 6px; }
+.aud-more{ margin-top:26px; }
+.aud-more .audience{ margin-top:16px; }
+@keyframes moreIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce){ details.more > :not(summary){ animation:none; } details.more > summary::after{ transition:none; } }
+
+/* ---- Try it ---- */
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+.try-form{ display:flex; gap:10px; margin-top:26px; max-width:640px; }
+.try-form input{ flex:1; min-width:0; font:inherit; font-size:1rem; padding:13px 16px; border-radius:12px; border:1px solid var(--vv-rule-hi); background:var(--vv-card); color:var(--vv-ink); }
+.try-form input:focus{ outline:none; border-color:var(--vv-accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--vv-accent) 18%, transparent); }
+.try-chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.try-chips button{ font:inherit; font-size:.82rem; padding:6px 12px; border-radius:999px; border:1px solid var(--vv-rule-hi); background:transparent; color:var(--vv-ink-2); cursor:pointer; transition:border-color .15s, color .15s; }
+.try-chips button:hover{ border-color:var(--vv-accent); color:var(--vv-ink); }
+.try-out{ margin-top:28px; }
+.try-pick{ display:grid; grid-template-columns:minmax(0,1fr); gap:20px; align-items:center; }
+@media (min-width:820px){ .try-pick{ grid-template-columns:minmax(0,420px) minmax(0,1fr); } }
+.try-cover{ aspect-ratio:16/9; border-radius:12px; overflow:hidden; border:1px solid var(--vv-rule); box-shadow:0 18px 40px -24px rgba(20,16,12,.35); position:relative; }
+.try-cover-in{ position:absolute; left:0; top:0; transform-origin:0 0; }
+.try-k{ font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--vv-ink-3, var(--vv-ink-2)); }
+.try-name{ font-family:var(--disp); font-weight:700; font-size:clamp(1.3rem,1.1rem + .8vw,1.8rem); margin-top:4px; }
+.try-why{ margin-top:8px; color:var(--vv-ink-2); line-height:1.55; }
+.try-look{ margin-top:8px; font-size:.86rem; color:var(--vv-ink-2); display:flex; align-items:center; gap:8px; }
+.try-look i{ width:14px; height:14px; border-radius:4px; display:inline-block; }
+.try-plan{ list-style:none; margin:22px 0 0; padding:0; display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px; }
+.try-plan li{ border:1px solid var(--vv-rule); background:var(--vv-card); border-radius:12px; padding:12px 14px; opacity:0; transform:translateY(8px); animation:tryIn .4s cubic-bezier(.22,.7,.3,1) forwards; }
+.try-plan .n{ font-size:.72rem; color:var(--vv-accent); font-weight:700; letter-spacing:.04em; }
+.try-plan .k{ font-weight:650; margin-top:2px; }
+.try-plan .w{ font-size:.84rem; color:var(--vv-ink-2); margin-top:4px; line-height:1.45; }
+.try-foot{ margin-top:16px; font-size:.86rem; color:var(--vv-ink-2); }
+.try-err{ margin-top:16px; color:var(--vv-risk); }
+@keyframes tryIn{ to{ opacity:1; transform:none; } }
+@media (prefers-reduced-motion:reduce){ .try-plan li{ animation:none; opacity:1; transform:none; } }
 </style>
 </head>
 <body>
@@ -1017,6 +1059,7 @@ body::after{
     <div class="nav-links">
       <a href="#ledger">Problem</a>
       <a href="#makes">Features</a>
+      <a href="#try">Try it</a>
       <a href="#grounding">Demo</a>
       <a href="#proof">Team</a>
       <a href="#pricing">Pricing</a>
@@ -1036,6 +1079,7 @@ body::after{
 <div class="mobile-menu" id="mobile-menu">
   <a href="#ledger">Problem</a>
   <a href="#makes">Features</a>
+      <a href="#try">Try it</a>
   <a href="#grounding">Demo</a>
   <a href="#proof">Team</a>
   <a href="#pricing">Pricing</a>
@@ -1054,13 +1098,8 @@ body::after{
         What if education
         <span class="l2 hero-serif">could finally learn from itself?</span>
       </h1>
-      <p class="lede hero-sub m-only">
+      <p class="lede hero-sub">
         Vivran brings lessons, questions, students and classrooms together, starting with the teacher.
-      </p>
-      <p class="lede hero-sub m-hide">
-        Every lesson, every question, every student and every classroom holds a piece of the
-        picture. Vivran brings those pieces together to help teachers teach better, students learn
-        better and schools understand more.
       </p>
       <div class="hero-cta">
         <a class="btn btn-primary" href="#vision">See what we&rsquo;re building &rarr;</a>
@@ -1139,16 +1178,16 @@ body::after{
     <div class="sec-head">
       <span class="eyebrow rv">The way education works today</span>
       <h2 class="rv d1">We know what was taught.<br />We know what was tested.<br />We still don&rsquo;t always know what was learned.</h2>
-      <p class="lede rv d2 m-hide">
-        A teacher spends hours planning, preparing lessons, making assignments and setting papers.
-        A student learns from class, notes, YouTube, tuition and whatever else helps them
-        understand. A school sees marks, attendance and reports.
-      </p>
-      <p class="lede rv d2">But these pieces rarely come together.</p>
-      <p class="lede rv d2 m-hide">
-        The result is that teachers work with one piece of the picture, students with another, and
-        schools with another.
-      </p>
+      <p class="lede rv d2">These pieces rarely come together.</p>
+      <details class="more rv d2">
+        <summary>Read more</summary>
+        <p class="lede">
+          A teacher spends hours planning, preparing lessons, making assignments and setting papers.
+          A student learns from class, notes, YouTube, tuition and whatever else helps them
+          understand. A school sees marks, attendance and reports. So teachers work with one piece
+          of the picture, students with another, and schools with another.
+        </p>
+      </details>
     </div>
 
     <div class="ledger rv d2">
@@ -1298,22 +1337,54 @@ body::after{
 
 <hr class="hr" />
 
+<!-- ============================ TRY IT ============================ -->
+<section class="sec" id="try">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow rv">Try it, no sign-up</span>
+      <h2 class="rv d1">Type what you teach next.</h2>
+      <p class="lede rv d2">See the lesson shape Vivran picks and the slides it plans. Instant, and no AI involved.</p>
+    </div>
+    <form class="try-form rv d2" id="tryForm" autocomplete="off">
+      <label class="sr-only" for="tryTopic">Your topic</label>
+      <input id="tryTopic" name="topic" maxlength="120" placeholder="e.g. Photosynthesis for Class 7" required />
+      <button class="btn btn-primary" type="submit">Plan it &rarr;</button>
+    </form>
+    <div class="try-chips rv d2" aria-label="Examples">
+      <button type="button" data-topic="Mitosis vs meiosis for Class 11">Mitosis vs meiosis</button>
+      <button type="button" data-topic="Revolt of 1857 for Class 8">Revolt of 1857</button>
+      <button type="button" data-topic="Python for loops for BCA">Python loops</button>
+      <button type="button" data-topic="Derive the equations of motion, Class 11">A derivation</button>
+      <button type="button" data-topic="Fractions quiz round for Class 5">A quiz round</button>
+    </div>
+    <div class="try-out" id="tryOut" aria-live="polite" hidden>
+      <div class="try-pick">
+        <div class="try-cover"><div class="try-cover-in" id="tryCover"></div></div>
+        <div>
+          <span class="try-k">Lesson shape</span>
+          <div class="try-name" id="tryName"></div>
+          <p class="try-why" id="tryWhy"></p>
+          <p class="try-look" id="tryLook"></p>
+        </div>
+      </div>
+      <ol class="try-plan" id="tryPlan"></ol>
+      <p class="try-foot">Inside Vivran, you edit this plan, then it writes every slide from your own material and you export to PowerPoint or PDF.</p>
+    </div>
+    <p class="try-err" id="tryErr" role="alert" hidden></p>
+  </div>
+</section>
+
+<hr class="hr" />
+
 <!-- ============================ 04. GROUNDING ============================ -->
 <section class="sec band" id="grounding">
   <div class="wrap">
     <div class="sec-head">
       <span class="eyebrow rv">Built around what you actually teach</span>
       <h2 class="rv d1">Nothing should appear out of nowhere.</h2>
-      <p class="lede rv d2 m-only">
+      <p class="lede rv d2">
         When Vivran writes a question, it knows which page, slide or moment in a lecture it came from.
-      </p>
-      <p class="lede rv d2 m-hide">
-        When Vivran creates a question, a worksheet or an explanation, it knows what it was
-        created from.<br />
-        A page in the textbook.<br />
-        A slide from your lecture.<br />
-        A moment in a recorded class.<br />
-        So teachers can check it. Students can trust it. Schools can stand behind it.
+        So teachers can check it, students can trust it, and schools can stand behind it.
       </p>
     </div>
 
@@ -1402,7 +1473,7 @@ body::after{
       <span class="gc-num" id="gcNum">9</span>
       <span class="gc-k">of 10 questions cite your material</span>
       <span class="gc-t">
-        <b>Every question points back to a page.</b> The one that can&rsquo;t is flagged, not hidden.<span class="m-hide"> You decide whether it stays, and whoever reviews the paper after you sees the same thing.</span>
+        <b>Every question points back to a page.</b> The one that can&rsquo;t is flagged, not hidden.
       </span>
     </div>
   </div>
@@ -1440,11 +1511,14 @@ body::after{
       </li>
     </ol>
 
-    <div class="audience rv d2">
+    <details class="more aud-more rv d2">
+      <summary>What it means for teachers, students and schools</summary>
+    <div class="audience">
       <div class="aud" id="for-teachers"><span class="aud-k">For teachers</span><p>Less time assembling. More time teaching. A clearer picture of the classroom.</p></div>
       <div class="aud" id="for-students"><span class="aud-k">For students</span><p>Learning that builds on what they were actually taught, not starting from scratch every time.</p></div>
       <div class="aud" id="for-institutions"><span class="aud-k">For schools</span><p>A clearer understanding of what is being taught, what is being learned, and where students need help.</p></div>
     </div>
+    </details>
     <p class="audience-close rv">One education. One shared understanding.</p>
   </div>
 </section>
@@ -1487,7 +1561,9 @@ body::after{
           <li><span class="why-who">Schools</span><p>Had more information than ever, yet still struggled to see what was actually happening in their classrooms.</p></li>
         </ol>
 
-        <div class="why-turn rv">
+        <details class="more why-more rv">
+          <summary>Why it matters to us</summary>
+        <div class="why-turn">
           <p class="why-strange">It felt strange.</p>
           <p class="why-build">
             <span>Everyone was working hard.</span>
@@ -1496,11 +1572,13 @@ body::after{
           </p>
         </div>
 
-        <div class="why-ask rv">
+        <div class="why-ask">
           <span class="why-ask-k">We kept wondering</span>
           <p class="why-q">What if all of this could actually work together?</p>
-          <p class="why-q why-q-sub m-hide">What if what a teacher taught could shape what a student learned, and what a student learned could help a teacher, and a school, understand what to do next?</p>
+          <p class="why-q why-q-sub">What if what a teacher taught could shape what a student learned, and what a student learned could help a teacher, and a school, understand what to do next?</p>
         </div>
+
+        </details>
 
         <p class="why-close rv">Vivran is our attempt to build that.</p>
       </div>
@@ -1524,8 +1602,7 @@ body::after{
       <span class="eyebrow rv">Pricing</span>
       <h2 class="rv d1">Free for teachers. Always.</h2>
       <p class="lede rv d2">
-        Teachers are where Vivran starts, so teachers don&rsquo;t pay for it. Students and schools are
-        the next part of the picture. Tell us what you need and we&rsquo;ll build it with you.
+        Teachers don&rsquo;t pay. Students and schools come next: tell us what you need.
       </p>
     </div>
 
@@ -2054,6 +2131,35 @@ body::after{
   window.addEventListener("pagehide", function () {
     if (HAS_GSAP) ScrollTrigger.getAll().forEach(function (t) { t.kill(); });
   });
+})();
+</script>
+
+<script>
+/* Try it: deterministic planning only (app/api/deck/try). No model, no login. */
+(function(){
+  var form=document.getElementById('tryForm'); if(!form) return;
+  var input=document.getElementById('tryTopic'), out=document.getElementById('tryOut'), err=document.getElementById('tryErr');
+  var cover=document.getElementById('tryCover'), btn=form.querySelector('button');
+  var esc=function(t){ var d=document.createElement('div'); d.textContent=t; return d.innerHTML; };
+  function fit(){ var box=cover.parentElement; var k=box.clientWidth/1920; cover.style.transform='scale('+k+')'; }
+  window.addEventListener('resize', fit);
+  async function run(topic){
+    err.hidden=true; btn.disabled=true; btn.textContent='Planning…';
+    try{
+      var r=await fetch('/api/deck/try',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:topic})});
+      var d=await r.json();
+      if(!r.ok) throw new Error(d.error||'Try a different topic.');
+      document.getElementById('tryName').textContent=d.template.name;
+      document.getElementById('tryWhy').textContent=d.template.reasons.length?('Because '+d.template.reasons.slice(0,2).join(' and ')+'.'):'A good general shape for a first lesson.';
+      document.getElementById('tryLook').innerHTML='<i style="background:'+esc(d.look.accent)+'"></i>'+esc(d.look.theme)+' theme · '+esc(d.look.skin)+' style'+(d.level?' · '+esc(d.level):'')+(d.subject?' · '+esc(d.subject):'');
+      cover.innerHTML='<style>'+d.cover.css+'</style>'+d.cover.html;
+      document.getElementById('tryPlan').innerHTML=d.plan.map(function(p,i){ return '<li style="animation-delay:'+(i*60)+'ms"><div class="n">SLIDE '+p.n+'</div><div class="k">'+esc(p.kind)+'</div><div class="w">'+esc(p.what)+'</div></li>'; }).join('');
+      out.hidden=false; requestAnimationFrame(fit);
+    }catch(e){ err.textContent=e.message; err.hidden=false; }
+    finally{ btn.disabled=false; btn.innerHTML='Plan it &rarr;'; }
+  }
+  form.addEventListener('submit',function(e){ e.preventDefault(); var t=input.value.trim(); if(t) run(t); });
+  document.querySelectorAll('.try-chips button').forEach(function(b){ b.addEventListener('click',function(){ input.value=b.dataset.topic; run(b.dataset.topic); }); });
 })();
 </script>
 </body>
