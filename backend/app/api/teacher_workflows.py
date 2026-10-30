@@ -70,7 +70,8 @@ def workflow_capabilities() -> dict:
         # Describes what each tier is actually used for today — see
         # app/ai/router.py, which is where the mapping lives.
         "model_layers": {
-            "slm": "extraction and rewriting: intent parsing, classification, creative prompt enhancement",
+            "slm": "extraction and rewriting: intent parsing, classification, prompt improvement, chat rewrites (bullets, table, simplify)",
+            "llm": "the chat's answers that add knowledge: explaining, comparing, summarising, ideas, analysis (app/ai/task_router.py)",
             "cheap_cloud": "authoring: slides, worksheets, lesson notes, coursework, and exam papers on their own pinned model",
             "premium": "complex multi-source assessment — disabled until Pro-tier billing is enabled",
         },

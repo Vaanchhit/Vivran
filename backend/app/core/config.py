@@ -106,6 +106,11 @@ class Settings(BaseSettings):
     # tiers and a plan is a few hundred tokens, so its per-minute limit matters
     # less here than for authoring. Falls back to the authoring model.
     planner_model: str = "openai/gpt-oss-120b"
+    # The LLM lane of the chat router (app/ai/task_router.py): explanations,
+    # comparisons, summaries, ideas, analysis, and any rewrite that has to add
+    # new content. Same model as the planner today, on its own setting so the
+    # two can be repinned apart. Falls back to the Gemini authoring model.
+    llm_model: str = "openai/gpt-oss-120b"
 
     # Media Services per Spec §31
     cartesia_api_key: str = ""

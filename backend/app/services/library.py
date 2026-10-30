@@ -128,11 +128,27 @@ def save_item(
         return None
 
 
+# From each item's parameters, the few that say what it is about: enough for the
+# chat's teaching-memory map to place it under a class and a topic, without
+# shipping every stored spec (a course plan's spec can hold the whole plan).
+_META_KEYS = ("grade", "subject", "topic", "topics", "concept")
+
+
+def _meta(spec: Any) -> Dict[str, Any]:
+    if not isinstance(spec, dict):
+        return {}
+    out = {k: spec[k] for k in _META_KEYS if spec.get(k)}
+    if isinstance(out.get("topics"), list):
+        out["topics"] = [str(t)[:120] for t in out["topics"][:5]]
+    return out
+
+
 def list_items(workspace_id: str, limit: int = 100) -> List[Dict[str, Any]]:
-    return table_select(
+    rows = table_select(
         "projects",
-        {"workspace_id": f"eq.{workspace_id}", "select": LIST_FIELDS, "order": "created_at.desc", "limit": str(limit)},
+        {"workspace_id": f"eq.{workspace_id}", "select": LIST_FIELDS + ",specification_json", "order": "created_at.desc", "limit": str(limit)},
     )
+    return [{**{k: v for k, v in r.items() if k != "specification_json"}, "meta": _meta(r.get("specification_json"))} for r in rows]
 
 
 def get_item(workspace_id: str, item_id: str) -> Optional[Dict[str, Any]]:
