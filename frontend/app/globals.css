@@ -165,6 +165,8 @@
 
   /* Embedded in the landing page, which brings its own grain. */
   html.vv-embed body::before { display: none; }
+  /* The chat composer shows focus on its whole box, so the field inside needs no ring of its own. */
+  html .vv-composer textarea:focus-visible { outline: none !important; }
   /* ...and its own dark palette (the board green), so the frame matches the page around it. */
   html.vv-embed[data-theme="dark"] {
     --bg: #1D2823; --surface: #25322C; --surface-2: #212D27; --bg-card: rgba(241, 239, 232, 0.05);
