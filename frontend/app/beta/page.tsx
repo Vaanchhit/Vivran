@@ -1,477 +1,198 @@
 "use client";
 
-// /beta: Vivran as a conversation. A frontend-only preview of a chat-style
-// product: every run is scripted (script.ts) from sample data, and nothing
-// calls a model. Plan-before-produce, teaching memory, sources and the
-// artifact panel are the parts of Vivran this layout is meant to show off.
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+// /beta: Vivran as a conversation. A frontend-only preview: answers are
+// scripted from sample content, conversations and bookmarks live in this
+// browser, and voice uses the browser's own speech services. lib/api.ts is
+// the seam where each piece becomes a backend call.
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
-  AlertTriangle, ArrowLeft, ArrowRight, ArrowUp, BookOpen, Brain, Check, ChevronDown, ChevronRight,
-  Download, FileText, FolderOpen, Library, Lightbulb, Menu, Moon, PanelLeft, Paperclip, Presentation,
-  Search, Settings, Share2, Sparkles, Square, SquarePen, Sun, X,
+  ArrowRight, ArrowUp, BookOpen, Download, FileText, LayoutGrid, Menu, Mic, Moon, PanelLeft, Paperclip,
+  Presentation, Share2, Square, SquarePen, Sun, X,
 } from "lucide-react";
 import { BrandMark } from "@/app/components/brand-mark";
 import { useTheme } from "@/lib/theme-context";
-import { DECK_SLIDES, FLOWS, PAPER, RECENTS, SOURCE_FILE, USER_LINES, route, type Block, type FlowId, type Source } from "./script";
+import * as api from "./lib/api";
+import { COLLECTIONS, PROMPT_CARDS, STARTERS, TIPS, TOUR } from "./lib/config";
+import { DECKS, PAPER, SOURCE_FILE } from "./lib/content";
+import type { ActionId, BotMsg, Conversation, Folder, Intent, Msg, Saved, Starter } from "./lib/types";
+import { useSpeaker, useSpeechInput } from "./lib/voice";
+import { ActionBar, BlockView, Thinking } from "./ui/blocks";
+import { Icon, InfoTip, Tip, Walkthrough } from "./ui/kit";
+import { DeckPanel, FeaturesView, PaperPanel, SaveDialog, SavedView } from "./ui/panels";
+import { Sidebar, type Since } from "./ui/sidebar";
 
-type UserMsg = { id: string; role: "user"; text: string };
-type BotMsg = {
-  id: string; role: "assistant"; flow: FlowId;
-  step: number;          // steps finished
-  shown: number;         // blocks revealed
-  live: boolean;         // still running
-  stopped?: boolean;
-  startedAt: number; tookMs?: number;
-};
-type Msg = UserMsg | BotMsg;
-
-const uid = () => Math.random().toString(36).slice(2, 9);
-const DECK = "/landing/decks/french-revolution";
-const pad = (n: number) => String(n).padStart(2, "0");
-
-function doneBot(flow: FlowId): BotMsg {
-  const f = FLOWS[flow];
-  const took = f.steps.reduce((a, s) => a + s.ms, 0) + f.blocks.length * 450;
-  return { id: uid(), role: "assistant", flow, step: f.steps.length, shown: f.blocks.length, live: false, startedAt: 0, tookMs: took };
-}
-
-/* ───────────────────────── small pieces ───────────────────────── */
-
-/** **bold** and [S1] citations, nothing else. */
-function Rich({ text, onCite }: { text: string; onCite?: (tag: string) => void }) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\[S\d\])/g);
-  return (
-    <>
-      {parts.map((p, i) => {
-        if (p.startsWith("**")) return <strong key={i} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>;
-        const m = p.match(/^\[(S\d)\]$/);
-        if (m) return (
-          <button key={i} type="button" onClick={() => onCite?.(m[1])}
-            className="inline-flex items-center align-[1px] mx-0.5 px-1.5 h-[18px] rounded-full text-[10px] font-semibold bg-accent-soft text-accent border border-accent-line hover:bg-accent-soft-hi">
-            {m[1]}
-          </button>
-        );
-        return <React.Fragment key={i}>{p}</React.Fragment>;
-      })}
-    </>
-  );
-}
-
-/** Text that writes itself word by word while live. */
-function Stream({ text, live, onCite }: { text: string; live: boolean; onCite?: (t: string) => void }) {
-  const words = useMemo(() => text.split(/(\s+)/), [text]);
-  const [n, setN] = useState(live ? 0 : words.length);
-  useEffect(() => {
-    if (!live) { setN(words.length); return; }
-    const id = setInterval(() => setN((v) => (v >= words.length ? (clearInterval(id), v) : v + 2)), 28);
-    return () => clearInterval(id);
-  }, [live, words]);
-  return <Rich text={words.slice(0, n).join("")} onCite={onCite} />;
-}
-
-function Elapsed({ from }: { from: number }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => { const id = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(id); }, []);
-  return <>{Math.max(0, Math.floor((now - from) / 1000))}s</>;
-}
-
-/* ───────────────────────── thinking trail ───────────────────────── */
-
-function Thinking({ m }: { m: BotMsg }) {
-  const f = FLOWS[m.flow];
-  const [open, setOpen] = useState(false);
-  const thinking = m.live && m.step < f.steps.length;
-  const cur = f.steps[Math.min(m.step, f.steps.length - 1)];
-  if (thinking) {
-    return (
-      <div className="mb-3">
-        <div className="flex items-center gap-2.5 text-sm">
-          <span className="relative w-5 h-5"><BrandMark className="w-5 h-5 animate-pulse" /></span>
-          <span className="font-medium text-foreground">{cur.label}…</span>
-          <span className="text-faint tabular-nums"><Elapsed from={m.startedAt} /></span>
-        </div>
-        <AnimatePresence mode="wait">
-          <motion.p key={m.step} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-            className="mt-2 ml-2.5 pl-4 border-l-2 border-border text-[13px] italic text-muted leading-relaxed">
-            {cur.detail}
-          </motion.p>
-        </AnimatePresence>
-      </div>
-    );
-  }
-  const secs = Math.max(1, Math.round((m.tookMs ?? 0) / 1000));
-  return (
-    <div className="mb-3">
-      <button type="button" onClick={() => setOpen(!open)} className="inline-flex items-center gap-1.5 text-[13px] text-muted hover:text-foreground">
-        <Sparkles className="w-3.5 h-3.5 text-accent" />
-        {m.stopped ? "Stopped" : `Worked for ${secs}s`}
-        {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-      </button>
-      <AnimatePresence initial={false}>
-        {open && (
-          <motion.ol initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden mt-2 ml-1.5 pl-4 border-l-2 border-border space-y-2">
-            {f.steps.slice(0, m.step).map((s) => (
-              <li key={s.label} className="text-[13px]">
-                <span className="inline-flex items-center gap-1.5 font-medium text-foreground"><Check className="w-3.5 h-3.5 text-success" />{s.label}</span>
-                <p className="text-muted italic mt-0.5">{s.detail}</p>
-              </li>
-            ))}
-          </motion.ol>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-/* ───────────────────────── blocks ───────────────────────── */
-
-function Clarify({ b, locked, onSubmit }: { b: Extract<Block, { t: "clarify" }>; locked: boolean; onSubmit: (text: string, next: FlowId) => void }) {
-  const [pick, setPick] = useState<Record<number, string>>({ 0: b.questions[0].options[1], 1: b.questions[1]?.options[0] });
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5 space-y-4">
-      {b.questions.map((q, i) => (
-        <div key={q.q}>
-          <div className="text-sm font-semibold text-foreground">{i + 1}. {q.q}</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {q.options.map((o) => (
-              <button key={o} type="button" disabled={locked} onClick={() => setPick({ ...pick, [i]: o })}
-                className={`px-3.5 py-1.5 rounded-full text-[13px] border transition-colors ${pick[i] === o ? "bg-ink text-ink-fg border-transparent" : "border-border text-muted hover:text-foreground hover:border-border-hi"} disabled:opacity-60`}>
-                {o}
-              </button>
-            ))}
-          </div>
-        </div>
-      ))}
-      {!locked && (
-        <button type="button" onClick={() => onSubmit(Object.values(pick).filter(Boolean).join(" · "), b.next)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-ink text-ink-fg text-sm font-semibold hover:opacity-90">
-          Write the paper <ArrowRight className="w-4 h-4" />
-        </button>
-      )}
-    </div>
-  );
-}
-
-function Outline({ b, locked, onApprove }: { b: Extract<Block, { t: "outline" }>; locked: boolean; onApprove: () => void }) {
-  const [slides, setSlides] = useState(b.slides);
-  return (
-    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
-      <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-border bg-card">
-        <span className="text-[13px] font-semibold text-foreground">Outline · {slides.length} slides</span>
-        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${locked ? "bg-success-soft text-success" : "bg-accent-soft text-accent"}`}>{locked ? "Approved" : "Waiting for you"}</span>
-      </div>
-      <ol className="divide-y divide-border">
-        {slides.map((s, i) => (
-          <li key={i} className="flex items-center gap-3 px-4 sm:px-5 py-2.5 group">
-            <span className="w-5 text-[12px] text-faint tabular-nums">{i + 1}</span>
-            <span className="hidden sm:inline-flex shrink-0 text-[10.5px] px-2 py-0.5 rounded-full border border-border text-muted">{s.move}</span>
-            <input value={s.title} disabled={locked} aria-label={`Slide ${i + 1} title`}
-              onChange={(e) => setSlides(slides.map((x, k) => (k === i ? { ...x, title: e.target.value } : x)))}
-              className="flex-1 min-w-0 bg-transparent text-sm text-foreground outline-none rounded-lg px-1.5 py-1 focus:bg-card disabled:opacity-100" />
-            {!locked && i > 0 && i < slides.length - 1 && (
-              <button type="button" aria-label="Remove slide" onClick={() => setSlides(slides.filter((_, k) => k !== i))}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded-full text-faint hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
-            )}
-          </li>
-        ))}
-      </ol>
-      {!locked && (
-        <div className="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3 border-t border-border">
-          <button type="button" onClick={onApprove} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-ink text-ink-fg text-sm font-semibold hover:opacity-90">
-            Approve and write <ArrowRight className="w-4 h-4" />
-          </button>
-          <span className="text-[12px] text-muted">Nothing is written until you approve.</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ArtifactCard({ b, onOpen }: { b: Extract<Block, { t: "artifact" }>; onOpen: () => void }) {
-  const deck = b.kind === "deck";
-  return (
-    <button type="button" onClick={onOpen}
-      className="group w-full text-left flex items-center gap-4 rounded-2xl border border-border bg-surface p-3 pr-5 hover:border-border-hi hover:shadow-soft transition-all">
-      <div className="relative w-28 sm:w-36 aspect-video shrink-0 rounded-xl overflow-hidden border border-border bg-card">
-        {deck ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={`${DECK}/t01.jpg`} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div className="absolute inset-0 p-2.5 flex flex-col gap-1">
-            <div className="h-1.5 w-2/3 rounded bg-border-hi" /><div className="h-1 w-full rounded bg-border" /><div className="h-1 w-5/6 rounded bg-border" />
-            <div className="h-1 w-full rounded bg-border mt-1" /><div className="h-1 w-3/4 rounded bg-border" /><div className="h-1 w-4/5 rounded bg-border" />
-          </div>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent">
-          {deck ? <Presentation className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />}{deck ? "Slides" : "Exam paper"}
-        </div>
-        <div className="mt-1 font-semibold text-foreground truncate">{b.title}</div>
-        <div className="text-[12.5px] text-muted truncate">{b.meta}</div>
-      </div>
-      <span className="hidden sm:inline-flex items-center gap-1 text-[13px] font-semibold text-foreground group-hover:text-accent">Open <ArrowRight className="w-4 h-4" /></span>
-    </button>
-  );
-}
-
-function Sources({ items, focus }: { items: Source[]; focus: string | null }) {
-  const [open, setOpen] = useState(false);
-  const show = open || !!focus;
-  return (
-    <div>
-      <button type="button" onClick={() => setOpen(!open)} className="inline-flex items-center gap-2 text-[13px] text-muted hover:text-foreground">
-        <span className="flex -space-x-1">{items.slice(0, 3).map((s) => <span key={s.tag} className="w-5 h-5 rounded-full grid place-items-center text-[9px] font-bold bg-accent-soft text-accent border-2 border-background">{s.tag}</span>)}</span>
-        {items.length} sources from your material {show ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-      </button>
-      <AnimatePresence initial={false}>
-        {show && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="mt-2 grid sm:grid-cols-2 gap-2">
-              {items.map((s) => (
-                <div key={s.tag} className={`rounded-2xl border p-3 text-[12.5px] transition-colors ${focus === s.tag ? "border-accent-line bg-accent-soft" : "border-border bg-surface"}`}>
-                  <div className="flex items-center gap-2 text-[11px] font-semibold text-muted">
-                    <span className="px-1.5 rounded-full bg-accent-soft text-accent">{s.tag}</span>
-                    <span className="truncate">{s.file}</span><span className="shrink-0">· {s.where}</span>
-                  </div>
-                  <p className="mt-1.5 text-foreground/90 leading-snug">&ldquo;{s.quote}&rdquo;</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
-function Explain() {
-  const row = (k: string, v: React.ReactNode) => (
-    <div className="grid grid-cols-[110px_1fr] gap-3 py-3 border-t border-border first:border-t-0 first:pt-0">
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-faint pt-0.5">{k}</span>
-      <div className="text-sm text-foreground leading-relaxed">{v}</div>
-    </div>
-  );
-  return (
-    <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      {row("The idea", <>From 1793 to 1794 the Jacobin government ruled through fear: anyone seen as an enemy of the republic could be arrested and executed.</>)}
-      {row("Like…", <>A class monitor given full power to keep order, who starts punishing anyone who even <em>might</em> talk, until the whole class is afraid, including the monitor&rsquo;s own friends.</>)}
-      {row("Maps to", (
-        <div className="flex flex-wrap gap-1.5">
-          {[["monitor", "Robespierre"], ["keeping order", "saving the republic"], ["punishments", "the guillotine"], ["the class", "French citizens"]].map(([a, b]) => (
-            <span key={a} className="text-[12px] px-2.5 py-1 rounded-full border border-border bg-card">{a} <span className="text-faint">→</span> <strong className="font-semibold">{b}</strong></span>
-          ))}
-        </div>
-      ))}
-      {row("Where it breaks", <span className="text-muted">A monitor can&rsquo;t execute anyone, and the Terror happened during a war and a food crisis, not just one person&rsquo;s choices.</span>)}
-      {row("Check", <ol className="list-decimal ml-4 space-y-1"><li>Why did the Jacobins say the Terror was necessary?</li><li>How did the Terror end for Robespierre himself?</li></ol>)}
-    </div>
-  );
-}
-
-/* ───────────────────────── artifact panel ───────────────────────── */
-
-function DeckPanel() {
-  const [i, setI] = useState(1);
-  const n = DECK_SLIDES.length;
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.closest("input,textarea")) return;
-      if (e.key === "ArrowRight") setI((v) => Math.min(n, v + 1));
-      if (e.key === "ArrowLeft") setI((v) => Math.max(1, v - 1));
-    };
-    window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
-  }, [n]);
-  return (
-    <div className="p-4 sm:p-5">
-      <div className="relative rounded-2xl overflow-hidden border border-border shadow-soft bg-card aspect-video">
-        <AnimatePresence mode="wait">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <motion.img key={i} src={`${DECK}/${pad(i)}.jpg`} alt={DECK_SLIDES[i - 1].title}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-            className="absolute inset-0 w-full h-full object-cover" />
-        </AnimatePresence>
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <div className="min-w-0">
-          <div className="text-[11px] text-faint">Slide {i} of {n} · {DECK_SLIDES[i - 1].move}</div>
-          <div className="text-sm font-semibold text-foreground truncate">{DECK_SLIDES[i - 1].title}</div>
-        </div>
-        <div className="flex gap-1.5 shrink-0">
-          <button type="button" aria-label="Previous slide" disabled={i === 1} onClick={() => setI(i - 1)} className="p-2 rounded-full border border-border text-muted hover:text-foreground disabled:opacity-30"><ArrowLeft className="w-4 h-4" /></button>
-          <button type="button" aria-label="Next slide" disabled={i === n} onClick={() => setI(i + 1)} className="p-2 rounded-full border border-border text-muted hover:text-foreground disabled:opacity-30"><ArrowRight className="w-4 h-4" /></button>
-        </div>
-      </div>
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        {DECK_SLIDES.map((s, k) => (
-          <button key={k} type="button" onClick={() => setI(k + 1)} aria-label={`Slide ${k + 1}`}
-            className={`rounded-xl overflow-hidden border-2 transition-colors ${i === k + 1 ? "border-accent" : "border-transparent hover:border-border-hi"}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${DECK}/t${pad(k + 1)}.jpg`} alt="" className="w-full aspect-video object-cover" />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PaperPanel() {
-  const [key, setKey] = useState(false);
-  let q = 0;
-  return (
-    <div className="p-4 sm:p-5">
-      <div className="flex justify-end mb-3">
-        <label className="inline-flex items-center gap-2 text-[12.5px] text-muted cursor-pointer">
-          <input type="checkbox" checked={key} onChange={(e) => setKey(e.target.checked)} className="accent-[var(--accent-1)]" /> Show where each question comes from
-        </label>
-      </div>
-      <div className="rounded-2xl border border-border bg-[#FFFDF9] text-[#1b1712] shadow-soft p-5 sm:p-8 font-serif">
-        <div className="text-center border-b border-black/10 pb-4">
-          <div className="text-[13px] tracking-wide">{PAPER.school}</div>
-          <div className="text-lg font-bold mt-1">{PAPER.title}</div>
-          <div className="text-[12px] text-black/60 mt-1">{PAPER.meta}</div>
-        </div>
-        {PAPER.sections.map((s) => (
-          <div key={s.name} className="mt-5">
-            <div className="flex items-baseline justify-between text-[13px] font-bold uppercase tracking-wide">
-              <span>{s.name}</span><span className="text-black/50 font-semibold normal-case">{s.rule}</span>
-            </div>
-            <ol className="mt-2 space-y-2">
-              {s.qs.map((x) => {
-                q += 1;
-                return (
-                  <li key={q} className={`text-[13.5px] leading-relaxed flex gap-2 ${!x.cite ? "rounded-lg bg-amber-100/70 -mx-2 px-2 py-1.5" : ""}`}>
-                    <span className="w-6 shrink-0 text-black/50">{q}.</span>
-                    <span className="flex-1">
-                      {x.q}
-                      {key && x.cite && <span className="ml-2 font-sans text-[10px] font-semibold text-[#B3341A] border border-[#B3341A]/30 rounded-full px-1.5 py-px whitespace-nowrap">Unit 4 · {x.cite}</span>}
-                      {!x.cite && (
-                        <span className="mt-1 flex items-center gap-1.5 font-sans text-[11.5px] text-amber-800">
-                          <AlertTriangle className="w-3.5 h-3.5" /> Not found in your material. Review or replace.
-                        </span>
-                      )}
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ───────────────────────── page ───────────────────────── */
+type Panel = { kind: "deck"; deck: string } | { kind: "paper" } | null;
+type View = "chat" | "features" | "saved";
 
 export default function BetaPage() {
   const { theme, toggleTheme } = useTheme();
+  const [ready, setReady] = useState(false);
+  const [config, setConfig] = useState({ cards: PROMPT_CARDS, starters: STARTERS, collections: COLLECTIONS });
+  const [convs, setConvs] = useState<Conversation[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [savedList, setSavedList] = useState<Saved[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [title, setTitle] = useState("New chat");
+  const [editTitle, setEditTitle] = useState(false);
+  const [view, setView] = useState<View>("chat");
+  const [panel, setPanel] = useState<Panel>(null);
   const [draft, setDraft] = useState("");
   const [queue, setQueue] = useState<string[]>([]);
-  const [panel, setPanel] = useState<null | "deck" | "paper">(null);
+  const [starter, setStarter] = useState<Starter | null>(null);
+  const [source, setSource] = useState<string | null>(SOURCE_FILE);
+  const [cite, setCite] = useState<string | null>(null);
   const [side, setSide] = useState(true);
   const [drawer, setDrawer] = useState(false);
-  const [cite, setCite] = useState<string | null>(null);
-  const [source, setSource] = useState(true);
-  const [title, setTitle] = useState("New chat");
+  const [tour, setTour] = useState(false);
+  const [saveFor, setSaveFor] = useState<BotMsg | null>(null);
+  const [query, setQuery] = useState("");
+  const [since, setSince] = useState<Since>("all");
+  const [folderFilter, setFolderFilter] = useState<string | null>(null);
+  const [autoRead, setAutoRead] = useState(false);
+  const [flash, setFlash] = useState<string | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLTextAreaElement>(null);
+  const file = useRef<HTMLInputElement>(null);
+  const { speaking, speak } = useSpeaker();
 
   const last = msgs[msgs.length - 1];
   const running = !!last && last.role === "assistant" && last.live;
 
-  const send = useCallback((text: string, forced?: FlowId) => {
-    const t = text.trim(); if (!t) return;
-    if (running) { setQueue((q) => [...q, t]); setDraft(""); return; }
-    const flow = forced ?? route(t);
-    setTitle((cur) => (cur === "New chat" ? FLOWS[flow].title : cur));
-    setMsgs((m) => [...m, { id: uid(), role: "user", text: t },
-      { id: uid(), role: "assistant", flow, step: 0, shown: 0, live: true, startedAt: Date.now() }]);
-    setDraft(""); setCite(null);
+  /* ── data ── */
+  const refresh = useCallback(() => {
+    setConvs(api.search(query, { folderId: folderFilter, since }));
+    setFolders(api.folders.list().slice());
+    setSavedList(api.saved.list());
+  }, [query, folderFilter, since]);
+
+  useEffect(() => {
+    api.getConfig().then(setConfig);
+    setAutoRead(api.prefs.get().autoRead);
+    setReady(true);
+    if (!api.onboarding.completed()) setTimeout(() => setTour(true), 700);
+  }, []);
+  useEffect(() => { if (ready) refresh(); }, [ready, refresh]);
+
+  // persist the open chat whenever it settles
+  useEffect(() => {
+    if (!activeId || running) return;
+    api.conversations.save(activeId, { messages: msgs });
+    refresh();
+  }, [msgs, activeId, running, refresh]);
+
+  /* ── sending ── */
+  const send = useCallback((raw: string, opts: { command?: api.Command } = {}) => {
+    let text = raw.trim();
+    if (!text && !starter) return;
+    if (running) { if (text) setQueue((q) => [...q, text]); setDraft(""); return; }
+    let forced: Intent | undefined;
+    let shown = text;
+    if (starter && !opts.command) {
+      text = api.starterPrompt(starter.id, text, source);
+      forced = starter.intent; shown = text;
+    }
+    // a reply to "which one?" resumes the request that was put on hold
+    const prev = msgs[msgs.length - 1];
+    if (prev?.role === "assistant" && prev.pending && !opts.command) { text = api.resume(prev.pending, text); forced = prev.pending.intent; }
+
+    const reply = api.respond(text, { source, forced, command: opts.command });
+    const bot: BotMsg = {
+      id: api.uid(), role: "assistant", run: reply.run, intent: reply.result, step: 0, shown: 0, live: true, startedAt: Date.now(),
+      pending: reply.ask ? { text, intent: reply.result.intent, field: reply.ask.field } : undefined,
+    };
+    const user: Msg = { id: api.uid(), role: "user", text: shown, starter: starter && !opts.command ? starter.label : undefined };
+    let id = activeId;
+    if (!id) { id = api.conversations.create(api.titleFor(reply.result, shown)).id; setActiveId(id); }
+    const c = api.conversations.get(id);
+    const settled = msgs.some((m) => m.role === "assistant" && !m.pending);
+    if (c && !c.titleEdited && !settled && !reply.ask) { const t = api.titleFor(reply.result, text); api.conversations.save(id, { title: t }); setTitle(t); }
+    else if (c) setTitle(c.title);
+    setMsgs((m) => [...m, user, bot]);
+    setDraft(""); setCite(null); setView("chat"); setStarter(null);
+  }, [running, starter, source, msgs, activeId]);
+
+  const runAction = useCallback((m: BotMsg, a: ActionId) => {
+    if (running) return;
+    const t = api.transform(m, a);
+    const user: Msg = { id: api.uid(), role: "user", text: t.derived.split(" · ")[0] };
+    const bot: BotMsg = { id: api.uid(), role: "assistant", run: t.run, intent: m.intent, step: 0, shown: 0, live: true, startedAt: Date.now(), derived: t.derived };
+    setMsgs((x) => [...x, user, bot]);
   }, [running]);
 
   // the run: finish each thinking step, then reveal blocks one by one
   useEffect(() => {
     if (!last || last.role !== "assistant" || !last.live) return;
-    const f = FLOWS[last.flow];
-    const thinking = last.step < f.steps.length;
-    const wait = thinking ? f.steps[last.step].ms : f.blocks[last.shown]?.t === "text" ? 900 : 450;
+    const r = last.run;
+    const thinking = last.step < r.steps.length;
+    const wait = thinking ? r.steps[last.step].ms : r.blocks[last.shown]?.t === "text" ? 850 : 420;
     const t = setTimeout(() => {
       let next: BotMsg;
       if (thinking) next = { ...last, step: last.step + 1 };
       else {
         const shown = last.shown + 1;
-        const blk = f.blocks[last.shown];
-        // the finished artifact opens beside the chat when there is room for it
-        if (blk?.t === "artifact" && window.innerWidth >= 1100) setPanel(blk.kind);
-        next = shown >= f.blocks.length ? { ...last, shown, live: false, tookMs: Date.now() - last.startedAt } : { ...last, shown };
+        const blk = r.blocks[last.shown];
+        if (blk?.t === "artifact" && window.innerWidth >= 1100) setPanel(blk.kind === "deck" ? { kind: "deck", deck: blk.deck! } : { kind: "paper" });
+        next = shown >= r.blocks.length ? { ...last, shown, live: false, tookMs: Date.now() - last.startedAt } : { ...last, shown };
+        if (!next.live && autoRead) speak(next.id, api.speakable(next.run));
       }
       setMsgs((m) => m.map((x) => (x.id === last.id ? next : x)));
     }, wait);
     return () => clearTimeout(t);
-  }, [last]);
+  }, [last, autoRead, speak]);
 
-  // a follow-up typed during a run goes out when the run finishes
+  useEffect(() => { if (!running && queue.length) { const [q, ...rest] = queue; setQueue(rest); send(q); } }, [running, queue, send]);
+  useEffect(() => { if (!flash) scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" }); }, [msgs, flash]);
   useEffect(() => {
-    if (!running && queue.length) { const [q, ...rest] = queue; setQueue(rest); send(q); }
-  }, [running, queue, send]);
+    if (!flash) return;
+    const t = setTimeout(() => document.getElementById(`msg-${flash}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+    const u = setTimeout(() => setFlash(null), 2400);
+    return () => { clearTimeout(t); clearTimeout(u); };
+  }, [flash]);
 
-  useEffect(() => { scroller.current?.scrollTo({ top: scroller.current.scrollHeight, behavior: "smooth" }); }, [msgs]);
+  /* ── voice ── */
+  const mic = useSpeechInput((text, final) => { setDraft(text); if (final) setTimeout(() => send(text), 250); });
 
-  const stop = () => setMsgs((m) => m.map((x) => (x === last && x.role === "assistant" ? { ...x, live: false, stopped: true, tookMs: Date.now() - x.startedAt } : x)));
-  const fresh = () => { setMsgs([]); setPanel(null); setTitle("New chat"); setQueue([]); setDrawer(false); setTimeout(() => box.current?.focus(), 50); };
-  const openRecent = (r: (typeof RECENTS)[number]) => {
-    const list: Msg[] = [];
-    r.flows.forEach((f) => { list.push({ id: uid(), role: "user", text: USER_LINES[f] }); list.push(doneBot(f)); });
-    setMsgs(list); setTitle(r.title); setPanel(null); setDrawer(false); setQueue([]);
+  /* ── navigation ── */
+  const stopRun = () => setMsgs((m) => m.map((x) => (x === last && x.role === "assistant" ? { ...x, live: false, stopped: true, tookMs: Date.now() - x.startedAt } : x)));
+  const fresh = () => {
+    if (running) stopRun();
+    setActiveId(null); setMsgs([]); setPanel(null); setTitle("New chat"); setQueue([]); setDrawer(false); setView("chat"); setStarter(null);
+    setTimeout(() => box.current?.focus(), 50);
   };
-
+  const openConv = (id: string, focusMsg?: string) => {
+    const c = api.conversations.get(id); if (!c) return;
+    setActiveId(id); setMsgs(c.messages.map((m) => (m.role === "assistant" ? { ...m, live: false } : m))); setTitle(c.title);
+    setPanel(null); setDrawer(false); setQueue([]); setView("chat"); setFlash(focusMsg ?? null);
+  };
+  const toggleSave = (m: BotMsg) => {
+    if (api.saved.isSaved(m.id)) { api.saved.remove(m.id); refresh(); }
+    else setSaveFor(m);
+  };
   const empty = msgs.length === 0;
 
-  const Sidebar = (
-    <div className="h-full flex flex-col bg-surface-2">
-      <div className="flex items-center justify-between px-4 h-14">
-        <a href="/" className="flex items-center gap-2 font-display font-extrabold text-[17px] text-foreground"><BrandMark className="w-6 h-6" /> Vivran</a>
-        <button type="button" aria-label="Collapse sidebar" onClick={() => { setSide(false); setDrawer(false); }} className="p-1.5 rounded-lg text-muted hover:text-foreground hover:bg-card"><PanelLeft className="w-[18px] h-[18px]" /></button>
-      </div>
-      <nav className="px-2 space-y-0.5">
-        {[
-          { icon: <SquarePen className="w-4 h-4" />, label: "New chat", on: fresh },
-          { icon: <Search className="w-4 h-4" />, label: "Search" },
-          { icon: <Library className="w-4 h-4" />, label: "Library" },
-          { icon: <FolderOpen className="w-4 h-4" />, label: "My sources" },
-          { icon: <Brain className="w-4 h-4" />, label: "Teaching memory" },
-        ].map((n) => (
-          <button key={n.label} type="button" onClick={n.on}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-foreground/85 hover:bg-card hover:text-foreground transition-colors">
-            <span className="text-muted">{n.icon}</span>{n.label}
-          </button>
-        ))}
-      </nav>
-      <div className="mt-6 px-5 text-[11px] font-semibold uppercase tracking-wider text-faint">Recent</div>
-      <div className="mt-1.5 px-2 space-y-0.5 flex-1 overflow-y-auto">
-        {RECENTS.map((r) => (
-          <button key={r.id} type="button" onClick={() => openRecent(r)}
-            className={`w-full text-left px-3 py-2 rounded-xl text-[13.5px] truncate transition-colors ${title === r.title ? "bg-card text-foreground font-medium" : "text-foreground/80 hover:bg-card"}`}>
-            {r.title}
-          </button>
-        ))}
-      </div>
-      <div className="p-3 space-y-1 border-t border-border">
-        <div className="flex items-center gap-2.5 px-3 py-2 text-[13px] text-muted"><span className="w-3.5 h-3.5 rounded-full border-2 border-success" /> Free for teachers</div>
-        <button type="button" className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] text-foreground/85 hover:bg-card"><Settings className="w-4 h-4 text-muted" /> Settings</button>
-        <div className="flex items-center gap-2.5 px-3 py-2">
-          <span className="w-7 h-7 rounded-full grid place-items-center bg-accent text-white text-[12px] font-bold">AR</span>
-          <div className="min-w-0"><div className="text-[13.5px] font-medium text-foreground truncate">Ms. Anjali Rao</div><div className="text-[11px] text-faint">Class 9 · History</div></div>
-        </div>
-      </div>
-    </div>
+  const sidebar = (
+    <Sidebar
+      convs={convs} folders={folders} activeId={activeId} view={view} savedCount={savedList.length}
+      query={query} since={since} folderFilter={folderFilter} autoRead={autoRead}
+      onQuery={setQuery} onSince={setSince} onFolderFilter={setFolderFilter}
+      onNew={fresh} onOpen={(id) => openConv(id)} onView={(v) => { setView(v); setDrawer(false); setPanel(null); }}
+      onCollapse={() => { setSide(false); setDrawer(false); }}
+      onRename={(id, t) => { api.conversations.save(id, { title: t, titleEdited: true }); if (id === activeId) setTitle(t); refresh(); }}
+      onPin={(id) => { const c = api.conversations.get(id); api.conversations.save(id, { pinned: !c?.pinned }); refresh(); }}
+      onMove={(id, f) => { api.conversations.save(id, { folderId: f }); refresh(); }}
+      onDelete={(id) => { api.conversations.remove(id); if (id === activeId) fresh(); refresh(); }}
+      onFolderCreate={(n) => { api.folders.create(n); refresh(); }}
+      onFolderRename={(id, n) => { api.folders.rename(id, n); refresh(); }}
+      onFolderDelete={(id) => { api.folders.remove(id); if (folderFilter === id) setFolderFilter(null); refresh(); }}
+      onTour={() => { fresh(); setTimeout(() => setTour(true), 300); }}
+      onReset={() => { api.resetAll(); fresh(); refresh(); setTimeout(() => setTour(true), 300); }}
+      onAutoRead={(v) => { setAutoRead(v); api.prefs.set({ autoRead: v }); }}
+    />
   );
 
-  const Composer = (
+  const composer = (
     <div className={`w-full ${empty ? "" : "max-w-3xl mx-auto"}`}>
       {queue.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2">
@@ -483,162 +204,220 @@ export default function BetaPage() {
           ))}
         </div>
       )}
-      <div className="vv-composer rounded-[26px] border border-border bg-surface shadow-soft focus-within:border-accent-line focus-within:shadow-panel transition-all">
+      <div data-tour="composer" className="vv-composer rounded-[26px] border border-border bg-surface shadow-soft focus-within:border-accent-line focus-within:shadow-panel transition-all">
+        {starter && (
+          <div className="px-4 pt-3 -mb-1">
+            <span className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full bg-ink text-ink-fg text-[12.5px] font-medium">
+              <Icon name={starter.icon} className="w-3.5 h-3.5" />{starter.label}
+              <button type="button" aria-label="Clear starter" onClick={() => setStarter(null)} className="ml-0.5 p-0.5 rounded-full hover:bg-white/15"><X className="w-3 h-3" /></button>
+            </span>
+          </div>
+        )}
         <textarea ref={box} value={draft} rows={empty ? 3 : 2} onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(draft); } }}
-          placeholder={running ? "Send a follow-up. It's held and sent when this finishes, even if you close the tab…" : "Ask Vivran to plan, teach, assess or explain…"}
+          placeholder={mic.listening ? "Listening…" : running ? "Send a follow-up. It's held and sent when this finishes…" : starter ? starter.placeholder : "Ask Vivran to plan, teach, assess or explain…"}
           className="w-full resize-none bg-transparent px-5 pt-4 text-[15px] text-foreground placeholder:text-faint outline-none" />
-        <div className="flex items-center gap-2 px-3 pb-3">
-          <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] text-muted hover:text-foreground hover:bg-card"><Paperclip className="w-4 h-4" /> <span className="hidden sm:inline">Attach</span></button>
-          {source ? (
-            <span className="inline-flex items-center gap-1.5 min-w-0 px-3 py-1.5 rounded-full text-[12.5px] bg-accent-soft text-foreground border border-accent-line">
-              <BookOpen className="w-3.5 h-3.5 text-accent shrink-0" /><span className="truncate max-w-[150px] sm:max-w-[240px]">{SOURCE_FILE}</span>
-              <button type="button" aria-label="Don't use this source" onClick={() => setSource(false)} className="text-muted hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
-            </span>
-          ) : (
-            <button type="button" onClick={() => setSource(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] text-muted border border-dashed border-border hover:text-foreground"><BookOpen className="w-3.5 h-3.5" /> Use a source</button>
-          )}
+        <div className="flex items-center gap-1.5 px-3 pb-3">
+          <input ref={file} type="file" accept=".pdf,.docx,.pptx" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) setSource(f.name); e.target.value = ""; }} />
+          <Tip text={TIPS.attach}><button type="button" aria-label="Attach a file" onClick={() => file.current?.click()} className="w-9 h-9 grid place-items-center rounded-full text-muted hover:text-foreground hover:bg-card"><Paperclip className="w-4 h-4" /></button></Tip>
+          <span data-tour="source" className="min-w-0 inline-flex">
+            {source ? (
+              <Tip text={TIPS.source}>
+                <span className="inline-flex items-center gap-1.5 min-w-0 px-3 py-1.5 rounded-full text-[12.5px] bg-accent-soft text-foreground border border-accent-line">
+                  <BookOpen className="w-3.5 h-3.5 text-accent shrink-0" /><span className={`truncate max-w-[110px] ${panel ? "sm:max-w-[150px]" : "sm:max-w-[220px]"}`}>{source}</span>
+                  <button type="button" aria-label="Don't use this source" onClick={() => setSource(null)} className="text-muted hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
+                </span>
+              </Tip>
+            ) : (
+              <button type="button" onClick={() => setSource(SOURCE_FILE)} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12.5px] text-muted border border-dashed border-border hover:text-foreground"><BookOpen className="w-3.5 h-3.5" /> Use a source</button>
+            )}
+          </span>
           <span className="flex-1" />
-          <span className="hidden sm:inline text-[12px] text-faint">Grounded</span>
+          <span className={`hidden ${panel ? "2xl:inline-flex" : "sm:inline-flex"} items-center gap-1 text-[12px] text-faint`}>Grounded <InfoTip text={TIPS.grounded} /></span>
+          <span data-tour="mic" className="inline-flex">
+            <Tip text={mic.error ?? (mic.supported ? TIPS.mic : "Voice input needs Chrome or Edge")}>
+              <button type="button" aria-label={mic.listening ? "Stop listening" : "Speak"} onClick={() => (mic.listening ? mic.stop() : mic.start())}
+                className={`relative w-9 h-9 grid place-items-center rounded-full transition-colors ${mic.listening ? "bg-accent text-white" : "text-muted hover:text-foreground hover:bg-card"}`}>
+                {mic.listening && <span className="absolute inset-0 rounded-full bg-accent/40 animate-ping" />}
+                <Mic className="relative w-4 h-4" />
+              </button>
+            </Tip>
+          </span>
           {running ? (
-            <button type="button" aria-label="Stop" onClick={stop} className="w-9 h-9 rounded-full grid place-items-center bg-ink text-ink-fg"><Square className="w-3.5 h-3.5 fill-current" /></button>
+            <button type="button" aria-label="Stop" onClick={stopRun} className="w-9 h-9 rounded-full grid place-items-center bg-ink text-ink-fg"><Square className="w-3.5 h-3.5 fill-current" /></button>
           ) : (
-            <button type="button" aria-label="Send" disabled={!draft.trim()} onClick={() => send(draft)} className="w-9 h-9 rounded-full grid place-items-center bg-ink text-ink-fg disabled:opacity-30 transition-opacity"><ArrowUp className="w-[18px] h-[18px]" /></button>
+            <button type="button" aria-label="Send" disabled={!draft.trim() && !starter} onClick={() => send(draft)} className="w-9 h-9 rounded-full grid place-items-center bg-ink text-ink-fg disabled:opacity-30 transition-opacity"><ArrowUp className="w-[18px] h-[18px]" /></button>
           )}
         </div>
       </div>
+      {mic.error && <p className="mt-1.5 text-center text-[12px] text-danger">{mic.error}</p>}
     </div>
+  );
+
+  const welcome = (
+    <div className="flex-1 overflow-y-auto">
+      <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-3xl">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <BrandMark className="w-9 h-9" />
+            <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-foreground">What are we teaching today?</h2>
+          </div>
+          <p className="text-center text-[14px] text-muted mb-7">Good to see you, Ms. Rao. Your Unit 4 chapter is ready to use.</p>
+          {composer}
+          <div data-tour="starters" className="mt-4 flex flex-wrap justify-center gap-2">
+            {config.starters.map((s) => (
+              <button key={s.id} type="button" onClick={() => { setStarter(starter?.id === s.id ? null : s); box.current?.focus(); }}
+                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-[13px] transition-colors ${starter?.id === s.id ? "bg-ink text-ink-fg border-transparent" : "border-border bg-surface text-foreground/85 hover:border-border-hi hover:text-foreground"}`}>
+                <Icon name={s.icon} className={`w-3.5 h-3.5 ${starter?.id === s.id ? "" : "text-accent"}`} />{s.label}
+              </button>
+            ))}
+          </div>
+          <div data-tour="cards" className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {config.cards.map((c, i) => (
+              <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
+                className="group relative rounded-2xl border border-border bg-surface p-4 hover:border-border-hi hover:shadow-soft transition-all">
+                <button type="button" onClick={() => send(c.prompt)} className="text-left w-full">
+                  <span className="w-8 h-8 rounded-xl grid place-items-center bg-accent-soft text-accent"><Icon name={c.icon} className="w-4 h-4" /></span>
+                  <div className="mt-3 font-semibold text-[14.5px] text-foreground">{c.title}</div>
+                  <p className="mt-1 text-[12.5px] text-muted leading-snug">{c.description}</p>
+                  <p className="mt-2.5 text-[12px] text-faint italic truncate">&ldquo;{c.prompt}&rdquo;</p>
+                </button>
+                <span className="absolute top-3 right-3">
+                  <Tip text="Edit before sending">
+                    <button type="button" aria-label="Edit this prompt first" onClick={() => { setDraft(c.prompt); box.current?.focus(); }} className="p-1.5 rounded-lg text-faint opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-foreground hover:bg-card"><SquarePen className="w-3.5 h-3.5" /></button>
+                  </Tip>
+                </span>
+              </motion.div>
+            ))}
+          </div>
+          <div className="mt-6 text-center">
+            <button type="button" onClick={() => setView("features")} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-foreground hover:text-accent"><LayoutGrid className="w-4 h-4" /> See everything Vivran can do <ArrowRight className="w-3.5 h-3.5" /></button>
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+
+  const thread = (
+    <>
+      <div ref={scroller} className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+          {msgs.map((m, mi) => m.role === "user" ? (
+            <motion.div key={m.id} id={`msg-${m.id}`} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-end gap-1">
+              {m.starter && <span className="text-[11px] text-faint">{m.starter}</span>}
+              <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-card border border-border px-4 py-2.5 text-[15px] text-foreground">{m.text}</div>
+            </motion.div>
+          ) : (
+            <div key={m.id} id={`msg-${m.id}`} className={`rounded-3xl transition-shadow duration-700 ${flash === m.id ? "ring-2 ring-accent ring-offset-8 ring-offset-background" : ""}`}>
+              <Thinking m={m} />
+              <div className="space-y-4">
+                {m.run.blocks.slice(0, m.shown).map((b, bi) => (
+                  <motion.div key={bi} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                    <BlockView b={b} live={m.live && bi === m.shown - 1} locked={mi < msgs.length - 1} focus={mi === msgs.length - 1 ? cite : null}
+                      h={{
+                        onCite: setCite, onSend: (t) => send(t),
+                        onChoices: (t) => send(t, { command: { kind: "writePaper" } }),
+                        onAnswer: (a) => send(a),
+                        onApprove: (deck) => send("Approved. Write the deck.", { command: { kind: "writeDeck", deck } }),
+                        onOpen: (a) => setPanel(a.kind === "deck" ? { kind: "deck", deck: a.deck! } : { kind: "paper" }),
+                      }} />
+                  </motion.div>
+                ))}
+              </div>
+              {!m.live && !m.stopped && (
+                <ActionBar m={m} compact={mi < msgs.length - 1} saved={savedList.some((s) => s.messageId === m.id)} speaking={speaking === m.id}
+                  onAction={(a) => runAction(m, a)} onSpeak={() => speak(m.id, api.speakable(m.run))}
+                  onCopy={() => navigator.clipboard?.writeText(api.speakable(m.run))} onSave={() => toggleSave(m)} />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="shrink-0 px-3 sm:px-6 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
+        {composer}
+        <p className="mt-2 text-center text-[11px] text-faint">Beta preview with sample data. Vivran checks its work, and so should you.</p>
+      </div>
+    </>
   );
 
   return (
     <MotionConfig reducedMotion="user">
       <div className="h-[100dvh] flex bg-background text-foreground overflow-hidden">
-        {/* sidebar: docked on desktop, a drawer on phones */}
-        <aside className={`hidden md:block shrink-0 border-r border-border transition-[width] duration-300 overflow-hidden ${side ? "w-64" : "w-0 border-r-0"}`}>
-          <div className="w-64 h-full">{Sidebar}</div>
+        <aside className={`hidden md:block shrink-0 border-r border-border transition-[width] duration-300 overflow-hidden ${side ? "w-72" : "w-0 border-r-0"}`}>
+          <div className="w-72 h-full">{ready && sidebar}</div>
         </aside>
         <AnimatePresence>
           {drawer && (
             <>
               <motion.div className="md:hidden fixed inset-0 z-40 bg-black/40" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDrawer(false)} />
-              <motion.aside className="md:hidden fixed inset-y-0 left-0 z-50 w-72 border-r border-border shadow-panel" initial={{ x: -300 }} animate={{ x: 0 }} exit={{ x: -300 }} transition={{ type: "spring", damping: 30, stiffness: 300 }}>{Sidebar}</motion.aside>
+              <motion.aside className="md:hidden fixed inset-y-0 left-0 z-50 w-[85vw] max-w-80 border-r border-border shadow-panel" initial={{ x: -320 }} animate={{ x: 0 }} exit={{ x: -320 }} transition={{ type: "spring", damping: 30, stiffness: 300 }}>{sidebar}</motion.aside>
             </>
           )}
         </AnimatePresence>
 
-        {/* conversation */}
         <main className="flex-1 min-w-0 flex flex-col">
           <header className="h-14 shrink-0 flex items-center gap-2 px-3 sm:px-5 border-b border-border/70">
             <button type="button" aria-label="Open menu" onClick={() => setDrawer(true)} className="md:hidden p-2 rounded-lg text-muted"><Menu className="w-5 h-5" /></button>
             {!side && <button type="button" aria-label="Open sidebar" onClick={() => setSide(true)} className="hidden md:inline-flex p-2 rounded-lg text-muted hover:text-foreground"><PanelLeft className="w-[18px] h-[18px]" /></button>}
             {!side && <button type="button" aria-label="New chat" onClick={fresh} className="hidden md:inline-flex p-2 rounded-lg text-muted hover:text-foreground"><SquarePen className="w-[18px] h-[18px]" /></button>}
-            <h1 className="text-[15px] font-medium text-foreground truncate">{title}</h1>
+            {view !== "chat" ? (
+              <button type="button" onClick={() => setView("chat")} className="text-[15px] font-medium text-foreground truncate">← Back to chat</button>
+            ) : editTitle && activeId ? (
+              <form onSubmit={(e) => { e.preventDefault(); setEditTitle(false); }} className="min-w-0 flex-1 max-w-md">
+                <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)}
+                  onBlur={() => { setEditTitle(false); api.conversations.save(activeId, { title: title.trim() || "Untitled", titleEdited: true }); refresh(); }}
+                  className="w-full rounded-lg border border-accent-line bg-surface px-2 py-1 text-[15px] text-foreground outline-none" />
+              </form>
+            ) : (
+              <Tip text={activeId ? "Click to rename" : "Titles are written for you from the first request"} side="bottom">
+                <button type="button" onClick={() => activeId && setEditTitle(true)} className="text-[15px] font-medium text-foreground truncate max-w-[50vw] text-left">{title}</button>
+              </Tip>
+            )}
             <span className={`hidden ${panel ? "xl:inline" : "sm:inline"} shrink-0 whitespace-nowrap text-[10.5px] font-semibold px-2 py-0.5 rounded-full border border-border text-faint`}>Beta preview · sample data</span>
             <span className="flex-1" />
-            <button type="button" aria-label="Toggle theme" onClick={toggleTheme} className="p-2 rounded-lg text-muted hover:text-foreground">{theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
-            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] text-muted hover:text-foreground border border-border"><Share2 className="w-3.5 h-3.5" /> Share</button>
+            <Tip text={theme === "dark" ? "Light theme" : "Dark theme"} side="bottom"><button type="button" aria-label="Toggle theme" onClick={toggleTheme} className="p-2 rounded-lg text-muted hover:text-foreground">{theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button></Tip>
+            <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] text-muted hover:text-foreground border border-border"><Share2 className="w-3.5 h-3.5" /> <span className={`hidden ${panel ? "2xl:inline" : "sm:inline"}`}>Share</span></button>
           </header>
 
-          {empty ? (
+          {view === "features" ? (
+            <div className="flex-1 overflow-y-auto"><FeaturesView onTry={(p) => { fresh(); setTimeout(() => send(p), 60); }} onClose={() => setView("chat")} /></div>
+          ) : view === "saved" ? (
             <div className="flex-1 overflow-y-auto">
-              <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl">
-                  <div className="flex items-center justify-center gap-3 mb-8">
-                    <BrandMark className="w-9 h-9" />
-                    <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-foreground">What are we teaching today?</h2>
-                  </div>
-                  {Composer}
-                  <div className="mt-4 flex flex-wrap justify-center gap-2">
-                    {[
-                      { icon: <Presentation className="w-4 h-4" />, label: "Slides", text: USER_LINES.slidesPlan },
-                      { icon: <FileText className="w-4 h-4" />, label: "Exam paper", text: USER_LINES.paperAsk },
-                      { icon: <Lightbulb className="w-4 h-4" />, label: "Explain simply", text: USER_LINES.explain },
-                    ].map((c) => (
-                      <button key={c.label} type="button" onClick={() => send(c.text)}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border bg-surface text-[13.5px] text-foreground/85 hover:border-border-hi hover:text-foreground transition-colors">
-                        <span className="text-accent">{c.icon}</span>{c.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="mt-8 text-center text-[12.5px] text-faint">Vivran writes from your sources and shows where every fact came from.</p>
-                </motion.div>
-              </div>
+              <SavedView items={savedList} collections={config.collections}
+                onOpen={(s) => openConv(s.conversationId, s.messageId)}
+                onRemove={(s) => { api.saved.remove(s.messageId); refresh(); }}
+                onUpdate={(s, patch) => { api.saved.update(s.id, patch); refresh(); }} />
             </div>
-          ) : (
-            <>
-              <div ref={scroller} className="flex-1 overflow-y-auto">
-                <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-                  {msgs.map((m, mi) => m.role === "user" ? (
-                    <motion.div key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
-                      <div className="max-w-[85%] rounded-3xl rounded-br-lg bg-card border border-border px-4 py-2.5 text-[15px] text-foreground">{m.text}</div>
-                    </motion.div>
-                  ) : (
-                    <div key={m.id}>
-                      <Thinking m={m} />
-                      <div className="space-y-4">
-                        {FLOWS[m.flow].blocks.slice(0, m.shown).map((b, bi) => {
-                          const live = m.live && bi === m.shown - 1;
-                          const locked = mi < msgs.length - 1; // a choice is spent once the chat moved on
-                          return (
-                            <motion.div key={bi} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                              {b.t === "text" && <p className="text-[15px] leading-7 text-foreground/90"><Stream text={b.text} live={live} onCite={setCite} /></p>}
-                              {b.t === "memory" && (
-                                <div className="flex gap-3 rounded-2xl border border-success-line bg-success-soft px-4 py-3">
-                                  <Brain className="w-[18px] h-[18px] text-success shrink-0 mt-0.5" />
-                                  <div className="text-sm"><Rich text={b.text} /><div className="text-[12px] text-muted mt-0.5">{b.why}</div></div>
-                                </div>
-                              )}
-                              {b.t === "clarify" && <Clarify b={b} locked={locked} onSubmit={(t, n) => send(t, n)} />}
-                              {b.t === "outline" && <Outline b={b} locked={locked} onApprove={() => send(USER_LINES.slidesWrite, b.next)} />}
-                              {b.t === "artifact" && <ArtifactCard b={b} onOpen={() => setPanel(b.kind)} />}
-                              {b.t === "explain" && <Explain />}
-                              {b.t === "sources" && <Sources items={b.items} focus={mi === msgs.length - 1 ? cite : null} />}
-                              {b.t === "followups" && !locked && (
-                                <div className="flex flex-wrap gap-2">
-                                  {b.items.map((s) => (
-                                    <button key={s} type="button" onClick={() => send(s)} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-border text-[13px] text-muted hover:text-foreground hover:border-border-hi transition-colors">
-                                      {s} <ArrowRight className="w-3.5 h-3.5" />
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="shrink-0 px-3 sm:px-6 pb-4 pt-2 bg-gradient-to-t from-background via-background to-transparent">
-                {Composer}
-                <p className="mt-2 text-center text-[11px] text-faint">Beta preview with sample data. Vivran checks its work, and so should you.</p>
-              </div>
-            </>
-          )}
+          ) : empty ? welcome : thread}
         </main>
 
-        {/* artifact panel: beside the chat on wide screens, over it on small ones */}
         <AnimatePresence>
-          {panel && (
+          {panel && view === "chat" && (
             <motion.section key="panel" initial={{ x: 40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 40, opacity: 0 }} transition={{ duration: 0.25 }}
-              className="fixed inset-0 z-30 lg:static lg:z-auto lg:w-[46%] lg:max-w-[720px] shrink-0 flex flex-col bg-background lg:border-l border-border">
+              className="fixed inset-0 z-30 lg:static lg:z-auto lg:w-[44%] lg:max-w-[700px] shrink-0 flex flex-col bg-background lg:border-l border-border">
               <div className="h-14 shrink-0 flex items-center gap-2 px-4 border-b border-border/70">
-                <span className="text-accent">{panel === "deck" ? <Presentation className="w-4 h-4" /> : <FileText className="w-4 h-4" />}</span>
-                <span className="text-[14px] font-semibold text-foreground truncate">{panel === "deck" ? "The French Revolution" : PAPER.title}</span>
+                <span className="text-accent">{panel.kind === "deck" ? <Presentation className="w-4 h-4" /> : <FileText className="w-4 h-4" />}</span>
+                <span className="text-[14px] font-semibold text-foreground truncate">{panel.kind === "deck" ? DECKS.find((d) => d.id === panel.deck)?.title : PAPER.title}</span>
                 <span className="flex-1" />
-                {panel === "deck" && (
-                  <a href={`${DECK}.pptx`} download className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold bg-ink text-ink-fg hover:opacity-90"><Download className="w-3.5 h-3.5" /> PowerPoint</a>
-                )}
-                {panel === "paper" && (
-                  <button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold bg-ink text-ink-fg hover:opacity-90"><Download className="w-3.5 h-3.5" /> PDF</button>
-                )}
+                {panel.kind === "deck"
+                  ? <a href={`/landing/decks/${panel.deck}.pptx`} download className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold bg-ink text-ink-fg hover:opacity-90"><Download className="w-3.5 h-3.5" /> PowerPoint</a>
+                  : <Tip text="Not in the beta yet" side="bottom"><button type="button" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold bg-ink text-ink-fg opacity-80"><Download className="w-3.5 h-3.5" /> PDF</button></Tip>}
                 <button type="button" aria-label="Close" onClick={() => setPanel(null)} className="p-2 rounded-full text-muted hover:text-foreground hover:bg-card"><X className="w-4 h-4" /></button>
               </div>
-              <div className="flex-1 overflow-y-auto">{panel === "deck" ? <DeckPanel /> : <PaperPanel />}</div>
+              <div className="flex-1 overflow-y-auto">{panel.kind === "deck" ? <DeckPanel deckId={panel.deck} /> : <PaperPanel />}</div>
             </motion.section>
           )}
         </AnimatePresence>
+
+        {saveFor && (
+          <SaveDialog collections={config.collections} onClose={() => setSaveFor(null)}
+            onSave={(collection, note) => {
+              const c = api.conversations.get(activeId ?? "");
+              api.saved.add({ messageId: saveFor.id, conversationId: activeId ?? "", collection, note, title: c?.title ?? title, excerpt: api.speakable(saveFor.run).slice(0, 220), intent: saveFor.intent.intent });
+              setSaveFor(null); refresh();
+            }} />
+        )}
+        {tour && view === "chat" && empty && <Walkthrough steps={TOUR} onDone={() => { setTour(false); api.onboarding.complete(); }} />}
       </div>
     </MotionConfig>
   );
