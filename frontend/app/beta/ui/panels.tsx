@@ -1,89 +1,65 @@
 "use client";
 // Larger surfaces: the artifact viewers, the feature catalogue, saved responses
 // and the save dialog.
-import React, { useEffect, useMemo, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, ArrowRight, Bookmark, Search, Trash2, X } from "lucide-react";
+import React, { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { AlertTriangle, ArrowRight, Bookmark, Search, Trash2, X } from "lucide-react";
 import { BUILT_IN, COMING, TOOLS, type FeatureStatus } from "../lib/config";
-import { DECKS, PAPER } from "../lib/content";
+import { DeckView } from "@/app/components/deck-view";
+import type { AssessmentGenerateResponse, DeckReady } from "@/services/api";
 import type { Saved } from "../lib/types";
 import { Icon } from "./kit";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
-export function DeckPanel({ deckId }: { deckId: string }) {
-  const d = DECKS.find((x) => x.id === deckId) ?? DECKS[0];
-  const n = d.slides.length;
-  const [i, setI] = useState(1);
-  useEffect(() => setI(1), [deckId]);
-  useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.closest("input,textarea")) return;
-      if (e.key === "ArrowRight") setI((v) => Math.min(n, v + 1));
-      if (e.key === "ArrowLeft") setI((v) => Math.max(1, v - 1));
-    };
-    window.addEventListener("keydown", k); return () => window.removeEventListener("keydown", k);
-  }, [n]);
-  const base = `/landing/decks/${d.id}`;
-  return (
-    <div className="p-4 sm:p-5">
-      <div className="relative rounded-2xl overflow-hidden border border-border shadow-soft bg-card aspect-video">
-        <AnimatePresence mode="wait">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <motion.img key={`${d.id}-${i}`} src={`${base}/${pad(i)}.jpg`} alt={d.slides[i - 1].title} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} className="absolute inset-0 w-full h-full object-cover" />
-        </AnimatePresence>
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <div className="min-w-0">
-          <div className="text-[11px] text-faint">Slide {i} of {n} · {d.slides[i - 1].move}</div>
-          <div className="text-sm font-semibold text-foreground truncate">{d.slides[i - 1].title}</div>
-        </div>
-        <div className="flex gap-1.5 shrink-0">
-          <button type="button" aria-label="Previous slide" disabled={i === 1} onClick={() => setI(i - 1)} className="p-2 rounded-full border border-border text-muted hover:text-foreground disabled:opacity-30"><ArrowLeft className="w-4 h-4" /></button>
-          <button type="button" aria-label="Next slide" disabled={i === n} onClick={() => setI(i + 1)} className="p-2 rounded-full border border-border text-muted hover:text-foreground disabled:opacity-30"><ArrowRight className="w-4 h-4" /></button>
-        </div>
-      </div>
-      <div className="mt-4 grid grid-cols-4 gap-2">
-        {d.slides.map((s, k) => (
-          <button key={k} type="button" onClick={() => setI(k + 1)} aria-label={`Slide ${k + 1}`} className={`rounded-xl overflow-hidden border-2 transition-colors ${i === k + 1 ? "border-accent" : "border-transparent hover:border-border-hi"}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`${base}/t${pad(k + 1)}.jpg`} alt="" className="w-full aspect-video object-cover" />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+/** A finished deck: the product's own viewer, with PowerPoint and PDF export. */
+export function DeckPanel({ deck }: { deck: DeckReady }) {
+  return <div className="p-4 sm:p-5 [&>div]:border-t-0 [&>div]:pt-0"><DeckView deck={deck} /></div>;
 }
 
-export function PaperPanel() {
+interface PaperQ { question_number?: number; question_text: string; marks: number; options?: string[] | null; answer?: string; solution?: string; source_ids?: string[]; support?: string | null; question_type?: string }
+interface Paper { title?: string; subject?: string; grade?: string; total_marks?: number; duration_minutes?: number; sections?: { name: string; instructions?: string; questions: PaperQ[] }[] }
+
+/** A finished paper, as it prints. Answers and where each question came from are a toggle away. */
+export function PaperPanel({ data }: { data: AssessmentGenerateResponse }) {
+  const [answers, setAnswers] = useState(false);
   const [cites, setCites] = useState(false);
+  const a = (data.assessment ?? {}) as Paper;
+  const grounded = (data.grounded_on ?? 0) > 0;
   let q = 0;
   return (
     <div className="p-4 sm:p-5">
-      <div className="flex justify-end mb-3">
+      <div className="flex flex-wrap justify-end gap-x-4 gap-y-1 mb-3">
         <label className="inline-flex items-center gap-2 text-[12.5px] text-muted cursor-pointer">
-          <input type="checkbox" checked={cites} onChange={(e) => setCites(e.target.checked)} className="accent-[var(--accent-1)]" /> Show where each question comes from
+          <input type="checkbox" checked={answers} onChange={(e) => setAnswers(e.target.checked)} className="accent-[var(--accent-1)]" /> Show answers
         </label>
+        {grounded && (
+          <label className="inline-flex items-center gap-2 text-[12.5px] text-muted cursor-pointer">
+            <input type="checkbox" checked={cites} onChange={(e) => setCites(e.target.checked)} className="accent-[var(--accent-1)]" /> Show where each question comes from
+          </label>
+        )}
       </div>
       <div className="rounded-2xl border border-border bg-[#FFFDF9] text-[#1b1712] shadow-soft p-5 sm:p-8 font-serif">
         <div className="text-center border-b border-black/10 pb-4">
-          <div className="text-[13px] tracking-wide">{PAPER.school}</div>
-          <div className="text-lg font-bold mt-1">{PAPER.title}</div>
-          <div className="text-[12px] text-black/60 mt-1">{PAPER.meta}</div>
+          <div className="text-lg font-bold">{a.title}</div>
+          <div className="text-[12px] text-black/60 mt-1">{[a.grade, a.subject, a.total_marks && `${a.total_marks} marks`, a.duration_minutes && `${a.duration_minutes} minutes`].filter(Boolean).join(" · ")}</div>
         </div>
-        {PAPER.sections.map((s) => (
+        {(a.sections ?? []).map((s) => (
           <div key={s.name} className="mt-5">
-            <div className="flex items-baseline justify-between text-[13px] font-bold uppercase tracking-wide"><span>{s.name}</span><span className="text-black/50 font-semibold normal-case">{s.rule}</span></div>
-            <ol className="mt-2 space-y-2">
-              {s.qs.map((x) => {
+            <div className="flex items-baseline justify-between gap-3 text-[13px] font-bold uppercase tracking-wide"><span>{s.name}</span><span className="text-black/50 font-semibold normal-case text-right">{s.questions.reduce((x, y) => x + (y.marks || 0), 0)} marks</span></div>
+            {s.instructions && <p className="mt-1 text-[12px] italic text-black/60">{s.instructions}</p>}
+            <ol className="mt-2 space-y-2.5">
+              {s.questions.map((x) => {
                 q += 1;
+                const weak = grounded && (x.support === "low" || x.support === "none");
                 return (
-                  <li key={q} className={`text-[13.5px] leading-relaxed flex gap-2 ${!x.cite ? "rounded-lg bg-amber-100/70 -mx-2 px-2 py-1.5" : ""}`}>
+                  <li key={q} className={`text-[13.5px] leading-relaxed flex gap-2 ${cites && weak ? "rounded-lg bg-amber-100/70 -mx-2 px-2 py-1.5" : ""}`}>
                     <span className="w-6 shrink-0 text-black/50">{q}.</span>
                     <span className="flex-1">
-                      {x.q}
-                      {cites && x.cite && <span className="ml-2 font-sans text-[10px] font-semibold text-[#B3341A] border border-[#B3341A]/30 rounded-full px-1.5 py-px whitespace-nowrap">Unit 4 · {x.cite}</span>}
-                      {!x.cite && <span className="mt-1 flex items-center gap-1.5 font-sans text-[11.5px] text-amber-800"><AlertTriangle className="w-3.5 h-3.5" /> Not found in your material. Review or replace.</span>}
+                      {x.question_text}
+                      <span className="ml-2 font-sans text-[11px] text-black/45 whitespace-nowrap">[{x.marks}]</span>
+                      {x.options?.length ? <span className="mt-1 grid sm:grid-cols-2 gap-x-4 text-[13px]">{x.options.map((o, i) => <span key={i}>({String.fromCharCode(97 + i)}) {o}</span>)}</span> : null}
+                      {cites && !!x.source_ids?.length && <span className="ml-2 font-sans text-[10px] font-semibold text-[#B3341A] border border-[#B3341A]/30 rounded-full px-1.5 py-px whitespace-nowrap">From your material</span>}
+                      {cites && weak && <span className="mt-1 flex items-center gap-1.5 font-sans text-[11.5px] text-amber-800"><AlertTriangle className="w-3.5 h-3.5" /> Not clearly in your material. Review it.</span>}
+                      {answers && x.answer && <span className="mt-1 block font-sans text-[12px] text-[#1f6b4f]">Answer: {x.answer}</span>}
                     </span>
                   </li>
                 );

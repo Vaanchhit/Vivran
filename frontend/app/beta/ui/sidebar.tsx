@@ -16,12 +16,12 @@ export type Since = "all" | "today" | "week" | "older";
 export interface SidebarProps {
   convs: Conversation[]; folders: Folder[]; activeId: string | null; view: string; savedCount: number;
   query: string; since: Since; folderFilter: string | null;
-  autoRead: boolean;
+  autoRead: boolean; showRoute: boolean; user: { name: string; email: string };
   onQuery: (q: string) => void; onSince: (s: Since) => void; onFolderFilter: (id: string | null) => void;
   onNew: () => void; onOpen: (id: string) => void; onView: (v: "features" | "saved" | "library" | "sources" | "memory") => void; onCollapse: () => void;
   onRename: (id: string, title: string) => void; onPin: (id: string) => void; onMove: (id: string, folderId: string | null) => void; onDelete: (id: string) => void;
   onFolderCreate: (name: string) => void; onFolderRename: (id: string, name: string) => void; onFolderDelete: (id: string) => void;
-  onTour: () => void; onReset: () => void; onAutoRead: (v: boolean) => void;
+  onTour: () => void; onReset: () => void; onAutoRead: (v: boolean) => void; onShowRoute: (v: boolean) => void; onSignOut: () => void;
 }
 
 function ConvItem({ c, active, folders, p }: { c: Conversation; active: boolean; folders: Folder[]; p: SidebarProps }) {
@@ -173,7 +173,7 @@ export function Sidebar(p: SidebarProps) {
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="absolute bottom-full left-3 right-3 mb-2 z-40 rounded-2xl border border-border bg-surface shadow-panel p-1.5 text-[13px]">
               <button type="button" onClick={() => { setHelp(false); p.onTour(); }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-card text-foreground"><HelpCircle className="w-4 h-4 text-muted" /> Take the tour</button>
               <button type="button" onClick={() => { setHelp(false); p.onView("features"); }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-card text-foreground"><LayoutGrid className="w-4 h-4 text-muted" /> What Vivran can do</button>
-              <button type="button" onClick={() => { setHelp(false); p.onReset(); }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-card text-foreground"><RotateCcw className="w-4 h-4 text-muted" /> Reset sample data</button>
+              <button type="button" onClick={() => { setHelp(false); p.onReset(); }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl hover:bg-card text-foreground"><RotateCcw className="w-4 h-4 text-muted" /> Clear chats in this browser</button>
             </motion.div>
           )}
           {settings && (
@@ -182,14 +182,19 @@ export function Sidebar(p: SidebarProps) {
                 <span><span className="block text-foreground font-medium">Read answers aloud</span><span className="text-[11.5px] text-muted">Every new answer, automatically</span></span>
                 <input type="checkbox" checked={p.autoRead} onChange={(e) => p.onAutoRead(e.target.checked)} className="w-4 h-4 accent-[var(--accent-1)]" />
               </label>
+              <label className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-xl hover:bg-card cursor-pointer">
+                <span><span className="block text-foreground font-medium">Show routing</span><span className="text-[11.5px] text-muted">Internal: which model ran each step</span></span>
+                <input type="checkbox" checked={p.showRoute} onChange={(e) => p.onShowRoute(e.target.checked)} className="w-4 h-4 accent-[var(--accent-1)]" />
+              </label>
+              <button type="button" onClick={p.onSignOut} className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-card text-foreground font-medium">Sign out</button>
             </motion.div>
           )}
         </AnimatePresence>
         <button type="button" data-tour="help" onClick={() => { setHelp(!help); setSettings(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] text-foreground/85 hover:bg-card"><HelpCircle className="w-4 h-4 text-muted" /> Help and tour</button>
         <button type="button" onClick={() => { setSettings(!settings); setHelp(false); }} className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] text-foreground/85 hover:bg-card"><Settings className="w-4 h-4 text-muted" /> Settings</button>
         <div className="flex items-center gap-2.5 px-3 py-2">
-          <span className="w-7 h-7 rounded-full grid place-items-center bg-accent text-white text-[12px] font-bold">AR</span>
-          <div className="min-w-0"><div className="text-[13.5px] font-medium text-foreground truncate">Ms. Anjali Rao</div><div className="text-[11px] text-faint">Free for teachers</div></div>
+          <span className="w-7 h-7 shrink-0 rounded-full grid place-items-center bg-accent text-white text-[12px] font-bold">{p.user.name.split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase()}</span>
+          <div className="min-w-0"><div className="text-[13.5px] font-medium text-foreground truncate">{p.user.name}</div><div className="text-[11px] text-faint truncate">{p.user.email}</div></div>
         </div>
       </div>
     </div>

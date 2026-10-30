@@ -1,7 +1,5 @@
 // Everything the chat offers before the teacher types: prompt cards, starters,
-// quick actions, the feature catalogue, tooltips and the walkthrough. Served by
-// api.getConfig(), which stands in for GET /api/chat/config, so it can move to
-// the backend without the interface changing.
+// quick actions, the feature catalogue, tooltips and the walkthrough.
 import type { ActionId, Intent, PromptCard, Starter } from "./types";
 
 // One card per task: the example sends as-is, and "Your own" opens the matching
@@ -41,7 +39,7 @@ export const ACTIONS_FOR: Record<Intent, ActionId[]> = {
   explain: ["examples", "table", "bullets"],
   summarise: ["further", "table", "examples"],
   compare: ["examples", "bullets", "further"],
-  slides: ["summarise", "examples"],
+  slides: [],
   paper: ["summarise"],
   worksheet: ["examples", "table"],
   plan: ["bullets", "further"],
@@ -53,7 +51,6 @@ export const ACTIONS_FOR: Record<Intent, ActionId[]> = {
 /** Simplify / Elaborate sit on their own beside every answer that has text. */
 export const LEVELS: Partial<Record<Intent, { simplify: string; elaborate: string }>> = {
   paper: { simplify: "Make it easier", elaborate: "Make it harder" },
-  slides: { simplify: "Simpler language", elaborate: "More depth" },
 };
 
 export const COLLECTIONS = ["Lessons", "Assessment", "Research", "Ideas"];
@@ -63,7 +60,7 @@ export interface Tool { name: string; icon: string; status: FeatureStatus; give:
 
 /** The things Vivran makes. Smaller abilities live inside the tool they belong to. */
 export const TOOLS: Tool[] = [
-  { name: "Lesson slides", icon: "slides", status: "Live", give: "A topic or chapter, the class, how long", get: "A plan to approve, then a finished deck", includes: ["26 lesson shapes", "Every slide fitted", "Speaker notes", "PowerPoint export", "A meme, if you ask"], try: "Slides on photosynthesis for Class 7" },
+  { name: "Lesson slides", icon: "slides", status: "Live", give: "A topic or chapter, the class, how long", get: "A plan to approve, then a finished deck", includes: ["Every slide fitted", "Speaker notes", "PowerPoint and PDF export", "A meme, if you ask"], try: "Slides on photosynthesis for Class 7" },
   { name: "Exam papers", icon: "paper", status: "Live", give: "Topic and total marks", get: "A paper in your section format, exact to the total", includes: ["Answer key", "Marking scheme", "Harder or easier, one question at a time"], try: "A 40-mark unit test on the French Revolution" },
   { name: "Worksheets", icon: "list", status: "Live", give: "A topic", get: "Activities and questions for the class", includes: [], try: "A worksheet on the French Revolution" },
   { name: "Plans and ideas", icon: "calendar", status: "Live", give: "A unit and the weeks you have", get: "A week-by-week plan, or ideas for one lesson", includes: ["From your syllabus", "Openers, activities, exit tickets"], try: "Plan a unit on the French Revolution, 4 weeks" },
@@ -76,6 +73,7 @@ export const TOOLS: Tool[] = [
 export const BUILT_IN: { name: string; icon: string; desc: string; beta?: boolean }[] = [
   { name: "Cited to the page", icon: "quote", desc: "Facts link back to your source, and unsupported ones are flagged." },
   { name: "Teaching memory", icon: "brain", desc: "Learns your formats from work you've already set." },
+  { name: "Improve my request", icon: "spark", desc: "Adds the class, length or format a request was missing. You choose whether to use it." },
   { name: "12 Indian languages", icon: "globe", desc: "Ask and get answers in Hindi, Tamil, Bengali and more." },
   { name: "Voice", icon: "mic", desc: "Speak a request; hear any answer read aloud.", beta: true },
 ];
@@ -84,6 +82,7 @@ export const COMING = ["Narrated lessons and short videos", "Student revision fr
 
 export const TIPS = {
   attach: "Add a PDF, Word file or deck. Vivran writes from it and cites its pages.",
+  improve: "Adds the details your request is missing. You see it before anything is sent.",
   source: "Answers come from this file first. Remove it to answer from general knowledge.",
   grounded: "Grounded: every fact is checked against your sources, and anything unsupported is flagged.",
   mic: "Speak instead of typing. Works in Chrome and Edge.",

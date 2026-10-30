@@ -3,23 +3,23 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  ArrowRight, Bookmark, BookmarkCheck, Check, ChevronDown, ChevronRight, Copy, FileText,
-  Presentation, Sparkles, Volume2, VolumeX, X,
+  AlertTriangle, ArrowRight, Bookmark, BookmarkCheck, Check, ChevronDown, ChevronRight, Copy, Cpu, FileText,
+  Presentation, RotateCcw, Sparkles, Volume2, VolumeX, X,
 } from "lucide-react";
 import { BrandMark } from "@/app/components/brand-mark";
+import type { ExampleResult } from "@/services/api";
 import { ACTIONS, ACTIONS_FOR, LEVELS, TIPS } from "../lib/config";
-import { EXPLANATIONS } from "../lib/content";
-import type { ActionId, Block, BotMsg, Source, TableData } from "../lib/types";
+import type { ActionId, Block, BotMsg, OutlineRow, RouteInfo, Source, TableData } from "../lib/types";
 import { Icon, Tip } from "./kit";
 
 /** **bold** and [S1] citations, nothing else. */
 export function Rich({ text, onCite }: { text: string; onCite?: (tag: string) => void }) {
-  const parts = text.split(/(\*\*[^*]+\*\*|\[S\d\])/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\[S\d+\])/g);
   return (
     <>
       {parts.map((p, i) => {
         if (p.startsWith("**")) return <strong key={i} className="font-semibold text-foreground">{p.slice(2, -2)}</strong>;
-        const m = p.match(/^\[(S\d)\]$/);
+        const m = p.match(/^\[(S\d+)\]$/);
         if (m) return (
           <button key={i} type="button" onClick={() => onCite?.(m[1])} aria-label={`Source ${m[1]}`}
             className="inline-flex items-center align-[1px] mx-0.5 px-1.5 h-[18px] rounded-full text-[10px] font-semibold bg-accent-soft text-accent border border-accent-line hover:bg-accent-soft-hi">{m[1]}</button>
@@ -47,9 +47,42 @@ function Elapsed({ from }: { from: number }) {
   return <>{Math.max(0, Math.floor((now - from) / 1000))}s</>;
 }
 
-export function Thinking({ m }: { m: BotMsg }) {
+const LANE: Record<RouteInfo["intelligence"], string> = { rules: "Rules", slm: "SLM", llm: "LLM", media: "Media" };
+
+/** Internal: which intelligence ran each task. Shown only with "Show routing" on. */
+function Routes({ routes }: { routes: RouteInfo[] }) {
+  return (
+    <div className="basis-full flex flex-wrap gap-1.5">
+      {routes.map((r, i) => {
+        const ran = r.ran_on ? `${r.ran_on.model} (${r.ran_on.provider})` : r.model ? `${r.model}${r.provider && r.provider !== "rules" ? ` (${r.provider})` : ""}` : r.pins ? "" : "no model";
+        return (
+          <Tip key={i} text={r.why} side="bottom">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-muted">
+              <Cpu className="w-3 h-3" />
+              <span className={`font-semibold ${r.intelligence === "llm" ? "text-accent" : r.intelligence === "slm" ? "text-success" : "text-foreground"}`}>{LANE[r.intelligence]}</span>
+              <span>{r.task}</span><span className="text-faint">→ {r.pipeline}{r.input !== "text" ? ` · ${r.input} in` : ""}</span>
+              {ran && <span className="text-faint">· {ran}</span>}
+              {r.pins && !r.ran_on && <span className="text-faint">· {Object.entries(r.pins).map(([k, v]) => `${k}: ${v}`).join(", ")}</span>}
+            </span>
+          </Tip>
+        );
+      })}
+    </div>
+  );
+}
+
+export function Thinking({ m, showRoute }: { m: BotMsg; showRoute?: boolean }) {
   const steps = m.run.steps;
   const [open, setOpen] = useState(false);
+  if (m.waiting) {
+    return (
+      <div className="mb-3 flex items-center gap-2.5 text-sm">
+        <BrandMark className="w-5 h-5 animate-pulse" />
+        <span className="font-medium text-foreground">{m.run.steps[0]?.label ?? "Working"}…</span>
+        <span className="text-faint tabular-nums"><Elapsed from={m.startedAt} /></span>
+      </div>
+    );
+  }
   if (m.live && m.step < steps.length) {
     const cur = steps[m.step];
     return (
@@ -79,12 +112,13 @@ export function Thinking({ m }: { m: BotMsg }) {
         <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full border border-border text-muted">{m.intent.label}</span>
       </Tip>
       {m.derived && <span className="text-[11.5px] text-faint italic">{m.derived}</span>}
+      {showRoute && !!m.routes?.length && <Routes routes={m.routes} />}
       <AnimatePresence initial={false}>
         {open && (
           <motion.ol initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
             className="basis-full overflow-hidden ml-1.5 pl-4 border-l-2 border-border space-y-2">
             {steps.slice(0, m.step).map((s) => (
-              <li key={s.label} className="text-[13px]">
+              <li key={`${s.label}-${s.detail}`} className="text-[13px]">
                 <span className="inline-flex items-center gap-1.5 font-medium text-foreground"><Check className="w-3.5 h-3.5 text-success" />{s.label}</span>
                 <p className="text-muted italic mt-0.5">{s.detail}</p>
               </li>
@@ -145,7 +179,7 @@ function Ask({ b, locked, onAnswer }: { b: Extract<Block, { t: "ask" }>; locked:
   );
 }
 
-function Outline({ b, locked, onApprove }: { b: Extract<Block, { t: "outline" }>; locked: boolean; onApprove: () => void }) {
+function Outline({ b, locked, onApprove }: { b: Extract<Block, { t: "outline" }>; locked: boolean; onApprove: (slides: OutlineRow[]) => void }) {
   const [slides, setSlides] = useState(b.slides);
   return (
     <div className="rounded-2xl border border-border bg-surface overflow-hidden">
@@ -155,12 +189,15 @@ function Outline({ b, locked, onApprove }: { b: Extract<Block, { t: "outline" }>
       </div>
       <ol className="divide-y divide-border">
         {slides.map((s, i) => (
-          <li key={i} className="flex items-center gap-3 px-4 sm:px-5 py-2.5 group">
-            <span className="w-5 text-[12px] text-faint tabular-nums">{i + 1}</span>
-            <span className="hidden sm:inline-flex shrink-0 text-[10.5px] px-2 py-0.5 rounded-full border border-border text-muted">{s.move}</span>
-            <input value={s.title} disabled={locked} aria-label={`Slide ${i + 1} title`}
-              onChange={(e) => setSlides(slides.map((x, k) => (k === i ? { ...x, title: e.target.value } : x)))}
-              className="flex-1 min-w-0 bg-transparent text-sm text-foreground outline-none rounded-lg px-1.5 py-1 focus:bg-card disabled:opacity-100" />
+          <li key={i} className="flex items-start gap-3 px-4 sm:px-5 py-2.5 group">
+            <span className="w-5 pt-1.5 text-[12px] text-faint tabular-nums">{i + 1}</span>
+            <span className="hidden sm:inline-flex shrink-0 mt-1 text-[10.5px] px-2 py-0.5 rounded-full border border-border text-muted capitalize">{s.move}</span>
+            <div className="flex-1 min-w-0">
+              <input value={s.title} disabled={locked} aria-label={`Slide ${i + 1} title`}
+                onChange={(e) => setSlides(slides.map((x, k) => (k === i ? { ...x, title: e.target.value } : x)))}
+                className="w-full bg-transparent text-sm text-foreground outline-none rounded-lg px-1.5 py-1 focus:bg-card disabled:opacity-100" />
+              {s.point && <p className="px-1.5 text-[12px] text-muted leading-snug">{s.point}</p>}
+            </div>
             {!locked && i > 0 && i < slides.length - 1 && (
               <button type="button" aria-label="Remove slide" onClick={() => setSlides(slides.filter((_, k) => k !== i))}
                 className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-1 rounded-full text-faint hover:text-foreground"><X className="w-3.5 h-3.5" /></button>
@@ -170,7 +207,7 @@ function Outline({ b, locked, onApprove }: { b: Extract<Block, { t: "outline" }>
       </ol>
       {!locked && (
         <div className="flex flex-wrap items-center gap-3 px-4 sm:px-5 py-3 border-t border-border">
-          <button type="button" onClick={onApprove} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-ink text-ink-fg text-sm font-semibold hover:opacity-90">Approve and write <ArrowRight className="w-4 h-4" /></button>
+          <button type="button" onClick={() => onApprove(slides)} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-ink text-ink-fg text-sm font-semibold hover:opacity-90">Approve and write <ArrowRight className="w-4 h-4" /></button>
           <span className="text-[12px] text-muted">Nothing is written until you approve.</span>
         </div>
       )}
@@ -182,16 +219,8 @@ function ArtifactCard({ b, onOpen }: { b: Extract<Block, { t: "artifact" }>; onO
   const deck = b.kind === "deck";
   return (
     <button type="button" onClick={onOpen} className="group w-full text-left flex items-center gap-4 rounded-2xl border border-border bg-surface p-3 pr-5 hover:border-border-hi hover:shadow-soft transition-all">
-      <div className="relative w-28 sm:w-36 aspect-video shrink-0 rounded-xl overflow-hidden border border-border bg-card">
-        {deck ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={`/landing/decks/${b.deck}/t01.jpg`} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div className="absolute inset-0 p-2.5 flex flex-col gap-1">
-            <div className="h-1.5 w-2/3 rounded bg-border-hi" /><div className="h-1 w-full rounded bg-border" /><div className="h-1 w-5/6 rounded bg-border" />
-            <div className="h-1 w-full rounded bg-border mt-1" /><div className="h-1 w-3/4 rounded bg-border" /><div className="h-1 w-4/5 rounded bg-border" />
-          </div>
-        )}
+      <div className="relative w-24 sm:w-32 aspect-video shrink-0 rounded-xl overflow-hidden border border-border bg-card grid place-items-center">
+        <span className="w-10 h-10 rounded-xl grid place-items-center bg-accent-soft text-accent">{deck ? <Presentation className="w-5 h-5" /> : <FileText className="w-5 h-5" />}</span>
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-accent">
@@ -212,7 +241,7 @@ function Sources({ items, focus }: { items: Source[]; focus: string | null }) {
     <div>
       <button type="button" onClick={() => setOpen(!open)} className="inline-flex items-center gap-2 text-[13px] text-muted hover:text-foreground">
         <span className="flex -space-x-1">{items.slice(0, 3).map((s) => <span key={s.tag} className="w-5 h-5 rounded-full grid place-items-center text-[9px] font-bold bg-accent-soft text-accent border-2 border-background">{s.tag}</span>)}</span>
-        {items.length} sources from your material {show ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+        {items.length} {items.length === 1 ? "source" : "sources"} from your material {show ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
       </button>
       <AnimatePresence initial={false}>
         {show && (
@@ -232,22 +261,47 @@ function Sources({ items, focus }: { items: Source[]; focus: string | null }) {
   );
 }
 
-function Explain({ topic }: { topic: string }) {
-  const x = EXPLANATIONS[topic];
-  if (!x) return null;
+function Example({ x }: { x: ExampleResult }) {
+  const [show, setShow] = useState<number | null>(null);
+  const an = x.analogy;
+  if (!an) return null;
   const row = (k: string, v: React.ReactNode) => (
-    <div className="grid grid-cols-1 sm:grid-cols-[110px_1fr] gap-1 sm:gap-3 py-3 border-t border-border first:border-t-0 first:pt-0">
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-1 sm:gap-3 py-3 border-t border-border first:border-t-0 first:pt-0">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-faint pt-0.5">{k}</span>
       <div className="text-sm text-foreground leading-relaxed">{v}</div>
     </div>
   );
+  const w = an.worked_example;
   return (
     <div className="rounded-2xl border border-border bg-surface p-4 sm:p-5">
-      {row("The idea", x.idea)}
-      {row("Like…", x.like)}
-      {row("Maps to", <div className="flex flex-wrap gap-1.5">{x.maps.map(([a, b]) => <span key={a} className="text-[12px] px-2.5 py-1 rounded-full border border-border bg-card">{a} <span className="text-faint">→</span> <strong className="font-semibold">{b}</strong></span>)}</div>)}
-      {row("Where it breaks", <span className="text-muted">{x.breaks}</span>)}
-      {row("Check", <ol className="list-decimal ml-4 space-y-1">{x.check.map((c) => <li key={c}>{c}</li>)}</ol>)}
+      {x.concept?.one_line && row("The idea", x.concept.one_line)}
+      {row(an.setting ? `Like… ${an.setting}` : "Like…", an.story)}
+      {!!an.mapping.length && row("Maps to", <div className="flex flex-wrap gap-1.5">{an.mapping.map((m) => <span key={m.term} className="text-[12px] px-2.5 py-1 rounded-full border border-border bg-card">{m.in_story} <span className="text-faint">→</span> <strong className="font-semibold">{m.term}</strong></span>)}</div>)}
+      {w && row("Worked example", (
+        <div>
+          <div className="font-medium">{w.title}</div>
+          <ol className="mt-1 space-y-0.5 text-[13px]">{w.steps.map((st) => <li key={st.name}>{st.label}: <span className="text-muted">{st.expr}</span> = <strong className="font-semibold">{st.value.toLocaleString("en-IN")}</strong></li>)}</ol>
+          <div className="mt-1 text-[13px]">{w.result.label}: <strong className="font-semibold">{w.result.value.toLocaleString("en-IN")}</strong></div>
+        </div>
+      ))}
+      {!!an.where_it_breaks.length && row("Where it breaks", <ul className="text-muted space-y-1">{an.where_it_breaks.map((t) => <li key={t}>{t}</li>)}</ul>)}
+      {an.common_mistake && row("Watch for", <span className="text-muted">{an.common_mistake}</span>)}
+      {!!an.check.length && row("Check", (
+        <ol className="list-decimal ml-4 space-y-1">{an.check.map((c, i) => (
+          <li key={c.q}>{c.q} <button type="button" onClick={() => setShow(show === i ? null : i)} className="ml-1 text-[12px] font-semibold text-accent">{show === i ? "Hide" : "Answer"}</button>
+            {show === i && <div className="text-[13px] text-muted">{c.a}</div>}</li>
+        ))}</ol>
+      ))}
+    </div>
+  );
+}
+
+function Notice({ b, onRetry }: { b: Extract<Block, { t: "notice" }>; onRetry: (t: string) => void }) {
+  return (
+    <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${b.tone === "error" ? "border-danger-line bg-danger-soft" : "border-warning-line bg-warning-soft"}`}>
+      <AlertTriangle className={`w-4 h-4 mt-0.5 shrink-0 ${b.tone === "error" ? "text-danger" : "text-warning"}`} />
+      <div className="flex-1 text-foreground">{b.text}</div>
+      {b.retry && <button type="button" onClick={() => onRetry(b.retry!)} className="inline-flex items-center gap-1 shrink-0 text-[12.5px] font-semibold text-foreground hover:text-accent"><RotateCcw className="w-3.5 h-3.5" /> Try again</button>}
     </div>
   );
 }
@@ -271,7 +325,7 @@ export interface BlockHandlers {
   onSend: (text: string) => void;
   onChoices: (text: string, resume: string) => void;
   onAnswer: (answer: string) => void;
-  onApprove: (deck: string) => void;
+  onApprove: (ref: string, slides: OutlineRow[]) => void;
   onOpen: (b: Extract<Block, { t: "artifact" }>) => void;
 }
 
@@ -286,9 +340,10 @@ export function BlockView({ b, live, locked, focus, h }: { b: Block; live: boole
     );
     case "choices": return <Choices b={b} locked={locked} onSubmit={(t) => h.onChoices(t, b.resume)} />;
     case "ask": return <Ask b={b} locked={locked} onAnswer={h.onAnswer} />;
-    case "outline": return <Outline b={b} locked={locked} onApprove={() => h.onApprove(b.deck)} />;
+    case "outline": return <Outline b={b} locked={locked} onApprove={(slides) => h.onApprove(b.ref, slides)} />;
     case "artifact": return <ArtifactCard b={b} onOpen={() => h.onOpen(b)} />;
-    case "explain": return <Explain topic={b.topic} />;
+    case "example": return <Example x={b.data} />;
+    case "notice": return <Notice b={b} onRetry={h.onSend} />;
     case "bullets": return (
       <div>
         {b.title && <div className="text-[13px] font-semibold text-foreground mb-2">{b.title}</div>}
@@ -315,7 +370,7 @@ export function ActionBar({ m, saved, speaking, compact, onAction, onSpeak, onCo
   onAction: (a: ActionId) => void; onSpeak: () => void; onCopy: () => void; onSave: () => void;
 }) {
   const [copied, setCopied] = useState(false);
-  if (m.run.blocks.every((b) => b.t === "ask")) return null;
+  if (m.run.blocks.every((b) => b.t === "ask" || b.t === "notice")) return null;
   const askOnly = m.run.blocks.some((b) => b.t === "ask" || b.t === "choices" || b.t === "outline");
   const actions = askOnly || compact ? [] : ACTIONS_FOR[m.intent.intent].filter((a) => a !== "simplify" && a !== "elaborate");
   const lv = LEVELS[m.intent.intent];
@@ -327,7 +382,7 @@ export function ActionBar({ m, saved, speaking, compact, onAction, onSpeak, onCo
         <Tip text={copied ? "Copied" : TIPS.copy}><button type="button" aria-label="Copy" onClick={() => { onCopy(); setCopied(true); setTimeout(() => setCopied(false), 1400); }} className={icon}>{copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}</button></Tip>
         <Tip text={saved ? "Saved. Click to remove." : TIPS.save}><button type="button" aria-label={saved ? "Remove from saved" : "Save"} onClick={onSave} className={`${icon} ${saved ? "text-accent" : ""}`}>{saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}</button></Tip>
       </span>
-      {!askOnly && !compact && (
+      {!askOnly && !compact && m.intent.intent !== "slides" && (
         <div className="inline-flex rounded-full border border-border p-0.5">
           <Tip text="Easier words, shorter sentences"><button type="button" onClick={() => onAction("simplify")} className="px-3 py-1 rounded-full text-[12.5px] text-foreground/85 hover:bg-card">{lv?.simplify ?? "Simplify"}</button></Tip>
           <Tip text="More detail, for stronger students"><button type="button" onClick={() => onAction("elaborate")} className="px-3 py-1 rounded-full text-[12.5px] text-foreground/85 hover:bg-card">{lv?.elaborate ?? "Elaborate"}</button></Tip>

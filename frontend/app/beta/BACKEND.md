@@ -1,27 +1,41 @@
 # /beta → backend
 
-`/beta` runs entirely in the browser. `lib/api.ts` is the seam: each function below becomes one call, and the interface doesn't change.
+`/beta` signs in with the same account as the rest of the product (`layout.tsx`: login, referral gate, onboarding) and runs on the real backend. `lib/live.ts` is the seam.
 
-| Service | Function now | Endpoint | Notes |
-|---|---|---|---|
-| Prompt Manager | `getConfig()` | `GET /api/chat/config` | Prompt cards, starters, collections. Move `lib/config.ts` into a config table or JSON served by FastAPI. |
-| Prompt Manager | `starterPrompt(id, input)` | inside `POST /api/chat/messages` | Send `{starter_id, input}`; the server owns each template / system instruction. |
-| Intent Classifier | `classify()` (`lib/intent.ts`) | `POST /api/chat/intent`, or step 1 of `/messages` | Rules first, as now and as in `lib/slidekit/intent.ts`; an SLM call with JSON output only for what the rules leave as `general`. Returns `{intent, confidence, entities, ask?}`. |
-| Ambiguity | `ask` + `pending` | `/messages` returns `{needs_clarification: true, question, options, pending_id}` | Store the pending request server-side; the next message carries `pending_id` and resumes it (`resume()`). |
-| Response Processor | `respond()` | `POST /api/chat/messages` | Routes the intent into the existing generators (`app/generation/*`). Stream steps + blocks over SSE so the thinking trail is real. |
-| Quick actions | `transform(msg, action)` | `POST /api/chat/messages/:id/actions {action}` | One prompt template per action (summarise, further, examples, bullets, table, simplify, elaborate), given the original answer and recent context. |
-| Conversations | `conversations.*` | `GET/POST/PATCH/DELETE /api/conversations[/:id]` | Title from the first resolved request (`titleFor`), editable (`title_edited`). |
-| Folders | `folders.*` | `GET/POST/PATCH/DELETE /api/folders[/:id]` | |
-| Saved | `saved.*` | `GET/POST/PATCH/DELETE /api/saved[/:id]` | Table below. |
-| Search | `search(q, filters)` | `GET /api/conversations/search?q=&folder=&since=` | Postgres full-text over titles + message text; embeddings later (pgvector is already set up for sources). |
-| Onboarding | `onboarding.*` | `PATCH /api/profile {onboarding_completed}` | Column on the user profile. |
-| Voice | `lib/voice.ts` | `POST /api/voice/stt`, `POST /api/voice/tts` | Browser speech now (free). Server: ElevenLabs/Cartesia already in `app/media/`. |
-| Library | `library(convs, saved)` (`lib/memory.ts`) | `GET /api/library` | Already exists in the real app (`listLibrary`). Each chat that produced something should write a library row and link back to its conversation. |
-| My sources | `SOURCE_FILES` | `GET /api/sources`, `POST /api/sources` | The real app's materials endpoints: facts passages and style learned per file. |
-| Teaching memory | `PATTERNS`, `memoryGraph()` | `GET /api/memory/graph` | Return `{nodes, edges}` built from classes, topics, sources, library items and accepted patterns. Topic matching is regex now; server side it should use the topics the generator already extracts. `PATCH /api/memory/patterns/:id {status}` for Use it / Not me. |
-| Obsidian export | `obsidianVault()` + `zip()` | none (client side) | One note per node with `[[wikilinks]]` and a `.obsidian/graph.json` colouring each kind. A live sync would need an Obsidian plugin or its Local REST API; the export needs neither. |
+## The route a request takes
 
-## Tables (draft for a migration)
+Every message goes to `POST /api/chat/route` first. It reads the request with keyword rules and asks the small model only when no rule matches. It returns the intent, what the request names (topic, two items, class, marks), a question if a detail is missing, and the **route**: which intelligence the task belongs to and which pipeline runs it. The table lives in `backend/app/ai/task_router.py`.
+
+| Intelligence | Runs on | Tasks |
+|---|---|---|
+| Rules | no model | reading the request, spotting a missing detail, chat titles |
+| SLM | `settings.slm_model` (Gemini flash-lite) | the classifier fallback, *Improve my request*, greetings, rewrites of an answer the teacher already has (summarise, bullets, table, simplify) |
+| LLM | `settings.llm_model` (gpt-oss-120b on Groq), with Gemini authoring as fallback | explain, compare, summarise a document, ideas, analysis, open questions, and *explain further / examples / elaborate* |
+| Pipelines (LLM, own pins) | deck: planner + authoring model; paper: `settings.assessment_model` | slides, exam papers, worksheets, unit plans |
+| Media | browser speech first; Cartesia / ElevenLabs | voice in, read aloud |
+
+The rule that splits SLM from LLM: if a wrong answer would be a *new* wrong fact, it is LLM work. Text in an Indic script never goes to the SLM (`app/ai/language.py`). Settings → *Show routing* shows the route on each answer, for checking. Teachers never see it otherwise.
+
+## What each piece calls
+
+| In the chat | Function | Endpoint |
+|---|---|---|
+| Read and route | `respond()` | `POST /api/chat/route` |
+| Compare, summarise, ideas, analyse, general | `answer()` | `POST /api/chat/answer` (grounded via retrieval, cited `[S#]`, invented tags removed) |
+| Explain | `explain()` | `POST /api/examples` |
+| Slides | `planDeck()` → `writeDeck()` | `POST /api/deck/outline` → `POST /api/deck` (Next routes, slidekit) |
+| Exam paper | `setUpPaper()` → `writePaper()` | `GET /api/memory/usual`, `POST /api/assessments/generate`, `POST /api/assessments/export/pdf` |
+| Worksheet | `worksheet()` | `POST /api/content/worksheet` |
+| Unit plan | `plan()` | `POST /api/projects` |
+| Quick actions | `transform()` | `POST /api/chat/transform`; a paper's *easier / harder* writes the paper again at that level |
+| Improve my request | `improve()` | `POST /api/chat/improve` |
+| Library | `LibraryView`, `runFromLibrary()` | `GET /api/library` (now with `meta`: grade, subject, topic), `GET /api/library/:id` |
+| My sources | `SourcesView`, `AddSourceDialog` | `GET/POST/DELETE /api/sources` |
+| Teaching memory | `MemoryView` | `GET /api/library`, `GET /api/sources`, `GET /api/memory`, `POST /api/memory/traits/:id` |
+
+## Still in the browser
+
+Conversations, folders, saved answers and the two preferences (read aloud, show routing) are kept in `localStorage`, one store per account (`lib/api.ts`). Everything Vivran *makes* is already saved server-side in the Library. To move chats to the server:
 
 ```sql
 create table conversations (
@@ -36,7 +50,7 @@ create table chat_messages (
   id uuid primary key default gen_random_uuid(),
   conversation_id uuid not null references conversations(id) on delete cascade,
   role text not null check (role in ('user','assistant')),
-  content jsonb not null,            -- text, or the assistant's steps + blocks
+  content jsonb not null,            -- text, or the assistant's steps + blocks + routes
   intent text, derived_from uuid references chat_messages(id),
   created_at timestamptz not null default now(),
   search tsvector generated always as (to_tsvector('simple', content::text)) stored
@@ -49,6 +63,5 @@ create table saved_responses (
   collection text not null default 'Lessons', note text not null default '',
   saved_at timestamptz not null default now(), unique (user_id, message_id)
 );
-alter table profiles add column onboarding_completed boolean not null default false;
 ```
 Every table gets workspace/user RLS like migration 0002.

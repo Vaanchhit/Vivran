@@ -586,6 +586,8 @@ export interface LibraryEntry {
   status?: string;
   created_at?: string;
   updated_at?: string;
+  /** What the item is about, from the parameters it was made with. */
+  meta?: { grade?: string; subject?: string; topic?: string; topics?: string[]; concept?: string };
 }
 
 /** A saved item: `content` is the result exactly as the generator returned it. */
@@ -820,3 +822,55 @@ export async function generateVideo(prompt: string, aspectRatio: string = "16:9"
     duration_secs: durationSecs,
   });
 }
+// ---------------------------------------------------------------------------
+// Chat (backend app/api/chat.py): each request is read, then routed by task to
+// rules, the small model, the large model or an existing generator.
+// ---------------------------------------------------------------------------
+
+export interface ChatRoute {
+  task: string;
+  intelligence: "rules" | "slm" | "llm" | "media";
+  pipeline: string;
+  input: string;
+  output: string;
+  why: string;
+  model?: string | null;
+  provider?: string;
+  fallback?: string;
+  pins?: Record<string, string>;
+  ran_on?: { model: string; provider: string };
+  also_used?: { task: string; model: string; provider: string }[];
+}
+
+export interface ChatRead {
+  intent: string;
+  label: string;
+  confidence: number;
+  entities: { topic: string | null; items: string[]; grade: string | null; subject: string | null; marks: number | null; doc: boolean; difficulty: string };
+  ask: { question: string; options: string[]; field: string; placeholder: string } | null;
+  task: string;
+  route: ChatRoute;
+}
+
+export type ChatBlock =
+  | { t: "text"; text: string }
+  | { t: "bullets"; title?: string | null; items: string[] }
+  | { t: "table"; data: { columns: string[]; rows: string[][]; caption?: string | null } };
+
+export interface ChatSource { chunk_id: string; tag?: string; source_material?: string | null; page_number?: number | null; chapter?: string | null; excerpt: string }
+
+export interface ChatAnswer { blocks: ChatBlock[]; followups: string[]; sources: ChatSource[]; grounded_on: number; route: ChatRoute }
+
+type Turn = { role: "user" | "assistant"; text: string };
+
+export const chatRoute = (body: { text: string; forced_intent?: string; has_source?: boolean; modality?: "text" | "voice" | "document" }): Promise<ChatRead> =>
+  request("POST", "/chat/route", body);
+
+export const chatAnswer = (body: { task: string; text: string; history?: Turn[]; material_id?: string; grade?: string; subject?: string; pasted?: string }): Promise<ChatAnswer> =>
+  request("POST", "/chat/answer", body);
+
+export const chatTransform = (body: { action: string; answer: string; request?: string; history?: Turn[] }): Promise<{ blocks: ChatBlock[]; followups: string[]; route: ChatRoute }> =>
+  request("POST", "/chat/transform", body);
+
+export const chatImprove = (body: { text: string; intent?: string; grade?: string; subject?: string }): Promise<{ improved: string; added: string[]; changed: boolean; route: ChatRoute }> =>
+  request("POST", "/chat/improve", body);

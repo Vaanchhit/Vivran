@@ -1,4 +1,5 @@
-// Shapes shared by the beta chat's interface and its service layer (api.ts).
+// Shapes shared by the beta chat's interface and its service layer (api.ts, live.ts).
+import type { ExampleResult } from "@/services/api";
 
 export type Intent =
   | "explain" | "summarise" | "compare" | "slides" | "paper" | "worksheet"
@@ -10,6 +11,24 @@ export interface Step { label: string; detail: string; ms: number }
 
 export interface Source { tag: string; file: string; where: string; quote: string }
 
+/** Which intelligence ran a task (backend app/ai/task_router.py). Internal: shown only with routing switched on. */
+export interface RouteInfo {
+  task: string;
+  intelligence: "rules" | "slm" | "llm" | "media";
+  pipeline: string;
+  input: string;
+  output: string;
+  why: string;
+  model?: string | null;
+  provider?: string;
+  fallback?: string;
+  pins?: Record<string, string>;
+  ran_on?: { model: string; provider: string };
+  also_used?: { task: string; model: string; provider: string }[];
+}
+
+export type ArtifactKind = "deck" | "paper";
+
 export interface TableData { columns: string[]; rows: string[][]; caption?: string }
 
 export type Block =
@@ -17,37 +36,30 @@ export type Block =
   | { t: "memory"; text: string; why: string }
   | { t: "choices"; questions: { q: string; options: string[] }[]; submit: string; resume: string }
   | { t: "ask"; question: string; options: string[]; field: string; placeholder: string }
-  | { t: "outline"; deck: string; slides: { move: string; title: string }[] }
-  | { t: "artifact"; kind: "deck" | "paper"; deck?: string; title: string; meta: string }
-  | { t: "explain"; topic: string }
+  | { t: "outline"; ref: string; slides: OutlineRow[] }
+  | { t: "artifact"; kind: ArtifactKind; ref: string; libraryId?: string; title: string; meta: string }
+  | { t: "example"; data: ExampleResult }
+  | { t: "notice"; tone: "warn" | "error"; text: string; retry?: string }
   | { t: "bullets"; title?: string; items: string[] }
   | { t: "table"; data: TableData }
   | { t: "sources"; items: Source[] }
   | { t: "followups"; items: string[] };
 
-/** What a response can be reshaped into by the quick actions. */
-export interface Digest {
-  summary: string[];
-  simple: string;
-  more: string[];
-  examples: string[];
-  table: TableData;
-}
+export interface OutlineRow { type: string; move: string; title: string; point: string }
 
 export interface Run {
   steps: Step[];
   blocks: Block[];
-  digest?: Digest;
 }
 
 export interface IntentResult {
   intent: Intent;
   label: string;          // shown on the response ("Comparison")
   confidence: number;     // 0..1, from the rules that matched
-  entities: { topic?: string; items?: string[]; doc?: string; deck?: string; grade?: string };
+  entities: { topic?: string | null; items?: string[]; doc?: boolean; grade?: string | null; subject?: string | null; marks?: number | null; difficulty?: string };
 }
 
-export interface UserMsg { id: string; role: "user"; text: string; starter?: string }
+export interface UserMsg { id: string; role: "user"; text: string; starter?: string; voice?: boolean }
 export interface BotMsg {
   id: string; role: "assistant";
   run: Run; intent: IntentResult;
@@ -55,11 +67,14 @@ export interface BotMsg {
   startedAt: number; tookMs?: number;
   derived?: string;       // "Simplified from the answer above"
   pending?: Pending;      // a question waiting on a missing detail
+  waiting?: boolean;      // the request is still with the backend
+  request?: string;       // what was asked, for quick actions on this answer
+  routes?: RouteInfo[];   // every task this answer ran, in order
 }
 export type Msg = UserMsg | BotMsg;
 
 /** A request put on hold while Vivran asks for the missing detail. */
-export interface Pending { text: string; intent: Intent; field: string; starter?: string }
+export interface Pending { text: string; intent: Intent; field: string; starter?: string; ref?: string }
 
 export interface Conversation {
   id: string; title: string; titleEdited?: boolean;
