@@ -16,6 +16,10 @@
 | Search | `search(q, filters)` | `GET /api/conversations/search?q=&folder=&since=` | Postgres full-text over titles + message text; embeddings later (pgvector is already set up for sources). |
 | Onboarding | `onboarding.*` | `PATCH /api/profile {onboarding_completed}` | Column on the user profile. |
 | Voice | `lib/voice.ts` | `POST /api/voice/stt`, `POST /api/voice/tts` | Browser speech now (free). Server: ElevenLabs/Cartesia already in `app/media/`. |
+| Library | `library(convs, saved)` (`lib/memory.ts`) | `GET /api/library` | Already exists in the real app (`listLibrary`). Each chat that produced something should write a library row and link back to its conversation. |
+| My sources | `SOURCE_FILES` | `GET /api/sources`, `POST /api/sources` | The real app's materials endpoints: facts passages and style learned per file. |
+| Teaching memory | `PATTERNS`, `memoryGraph()` | `GET /api/memory/graph` | Return `{nodes, edges}` built from classes, topics, sources, library items and accepted patterns. Topic matching is regex now; server side it should use the topics the generator already extracts. `PATCH /api/memory/patterns/:id {status}` for Use it / Not me. |
+| Obsidian export | `obsidianVault()` + `zip()` | none (client side) | One note per node with `[[wikilinks]]` and a `.obsidian/graph.json` colouring each kind. A live sync would need an Obsidian plugin or its Local REST API; the export needs neither. |
 
 ## Tables (draft for a migration)
 

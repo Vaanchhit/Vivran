@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Bookmark, Brain, ChevronDown, ChevronRight, FolderClosed, FolderOpen, FolderPlus, HelpCircle, LayoutGrid,
+  Bookmark, Brain, ChevronDown, ChevronRight, FolderClosed, FolderOpen, FolderPlus, HelpCircle, LayoutGrid, Library,
   MoreHorizontal, PanelLeft, Pencil, Pin, PinOff, RotateCcw, Search, Settings, SquarePen, Trash2, X,
 } from "lucide-react";
 import { BrandMark } from "@/app/components/brand-mark";
@@ -18,7 +18,7 @@ export interface SidebarProps {
   query: string; since: Since; folderFilter: string | null;
   autoRead: boolean;
   onQuery: (q: string) => void; onSince: (s: Since) => void; onFolderFilter: (id: string | null) => void;
-  onNew: () => void; onOpen: (id: string) => void; onView: (v: "features" | "saved") => void; onCollapse: () => void;
+  onNew: () => void; onOpen: (id: string) => void; onView: (v: "features" | "saved" | "library" | "sources" | "memory") => void; onCollapse: () => void;
   onRename: (id: string, title: string) => void; onPin: (id: string) => void; onMove: (id: string, folderId: string | null) => void; onDelete: (id: string) => void;
   onFolderCreate: (name: string) => void; onFolderRename: (id: string, name: string) => void; onFolderDelete: (id: string) => void;
   onTour: () => void; onReset: () => void; onAutoRead: (v: boolean) => void;
@@ -112,11 +112,13 @@ export function Sidebar(p: SidebarProps) {
       </div>
       <nav className="px-2 space-y-0.5 shrink-0">
         <button type="button" onClick={p.onNew} className={`${nav} text-foreground/85 hover:bg-card`}><SquarePen className="w-4 h-4 text-muted" /> New chat</button>
-        <button type="button" data-tour="features" onClick={() => p.onView("features")} className={`${nav} ${p.view === "features" ? "bg-card text-foreground font-medium" : "text-foreground/85 hover:bg-card"}`}><LayoutGrid className="w-4 h-4 text-muted" /> Explore features</button>
+        <button type="button" onClick={() => p.onView("library")} className={`${nav} ${p.view === "library" ? "bg-card text-foreground font-medium" : "text-foreground/85 hover:bg-card"}`}><Library className="w-4 h-4 text-muted" /> Library</button>
+        <button type="button" onClick={() => p.onView("sources")} className={`${nav} ${p.view === "sources" ? "bg-card text-foreground font-medium" : "text-foreground/85 hover:bg-card"}`}><FolderOpen className="w-4 h-4 text-muted" /> My sources</button>
+        <button type="button" onClick={() => p.onView("memory")} className={`${nav} ${p.view === "memory" ? "bg-card text-foreground font-medium" : "text-foreground/85 hover:bg-card"}`}><Brain className="w-4 h-4 text-muted" /> Teaching memory</button>
         <button type="button" data-tour="saved" onClick={() => p.onView("saved")} className={`${nav} ${p.view === "saved" ? "bg-card text-foreground font-medium" : "text-foreground/85 hover:bg-card"}`}>
           <Bookmark className="w-4 h-4 text-muted" /> Saved {p.savedCount > 0 && <span className="ml-auto text-[11px] text-faint">{p.savedCount}</span>}
         </button>
-        <button type="button" className={`${nav} text-foreground/85 hover:bg-card`}><Brain className="w-4 h-4 text-muted" /> Teaching memory</button>
+        <button type="button" data-tour="features" onClick={() => p.onView("features")} className={`${nav} ${p.view === "features" ? "bg-card text-foreground font-medium" : "text-foreground/85 hover:bg-card"}`}><LayoutGrid className="w-4 h-4 text-muted" /> Explore features</button>
       </nav>
 
       <div className="mt-4 px-3 shrink-0" data-tour="search">

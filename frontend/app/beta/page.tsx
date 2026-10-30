@@ -4,7 +4,7 @@
 // scripted from sample content, conversations and bookmarks live in this
 // browser, and voice uses the browser's own speech services. lib/api.ts is
 // the seam where each piece becomes a backend call.
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
   ArrowRight, ArrowUp, BookOpen, Download, FileText, LayoutGrid, Menu, Mic, Moon, PanelLeft, Paperclip,
@@ -21,9 +21,11 @@ import { ActionBar, BlockView, Thinking } from "./ui/blocks";
 import { Icon, InfoTip, Tip, Walkthrough } from "./ui/kit";
 import { DeckPanel, FeaturesView, PaperPanel, SaveDialog, SavedView } from "./ui/panels";
 import { Sidebar, type Since } from "./ui/sidebar";
+import { LibraryView, MemoryView, SourcesView } from "./ui/workspace";
+import { library, type LibraryItem } from "./lib/memory";
 
 type Panel = { kind: "deck"; deck: string } | { kind: "paper" } | null;
-type View = "chat" | "features" | "saved";
+type View = "chat" | "features" | "saved" | "library" | "sources" | "memory";
 
 export default function BetaPage() {
   const { theme, toggleTheme } = useTheme();
@@ -171,6 +173,16 @@ export default function BetaPage() {
     else setSaveFor(m);
   };
   const empty = msgs.length === 0;
+  // The library and memory read every chat, not just the ones the sidebar search shows.
+  const items = useMemo(() => (ready ? library(api.conversations.list(), savedList) : []), [ready, convs, savedList]); // eslint-disable-line react-hooks/exhaustive-deps
+  const habits = useMemo(() => (ready ? api.conversations.list().flatMap((c) => c.messages.filter((m) => m.role === "user").map((m) => m.text)).filter((t) => t.length > 12 && !/^(approved|balanced|yes)/i.test(t)).slice(0, 8) : []), [ready, convs]); // eslint-disable-line react-hooks/exhaustive-deps
+  const openItem = (i: LibraryItem) => {
+    if (i.conversationId) { openConv(i.conversationId); if (i.deck) setPanel({ kind: "deck", deck: i.deck }); return; }
+    fresh();
+    if (i.deck) setTimeout(() => setPanel({ kind: "deck", deck: i.deck! }), 0);
+    else if (i.prompt) setTimeout(() => send(i.prompt!), 60);
+  };
+  const useSource = (name: string) => { setSource(name); fresh(); };
 
   const sidebar = (
     <Sidebar
@@ -264,7 +276,7 @@ export default function BetaPage() {
           </div>
           <p className="text-center text-[14px] text-muted mb-7">Good to see you, Ms. Rao. Your Unit 4 chapter is ready to use.</p>
           {composer}
-          <div data-tour="cards" className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div data-tour="cards" className={`mt-6 grid grid-cols-1 gap-2.5 ${panel ? "" : "sm:grid-cols-2"}`}>
             {config.cards.map((c, i) => {
               const st = config.starters.find((x) => x.id === c.starter);
               const on = !!st && starter?.id === st.id;
@@ -393,6 +405,12 @@ export default function BetaPage() {
                 onRemove={(s) => { api.saved.remove(s.messageId); refresh(); }}
                 onUpdate={(s, patch) => { api.saved.update(s.id, patch); refresh(); }} />
             </div>
+          ) : view === "library" ? (
+            <div key="library" className="flex-1 overflow-y-auto"><LibraryView items={items} onOpen={openItem} /></div>
+          ) : view === "sources" ? (
+            <div key="sources" className="flex-1 overflow-y-auto"><SourcesView active={source} habits={habits} onUse={useSource} /></div>
+          ) : view === "memory" ? (
+            <div key="memory" className="flex-1 overflow-y-auto"><MemoryView items={items} theme={theme === "dark" ? "dark" : "light"} onOpenItem={openItem} onUseSource={useSource} /></div>
           ) : empty ? welcome : thread}
         </main>
 
