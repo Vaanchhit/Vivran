@@ -8,7 +8,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
 import {
   ArrowRight, ArrowUp, BookOpen, Download, FileText, LayoutGrid, Menu, Mic, Moon, PanelLeft, Paperclip,
-  Presentation, Share2, Square, SquarePen, Sun, X,
+  ArrowUpRight, Presentation, Share2, Square, SquarePen, Sun, X,
 } from "lucide-react";
 import { BrandMark } from "@/app/components/brand-mark";
 import { useTheme } from "@/lib/theme-context";
@@ -264,31 +264,36 @@ export default function BetaPage() {
           </div>
           <p className="text-center text-[14px] text-muted mb-7">Good to see you, Ms. Rao. Your Unit 4 chapter is ready to use.</p>
           {composer}
-          <div data-tour="starters" className="mt-4 flex flex-wrap justify-center gap-2">
-            {config.starters.map((s) => (
-              <button key={s.id} type="button" onClick={() => { setStarter(starter?.id === s.id ? null : s); box.current?.focus(); }}
-                className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border text-[13px] transition-colors ${starter?.id === s.id ? "bg-ink text-ink-fg border-transparent" : "border-border bg-surface text-foreground/85 hover:border-border-hi hover:text-foreground"}`}>
-                <Icon name={s.icon} className={`w-3.5 h-3.5 ${starter?.id === s.id ? "" : "text-accent"}`} />{s.label}
-              </button>
-            ))}
-          </div>
-          <div data-tour="cards" className="mt-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {config.cards.map((c, i) => (
-              <motion.div key={c.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 * i }}
-                className="group relative rounded-2xl border border-border bg-surface p-4 hover:border-border-hi hover:shadow-soft transition-all">
-                <button type="button" onClick={() => send(c.prompt)} className="text-left w-full">
-                  <span className="w-8 h-8 rounded-xl grid place-items-center bg-accent-soft text-accent"><Icon name={c.icon} className="w-4 h-4" /></span>
-                  <div className="mt-3 font-semibold text-[14.5px] text-foreground">{c.title}</div>
-                  <p className="mt-1 text-[12.5px] text-muted leading-snug">{c.description}</p>
-                  <p className="mt-2.5 text-[12px] text-faint italic truncate">&ldquo;{c.prompt}&rdquo;</p>
-                </button>
-                <span className="absolute top-3 right-3">
-                  <Tip text="Edit before sending">
-                    <button type="button" aria-label="Edit this prompt first" onClick={() => { setDraft(c.prompt); box.current?.focus(); }} className="p-1.5 rounded-lg text-faint opacity-0 group-hover:opacity-100 focus:opacity-100 hover:text-foreground hover:bg-card"><SquarePen className="w-3.5 h-3.5" /></button>
-                  </Tip>
-                </span>
-              </motion.div>
-            ))}
+          <div data-tour="cards" className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {config.cards.map((c, i) => {
+              const st = config.starters.find((x) => x.id === c.starter);
+              const on = !!st && starter?.id === st.id;
+              return (
+                <motion.div key={c.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.04 * i }}
+                  className={`min-w-0 rounded-2xl border bg-surface p-3.5 transition-colors ${on ? "border-accent-line" : "border-border hover:border-border-hi"}`}>
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 w-7 h-7 shrink-0 rounded-lg grid place-items-center bg-accent-soft text-accent"><Icon name={c.icon} className="w-3.5 h-3.5" /></span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="font-semibold text-[14px] text-foreground">{c.title}</span>
+                        <span className="text-[11px] text-faint whitespace-nowrap">{c.output}</span>
+                      </div>
+                      <p className="mt-0.5 text-[12.5px] text-muted leading-snug">{c.description}</p>
+                      <div className="mt-2.5 flex items-center gap-1.5">
+                        <button type="button" onClick={() => send(c.prompt)} title="Run this example"
+                          className="min-w-0 flex-1 inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-left text-[12px] italic text-foreground/75 hover:text-foreground hover:bg-accent-soft transition-colors">
+                          <ArrowUpRight className="w-3.5 h-3.5 shrink-0 text-accent" /><span className="truncate">&ldquo;{c.prompt}&rdquo;</span>
+                        </button>
+                        {st && (
+                          <button type="button" onClick={() => { setStarter(on ? null : st); box.current?.focus(); }}
+                              className={`shrink-0 rounded-full border px-2.5 py-1.5 text-[12px] font-medium transition-colors ${on ? "bg-ink text-ink-fg border-transparent" : "border-border text-foreground/80 hover:text-foreground hover:border-border-hi"}`}>Your own</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
           <div className="mt-6 text-center">
             <button type="button" onClick={() => setView("features")} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-foreground hover:text-accent"><LayoutGrid className="w-4 h-4" /> See everything Vivran can do <ArrowRight className="w-3.5 h-3.5" /></button>

@@ -4,18 +4,22 @@
 // the backend without the interface changing.
 import type { ActionId, Intent, PromptCard, Starter } from "./types";
 
+// One card per task: the example sends as-is, and "Your own" opens the matching
+// starter so the teacher only fills in the gap.
 export const PROMPT_CARDS: PromptCard[] = [
-  { id: "deck", icon: "slides", title: "Slides for tomorrow", description: "A full lesson deck from your chapter, with a plan you approve first.", prompt: "Slides on the French Revolution for my Class 9, about 40 minutes" },
-  { id: "paper", icon: "paper", title: "A paper in your format", description: "Sections and marks the way you always set them.", prompt: "A 40-mark unit test on the French Revolution" },
-  { id: "explain", icon: "bulb", title: "Explain it simply", description: "An everyday analogy, and where it stops being true.", prompt: "Explain inflation simply for Class 9" },
-  { id: "compare", icon: "columns", title: "Compare two ideas", description: "A side-by-side table your students can copy.", prompt: "Compare Girondins and Jacobins" },
-  { id: "summary", icon: "doc", title: "Summarise my chapter", description: "Key points and terms, each linked to its page.", prompt: "Summarise this PDF" },
-  { id: "data", icon: "chart", title: "Read my class results", description: "Where each section is struggling, and what to do next.", prompt: "Analyse my class results from the last unit test" },
+  { id: "deck", icon: "slides", title: "Make slides", description: "A full lesson deck from your chapter, with a plan you approve first.", output: "PowerPoint · notes per slide", prompt: "Slides on the French Revolution for my Class 9, about 40 minutes", starter: "slides" },
+  { id: "paper", icon: "paper", title: "Set a paper", description: "Sections and marks the way you always set them.", output: "Paper + answer key", prompt: "A 40-mark unit test on the French Revolution", starter: "paper" },
+  { id: "explain", icon: "bulb", title: "Explain a concept", description: "An everyday analogy, and where it stops being true.", output: "Analogy · map · limits", prompt: "Explain inflation simply for Class 9", starter: "explain" },
+  { id: "compare", icon: "columns", title: "Compare two ideas", description: "A side-by-side table your students can copy.", output: "Table", prompt: "Compare Girondins and Jacobins", starter: "compare" },
+  { id: "summary", icon: "doc", title: "Summarise a document", description: "Key points and terms, each linked to its page.", output: "Points · cited pages", prompt: "Summarise this PDF", starter: "summarise" },
+  { id: "data", icon: "chart", title: "Read class results", description: "Where each section is struggling, and what to do next.", output: "By section · next steps", prompt: "Analyse my class results from the last unit test", starter: "analyse" },
 ];
 
 export const STARTERS: Starter[] = [
   { id: "explain", icon: "bulb", label: "Explain a concept", placeholder: "Which concept? e.g. compound interest", template: "Explain {input} simply for my class", intent: "explain" },
   { id: "summarise", icon: "doc", label: "Summarise a document", placeholder: "Which document? Leave blank to use the attached one", template: "Summarise {input}", intent: "summarise" },
+  { id: "compare", icon: "columns", label: "Compare two ideas", placeholder: "Which two? e.g. mitosis and meiosis", template: "Compare {input}", intent: "compare" },
+  { id: "paper", icon: "paper", label: "Set a paper", placeholder: "Which topic? e.g. the French Revolution", template: "A unit test on {input}", intent: "paper" },
   { id: "ideas", icon: "spark", label: "Generate ideas", placeholder: "Ideas for which topic or lesson?", template: "Give me lesson ideas for {input}", intent: "ideas" },
   { id: "analyse", icon: "chart", label: "Analyse data", placeholder: "Which results? e.g. last unit test", template: "Analyse {input}", intent: "analyse" },
   { id: "slides", icon: "slides", label: "Make slides", placeholder: "Which topic and class?", template: "Slides on {input}", intent: "slides" },
@@ -55,41 +59,28 @@ export const LEVELS: Partial<Record<Intent, { simplify: string; elaborate: strin
 export const COLLECTIONS = ["Lessons", "Assessment", "Research", "Ideas"];
 
 export type FeatureStatus = "Live" | "In beta" | "Coming next";
-export const FEATURES: { group: string; items: { name: string; desc: string; icon: string; status: FeatureStatus; try?: string }[] }[] = [
-  { group: "Plan", items: [
-    { name: "Course plans", desc: "A term, week by week, from your syllabus.", icon: "calendar", status: "Live", try: "Plan a unit on the French Revolution, 4 weeks" },
-    { name: "Lesson ideas", desc: "Openers, activities and exit tickets for any topic.", icon: "spark", status: "Live", try: "Give me lesson ideas for the French Revolution" },
-  ] },
-  { group: "Teach", items: [
-    { name: "Slides", desc: "26 lesson shapes, every slide fitted, PowerPoint export.", icon: "slides", status: "Live", try: "Slides on photosynthesis for Class 7" },
-    { name: "Worksheets", desc: "Activities and questions for the class to work on.", icon: "list", status: "Live", try: "A worksheet on the French Revolution" },
-    { name: "Lesson notes", desc: "What you'll say, slide by slide.", icon: "doc", status: "Live" },
-    { name: "Memes", desc: "One well-chosen meme, when you ask for it.", icon: "smile", status: "Live" },
-  ] },
-  { group: "Assess", items: [
-    { name: "Exam papers", desc: "Your sections and marks, exact to the total.", icon: "paper", status: "Live", try: "A 40-mark unit test on the French Revolution" },
-    { name: "Answer keys", desc: "Model answers and marking schemes.", icon: "check", status: "Live" },
-    { name: "Harder or easier", desc: "Change one question without redoing the paper.", icon: "up", status: "Live" },
-    { name: "Read class results", desc: "Where each section is struggling.", icon: "chart", status: "In beta", try: "Analyse my class results from the last unit test" },
-  ] },
-  { group: "Explain", items: [
-    { name: "Explain simply", desc: "An analogy, how it maps, and where it breaks.", icon: "bulb", status: "Live", try: "Explain compound interest simply" },
-    { name: "Compare", desc: "Side-by-side tables for two ideas.", icon: "columns", status: "In beta", try: "Compare mitosis and meiosis" },
-    { name: "Worked examples", desc: "The model writes the steps; code does the maths.", icon: "calc", status: "Live" },
-  ] },
-  { group: "Your material", items: [
-    { name: "My sources", desc: "PDFs, Word, PowerPoint and YouTube lectures.", icon: "folder", status: "Live", try: "Summarise this PDF" },
-    { name: "Cited to the page", desc: "Every fact links back to where it came from.", icon: "quote", status: "Live" },
-    { name: "Teaching memory", desc: "Learns your paper format from papers you've set.", icon: "brain", status: "Live" },
-  ] },
-  { group: "Reach", items: [
-    { name: "Voice", desc: "Speak your request; hear answers read aloud.", icon: "mic", status: "In beta" },
-    { name: "12 Indian languages", desc: "Write in Hindi, Tamil, Bengali and more.", icon: "globe", status: "Live" },
-    { name: "Narration and video", desc: "Lessons narrated, short explainer videos.", icon: "play", status: "Coming next" },
-    { name: "Student revision", desc: "Practice built from what was taught in class.", icon: "grad", status: "Coming next" },
-    { name: "Institution insights", desc: "Coverage and learning across sections.", icon: "building", status: "Coming next" },
-  ] },
+export interface Tool { name: string; icon: string; status: FeatureStatus; give: string; get: string; includes: string[]; try: string }
+
+/** The things Vivran makes. Smaller abilities live inside the tool they belong to. */
+export const TOOLS: Tool[] = [
+  { name: "Lesson slides", icon: "slides", status: "Live", give: "A topic or chapter, the class, how long", get: "A plan to approve, then a finished deck", includes: ["26 lesson shapes", "Every slide fitted", "Speaker notes", "PowerPoint export", "A meme, if you ask"], try: "Slides on photosynthesis for Class 7" },
+  { name: "Exam papers", icon: "paper", status: "Live", give: "Topic and total marks", get: "A paper in your section format, exact to the total", includes: ["Answer key", "Marking scheme", "Harder or easier, one question at a time"], try: "A 40-mark unit test on the French Revolution" },
+  { name: "Worksheets", icon: "list", status: "Live", give: "A topic", get: "Activities and questions for the class", includes: [], try: "A worksheet on the French Revolution" },
+  { name: "Plans and ideas", icon: "calendar", status: "Live", give: "A unit and the weeks you have", get: "A week-by-week plan, or ideas for one lesson", includes: ["From your syllabus", "Openers, activities, exit tickets"], try: "Plan a unit on the French Revolution, 4 weeks" },
+  { name: "Explanations", icon: "bulb", status: "Live", give: "A concept, or two to compare", get: "An analogy, how it maps, and where it breaks", includes: ["Side-by-side comparisons (beta)", "Worked examples, maths done by code"], try: "Explain compound interest simply" },
+  { name: "Summaries", icon: "doc", status: "Live", give: "A PDF, Word file, deck or YouTube lecture", get: "Key points and terms, each linked to its page", includes: [], try: "Summarise this PDF" },
+  { name: "Class results", icon: "chart", status: "In beta", give: "Marks from a test", get: "Where each section struggles, and what to reteach", includes: [], try: "Analyse my class results from the last unit test" },
 ];
+
+/** Not tools of their own: they apply to everything above. */
+export const BUILT_IN: { name: string; icon: string; desc: string; beta?: boolean }[] = [
+  { name: "Cited to the page", icon: "quote", desc: "Facts link back to your source, and unsupported ones are flagged." },
+  { name: "Teaching memory", icon: "brain", desc: "Learns your formats from work you've already set." },
+  { name: "12 Indian languages", icon: "globe", desc: "Ask and get answers in Hindi, Tamil, Bengali and more." },
+  { name: "Voice", icon: "mic", desc: "Speak a request; hear any answer read aloud.", beta: true },
+];
+
+export const COMING = ["Narrated lessons and short videos", "Student revision from what was taught", "Institution insights across sections"];
 
 export const TIPS = {
   attach: "Add a PDF, Word file or deck. Vivran writes from it and cites its pages.",
@@ -100,19 +91,17 @@ export const TIPS = {
   save: "Save to a collection, with a note",
   copy: "Copy the answer",
   intent: "What Vivran understood you wanted. It shapes the format and the actions offered.",
-  starters: "Pick a starter and just fill in the gap.",
   thinking: "What Vivran did, step by step.",
   search: "Searches titles and everything said in your chats.",
 };
 
 export const TOUR: { target: string; title: string; body: string }[] = [
   { target: "composer", title: "Ask in your own words", body: "Type what you're teaching. Vivran works out what you want, and asks if something's missing." },
-  { target: "cards", title: "Not sure where to start?", body: "Tap a card to see what Vivran can do with one click." },
-  { target: "starters", title: "Or pick a starter", body: "Choose a task, then just fill in the gap." },
+  { target: "cards", title: "Not sure where to start?", body: "Tap an example to run it, or Your own to fill in just the topic." },
   { target: "source", title: "Your material, first", body: "Attach a chapter or paper. Answers cite its pages." },
   { target: "mic", title: "Talk instead", body: "Tap the mic and speak. Answers can be read aloud too." },
   { target: "search", title: "Find any chat", body: "Search, pin, rename and file chats into folders." },
   { target: "saved", title: "Keep what's useful", body: "Bookmark any answer into a collection, with a note." },
-  { target: "features", title: "See everything", body: "Every Vivran feature, with a one-tap way to try it." },
+  { target: "features", title: "See everything", body: "Every tool, what it needs and what you get back." },
   { target: "help", title: "Replay anytime", body: "This tour lives here if you want it again." },
 ];

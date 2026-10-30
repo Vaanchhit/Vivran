@@ -76,5 +76,5 @@ export interface Saved {
   title: string; excerpt: string; intent: Intent;
 }
 
-export interface PromptCard { id: string; icon: string; title: string; description: string; prompt: string }
+export interface PromptCard { id: string; icon: string; title: string; description: string; output: string; prompt: string; starter: string }
 export interface Starter { id: string; icon: string; label: string; placeholder: string; template: string; intent: Intent }

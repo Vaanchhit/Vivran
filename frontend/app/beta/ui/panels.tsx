@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertTriangle, ArrowLeft, ArrowRight, Bookmark, Search, Trash2, X } from "lucide-react";
-import { FEATURES, type FeatureStatus } from "../lib/config";
+import { BUILT_IN, COMING, TOOLS, type FeatureStatus } from "../lib/config";
 import { DECKS, PAPER } from "../lib/content";
 import type { Saved } from "../lib/types";
 import { Icon } from "./kit";
@@ -103,44 +103,58 @@ const STATUS: Record<FeatureStatus, string> = {
 };
 
 export function FeaturesView({ onTry, onClose }: { onTry: (prompt: string) => void; onClose: () => void }) {
-  const [filter, setFilter] = useState<"All" | FeatureStatus>("All");
-  const groups = FEATURES.map((g) => ({ ...g, items: g.items.filter((f) => filter === "All" || f.status === filter) })).filter((g) => g.items.length);
-  const count = FEATURES.reduce((a, g) => a + g.items.length, 0);
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">Everything Vivran can do</h2>
-          <p className="mt-1 text-sm text-muted">{count} features. Tap <strong className="font-semibold text-foreground">Try it</strong> to see one in a new chat.</p>
-        </div>
-        <div className="inline-flex rounded-full border border-border p-1 bg-surface">
-          {(["All", "Live", "In beta", "Coming next"] as const).map((f) => (
-            <button key={f} type="button" onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-[12.5px] font-medium transition-colors ${filter === f ? "bg-ink text-ink-fg" : "text-muted hover:text-foreground"}`}>{f}</button>
-          ))}
-        </div>
-      </div>
-      <div className="mt-8 space-y-8">
-        {groups.map((g) => (
-          <section key={g.group}>
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">{g.group}</h3>
-            <div className="mt-3 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {g.items.map((f, i) => (
-                <motion.div key={f.name} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                  className="group flex flex-col rounded-2xl border border-border bg-surface p-4 hover:border-border-hi hover:shadow-soft transition-all">
-                  <div className="flex items-start justify-between gap-3">
-                    <span className="w-9 h-9 rounded-xl grid place-items-center bg-accent-soft text-accent"><Icon name={f.icon} className="w-[18px] h-[18px]" /></span>
-                    <span className={`text-[10.5px] font-semibold px-2 py-0.5 rounded-full ${STATUS[f.status]}`}>{f.status}</span>
-                  </div>
-                  <div className="mt-3 font-semibold text-foreground">{f.name}</div>
-                  <p className="mt-1 text-[13px] text-muted leading-snug flex-1">{f.desc}</p>
-                  {f.try && f.status !== "Coming next" && (
-                    <button type="button" onClick={() => { onTry(f.try!); onClose(); }} className="mt-3 self-start inline-flex items-center gap-1 text-[13px] font-semibold text-foreground hover:text-accent">Try it <ArrowRight className="w-3.5 h-3.5" /></button>
-                  )}
-                </motion.div>
-              ))}
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+      <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-foreground">What Vivran can do</h2>
+      <p className="mt-1 text-sm text-muted">{TOOLS.length} tools, each with what it needs from you and what you get back.</p>
+
+      <div className="mt-6 rounded-2xl border border-border bg-surface divide-y divide-border overflow-hidden">
+        {TOOLS.map((t, i) => (
+          <motion.div key={t.name} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+            className="grid md:grid-cols-[11rem_minmax(0,1fr)_auto] gap-x-6 gap-y-2.5 p-4 sm:px-5 items-start">
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 shrink-0 rounded-lg grid place-items-center bg-accent-soft text-accent"><Icon name={t.icon} className="w-4 h-4" /></span>
+              <div className="min-w-0">
+                <div className="font-semibold text-[14.5px] text-foreground leading-tight">{t.name}</div>
+                {t.status !== "Live" && <span className={`mt-1 inline-block text-[10.5px] font-semibold px-1.5 py-px rounded-full ${STATUS[t.status]}`}>{t.status}</span>}
+              </div>
             </div>
-          </section>
+            <div className="min-w-0 text-[13px]">
+              <dl className="grid grid-cols-[4.25rem_minmax(0,1fr)] gap-y-1">
+                <dt className="text-faint">You give</dt><dd className="text-muted">{t.give}</dd>
+                <dt className="text-faint">You get</dt><dd className="text-foreground">{t.get}</dd>
+              </dl>
+              {t.includes.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {t.includes.map((x) => <span key={x} className="rounded-full bg-card border border-border px-2 py-0.5 text-[11.5px] text-muted">{x}</span>)}
+                </div>
+              )}
+            </div>
+            <button type="button" onClick={() => { onTry(t.try); onClose(); }}
+              className="justify-self-start md:mt-0.5 inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-[12.5px] font-semibold text-foreground hover:border-border-hi hover:text-accent transition-colors">
+              Try it <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </motion.div>
         ))}
+      </div>
+
+      <h3 className="mt-9 text-[11px] font-semibold uppercase tracking-[0.12em] text-faint">Built into every tool</h3>
+      <div className="mt-3 grid sm:grid-cols-2 gap-x-6 gap-y-3">
+        {BUILT_IN.map((f) => (
+          <div key={f.name} className="flex gap-2.5">
+            <Icon name={f.icon} className="mt-0.5 w-4 h-4 shrink-0 text-accent" />
+            <div className="text-[13px] leading-snug">
+              <span className="font-semibold text-foreground">{f.name}</span>
+              {f.beta && <span className={`ml-1.5 text-[10.5px] font-semibold px-1.5 py-px rounded-full ${STATUS["In beta"]}`}>In beta</span>}
+              <span className="text-muted"> &mdash; {f.desc}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-9 flex flex-wrap items-center gap-x-2 gap-y-1.5 border-t border-border pt-5 text-[13px]">
+        <span className={`text-[10.5px] font-semibold px-2 py-0.5 rounded-full ${STATUS["Coming next"]}`}>Coming next</span>
+        {COMING.map((c, i) => <span key={c} className="text-muted">{c}{i < COMING.length - 1 && <span className="text-faint"> &middot;</span>}</span>)}
       </div>
     </div>
   );
