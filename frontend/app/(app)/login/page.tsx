@@ -9,6 +9,7 @@ import type { Role } from "@/types";
 import { Shield, BookOpen, GraduationCap, Building2, ArrowRight, Mail, CheckCircle2, KeyRound, User } from "lucide-react";
 import { BookLoader, PageLoader } from "@/app/components/book-loader";
 import { BrandMark } from "@/app/components/brand-mark";
+import { DotField } from "@/app/components/dot-field";
 
 export default function LoginPage() {
   return (
@@ -127,9 +128,7 @@ function LoginForm() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col justify-center py-12 px-6 lg:px-8 relative overflow-hidden">
-      {/* Background glow effects */}
-      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-accent-soft rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-chrome-soft rounded-full blur-3xl pointer-events-none" />
+      <DotField />
 
       <div className="sm:mx-auto sm:w-full sm:max-w-md max-w-lg z-10">
         {/* Brand logo */}

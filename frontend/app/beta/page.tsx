@@ -23,6 +23,7 @@ import { ActionBar, BlockView, Thinking } from "./ui/blocks";
 import { Icon, InfoTip, Tip, Walkthrough } from "./ui/kit";
 import { DeckPanel, FeaturesView, PaperPanel, SaveDialog, SavedView } from "./ui/panels";
 import { Sidebar, type Since } from "./ui/sidebar";
+import { DotField } from "@/app/components/dot-field";
 import { AddSourceDialog, LibraryView, MemoryView, SourcesView } from "./ui/workspace";
 
 type Panel = { kind: "deck"; deck: DeckReady } | { kind: "paper"; data: AssessmentGenerateResponse } | { kind: "loading"; title: string } | null;
@@ -391,8 +392,9 @@ export default function BetaPage() {
 
   const welcome = (
     <div className="flex-1 overflow-y-auto">
-      <div className="min-h-full flex flex-col items-center justify-center px-4 py-10">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-3xl">
+      <div className="relative min-h-full flex flex-col items-center justify-center px-4 py-10">
+        <DotField />
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="relative z-10 w-full max-w-3xl">
           <div className="flex items-center justify-center gap-3 mb-2">
             <BrandMark className="w-9 h-9" />
             <h2 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-foreground">What are we teaching today?</h2>

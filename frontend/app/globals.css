@@ -80,6 +80,10 @@
     --glow-1: rgba(178, 60, 23, 0.07);
     --glow-2: rgba(94, 87, 77, 0.06);
 
+    /* dot field (app/components/dot-field.tsx): rule-coloured dots, accent under the cursor */
+    --dot: rgba(20, 16, 12, 0.19);
+    --dot-hi: rgba(178, 60, 23, 0.85);
+
     /* elevation — warm, low-contrast; no coloured glow anywhere */
     --shadow-soft: 0 1px 2px rgba(20, 16, 12, 0.06);
     --shadow-panel: 0 1px 2px rgba(20, 16, 12, 0.04), 0 10px 28px rgba(20, 16, 12, 0.07);
@@ -138,6 +142,9 @@
 
     --glow-1: rgba(232, 121, 78, 0.10);
     --glow-2: rgba(207, 199, 186, 0.05);
+
+    --dot: rgba(244, 239, 231, 0.15);
+    --dot-hi: rgba(232, 121, 78, 0.9);
 
     --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.45);
     --shadow-panel: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
@@ -309,3 +316,30 @@ html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible 
 @media (prefers-reduced-motion: reduce) {
   .vv-block, .vv-mark:hover .vv-block, .vv-mark-host:hover .vv-block { transition: none; }
 }
+
+/* Dot field: the product's one texture, used only on entry screens (the chat
+   welcome, login), never behind reading surfaces. See dot-field.tsx. */
+.vv-dotfield { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; --mx: 50%; --my: 40%; }
+.vv-dotfield > i { position: absolute; inset: 0; display: block; }
+.vv-dotfield .d, .vv-dotfield .h {
+  background-image: radial-gradient(circle at center, var(--dot) 1px, transparent 1.6px);
+  background-size: 24px 24px;
+  background-position: center top;
+  animation: vv-dot-drift 90s linear infinite;
+}
+.vv-dotfield .d {
+  -webkit-mask-image: radial-gradient(ellipse 72% 64% at 50% 40%, #000 25%, transparent 100%);
+          mask-image: radial-gradient(ellipse 72% 64% at 50% 40%, #000 25%, transparent 100%);
+}
+.vv-dotfield .h {
+  background-image: radial-gradient(circle at center, var(--dot-hi) 1.4px, transparent 2px);
+  -webkit-mask-image: radial-gradient(circle 170px at var(--mx) var(--my), #000 0%, rgba(0,0,0,.3) 45%, transparent 100%);
+          mask-image: radial-gradient(circle 170px at var(--mx) var(--my), #000 0%, rgba(0,0,0,.3) 45%, transparent 100%);
+  opacity: 0;
+  transition: opacity .45s ease;
+}
+.vv-dotfield.lit .h { opacity: 1; }
+.vv-dotfield .w { background: radial-gradient(ellipse 46% 42% at 50% 46%, var(--glow-1), transparent 72%); }
+@keyframes vv-dot-drift { to { background-position: calc(50% + 24px) 24px; } }
+@media (hover: none) { .vv-dotfield .h { display: none; } }
+@media (prefers-reduced-motion: reduce) { .vv-dotfield .d, .vv-dotfield .h { animation: none; } }

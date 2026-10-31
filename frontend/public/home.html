@@ -1275,6 +1275,43 @@ details.more .lede{ margin-top:10px; }
 @media (max-width:700px){
   .desk > .spec{ max-height:300px; overflow:hidden; -webkit-mask-image:linear-gradient(#000 82%, transparent); mask-image:linear-gradient(#000 82%, transparent); }
 }
+/* ============================ DOT FIELD ============================
+   The one "instrument" texture: a fine dot grid in the rule colour, faded
+   at the edges, with a single warm wash behind the hero. On a pointer that
+   can hover, the dots under the cursor light up in the accent. Unbanded
+   sections only, so the bands keep the page's rhythm. */
+:root{ --dot:rgba(20,16,12,.2); --dot-hi:rgba(198,67,30,.85); --wash:rgba(198,67,30,.085); --dot-gap:24px; }
+:root[data-theme="dark"]{ --dot:rgba(241,239,232,.16); --dot-hi:rgba(240,138,102,.9); --wash:rgba(240,138,102,.11); }
+.dots{ position:relative; isolation:isolate; }
+.dotfield{ position:absolute; inset:0; z-index:-1; pointer-events:none; overflow:hidden; --mx:50%; --my:40%; }
+.dotfield > i{ position:absolute; inset:0; display:block; }
+.dotfield .d, .dotfield .h{
+  background-image:radial-gradient(circle at center, var(--dot) 1px, transparent 1.6px);
+  background-size:var(--dot-gap) var(--dot-gap); background-position:center top;
+}
+.dotfield .d{
+  -webkit-mask-image:radial-gradient(ellipse 78% 70% at 50% 42%, #000 30%, transparent 100%);
+          mask-image:radial-gradient(ellipse 78% 70% at 50% 42%, #000 30%, transparent 100%);
+  animation:dot-drift 90s linear infinite;
+}
+.dotfield .h{
+  background-image:radial-gradient(circle at center, var(--dot-hi) 1.4px, transparent 2px);
+  -webkit-mask-image:radial-gradient(circle 190px at var(--mx) var(--my), #000 0%, rgba(0,0,0,.35) 45%, transparent 100%);
+          mask-image:radial-gradient(circle 190px at var(--mx) var(--my), #000 0%, rgba(0,0,0,.35) 45%, transparent 100%);
+  opacity:0; transition:opacity .45s ease;
+  animation:dot-drift 90s linear infinite;
+}
+.dots.lit .dotfield .h{ opacity:1; }
+.dotfield .w{ background:radial-gradient(ellipse 48% 58% at 74% 46%, var(--wash), transparent 72%); }
+.dotfield.sec-f .d{
+  -webkit-mask-image:radial-gradient(ellipse 70% 62% at 50% 50%, #000 20%, transparent 100%);
+          mask-image:radial-gradient(ellipse 70% 62% at 50% 50%, #000 20%, transparent 100%);
+}
+.dotfield.cta-f .w{ background:radial-gradient(ellipse 42% 60% at 50% 55%, var(--wash), transparent 72%); }
+@keyframes dot-drift{ to{ background-position:calc(50% + var(--dot-gap)) var(--dot-gap); } }
+@media (max-width:700px){ :root{ --dot-gap:20px; } .dotfield .w{ background:radial-gradient(ellipse 90% 40% at 50% 70%, var(--wash), transparent 72%); } }
+@media (hover:none){ .dotfield .h{ display:none; } }
+@media (prefers-reduced-motion:reduce){ .dotfield .d, .dotfield .h{ animation:none; } }
 </style>
 </head>
 <body>
@@ -1327,7 +1364,8 @@ details.more .lede{ margin-top:10px; }
 <span id="top"></span>
 
 <!-- ============================ HERO ============================ -->
-<header class="hero">
+<header class="hero dots">
+  <div class="dotfield" aria-hidden="true"><i class="d"></i><i class="h"></i><i class="w"></i></div>
   <div class="wrap hero-grid">
     <div>
       <span class="eyebrow">Teachers · Students · Schools</span>
@@ -1445,7 +1483,8 @@ details.more .lede{ margin-top:10px; }
 <hr class="hr" />
 
 <!-- ============================ DEMO ============================ -->
-<section class="sec" id="demo">
+<section class="sec dots" id="demo">
+  <div class="dotfield sec-f" aria-hidden="true"><i class="d"></i><i class="h"></i></div>
   <span id="tour" class="anchor-alias"></span>
   <div class="wrap">
     <div class="sec-head">
@@ -1766,7 +1805,8 @@ details.more .lede{ margin-top:10px; }
 <hr class="hr" />
 
 <!-- ============================ WHERE THIS GOES ============================ -->
-<section class="sec" id="vision">
+<section class="sec dots" id="vision">
+  <div class="dotfield sec-f" aria-hidden="true"><i class="d"></i><i class="h"></i></div>
   <div class="wrap">
     <div class="sec-head">
       <span class="eyebrow rv">Where this goes</span>
@@ -1935,7 +1975,8 @@ details.more .lede{ margin-top:10px; }
 <hr class="hr" />
 
 <!-- ============================ FINAL CTA ============================ -->
-<section class="sec final-cta" id="join">
+<section class="sec final-cta dots" id="join">
+  <div class="dotfield sec-f cta-f" aria-hidden="true"><i class="d"></i><i class="h"></i><i class="w"></i></div>
   <div class="wrap">
     <h2 class="rv">We think education can work differently.</h2>
     <p class="final-sub rv d1">Less disconnected work.<br />More understanding.<br />Better teaching. Better learning.</p>
@@ -2552,6 +2593,22 @@ window.addEventListener('message', function(e){
     if(counted) return; counted=true;
     [].slice.call(ib.querySelectorAll('[data-ib-count]')).forEach(function(el){ count(el,+el.dataset.ibCount,1400); });
   };
+})();
+</script>
+<script>
+/* Dot field: the dots under the cursor light up. Pointer devices only. */
+(function(){
+  if (!window.matchMedia("(hover:hover)").matches) return;
+  document.querySelectorAll(".dots").forEach(function(sec){
+    var f = sec.querySelector(".dotfield"), raf = 0, x = 0, y = 0;
+    if (!f) return;
+    sec.addEventListener("pointermove", function(e){
+      var r = sec.getBoundingClientRect(); x = e.clientX - r.left; y = e.clientY - r.top;
+      if (!raf) raf = requestAnimationFrame(function(){ raf = 0; f.style.setProperty("--mx", x + "px"); f.style.setProperty("--my", y + "px"); });
+      sec.classList.add("lit");
+    });
+    sec.addEventListener("pointerleave", function(){ sec.classList.remove("lit"); });
+  });
 })();
 </script>
 </body>
