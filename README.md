@@ -102,8 +102,8 @@ The repo is organized to separate the public landing site and stakeholder experi
 
 Student and Institution experiences are intentionally stubbed as "Coming Soon". The app routes are:
 
-- `/landing` — public landing
-- `/teacher` — teacher workspace
+- `/` — public landing (`public/home.html`)
+- `/beta` — the teacher product: one chat that plans, teaches and assesses (`/teacher` redirects here)
 - `/student` — student coming-soon page
 - `/institution` — institution coming-soon page
 

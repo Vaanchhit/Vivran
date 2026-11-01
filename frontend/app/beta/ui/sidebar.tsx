@@ -18,7 +18,7 @@ export interface SidebarProps {
   query: string; since: Since; folderFilter: string | null;
   autoRead: boolean; showRoute: boolean; user: { name: string; email: string };
   onQuery: (q: string) => void; onSince: (s: Since) => void; onFolderFilter: (id: string | null) => void;
-  onNew: () => void; onOpen: (id: string) => void; onView: (v: "features" | "saved" | "library" | "sources" | "memory") => void; onCollapse: () => void;
+  onNew: () => void; onOpen: (id: string) => void; onView: (v: "features" | "saved" | "library" | "sources" | "memory" | "account") => void; onCollapse: () => void;
   onRename: (id: string, title: string) => void; onPin: (id: string) => void; onMove: (id: string, folderId: string | null) => void; onDelete: (id: string) => void;
   onFolderCreate: (name: string) => void; onFolderRename: (id: string, name: string) => void; onFolderDelete: (id: string) => void;
   onTour: () => void; onReset: () => void; onAutoRead: (v: boolean) => void; onShowRoute: (v: boolean) => void; onSignOut: () => void;
@@ -186,6 +186,8 @@ export function Sidebar(p: SidebarProps) {
                 <span><span className="block text-foreground font-medium">Show routing</span><span className="text-[11.5px] text-muted">Internal: which model ran each step</span></span>
                 <input type="checkbox" checked={p.showRoute} onChange={(e) => p.onShowRoute(e.target.checked)} className="w-4 h-4 accent-[var(--accent-1)]" />
               </label>
+              <div className="my-1.5 border-t border-border" />
+              <button type="button" onClick={() => { setSettings(false); p.onView("account"); }} className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-card text-foreground font-medium">Account and teaching preferences</button>
               <button type="button" onClick={p.onSignOut} className="w-full text-left px-2.5 py-2 rounded-xl hover:bg-card text-foreground font-medium">Sign out</button>
             </motion.div>
           )}

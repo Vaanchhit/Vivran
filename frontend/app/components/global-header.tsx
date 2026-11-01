@@ -22,7 +22,7 @@ export function GlobalHeader() {
 
         <nav className="hidden sm:flex items-center gap-6 text-sm text-muted">
           <a href="/" className="hover:text-foreground transition-colors">Home</a>
-          <Link href="/teacher" className="hover:text-foreground transition-colors">Teacher</Link>
+          <Link href="/beta" className="hover:text-foreground transition-colors">Teacher</Link>
           <Link href="/student" className="hover:text-foreground transition-colors">Student</Link>
           <Link href="/institution" className="hover:text-foreground transition-colors">Institution</Link>
         </nav>

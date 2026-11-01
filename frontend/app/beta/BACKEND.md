@@ -1,6 +1,6 @@
 # /beta → backend
 
-`/beta` signs in with the same account as the rest of the product (`layout.tsx`: login, referral gate, onboarding) and runs on the real backend. `lib/live.ts` is the seam.
+`/beta` is the teacher product (the old `/teacher` screens are gone and redirect here). It signs in through `layout.tsx` (login, referral gate, onboarding), keeps account settings and deletion in the Account view (`app/components/account-settings.tsx`) and runs on the real backend. `lib/live.ts` is the seam.
 
 ## The route a request takes
 

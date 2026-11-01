@@ -41,7 +41,7 @@ function LoginForm() {
   const [signupSuccessMessage, setSignupSuccessMessage] = useState("");
 
   const authError = searchParams.get("error");
-  const next = searchParams.get("next") || "/teacher";
+  const next = searchParams.get("next") || "/beta";
 
   // Bounce an already-signed-in visitor straight to their workspace — this
   // used to be a server-side redirect in middleware.ts. It's client-side now

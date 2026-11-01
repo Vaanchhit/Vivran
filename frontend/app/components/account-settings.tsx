@@ -86,7 +86,13 @@ function ChipPicker({
   );
 }
 
-export default function SettingsPage() {
+/**
+ * Profile, teaching preferences, appearance, sign-out and account deletion.
+ * Shown as the Account view in the chat (app/beta/page.tsx). `onDeleted` runs
+ * after the account is gone, before the hard redirect, to clear anything the
+ * browser still holds for this teacher.
+ */
+export function AccountSettings({ onDeleted }: { onDeleted?: () => void }) {
   const { user, logout, deleteAccount, completeOnboarding } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
@@ -150,8 +156,9 @@ export default function SettingsPage() {
       return;
     }
     setLeaving(true);
+    onDeleted?.();
     await logout();
-    // A hard navigation: clearing the session also trips TeacherLayout's own
+    // A hard navigation: clearing the session also trips the chat layout's own
     // redirect to /login, and racing that against a client-side push is
     // unreliable. This is a one-off terminal redirect for an irreversible action.
     window.location.href = "/";
@@ -164,7 +171,7 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="border-b border-border pb-6">
-        <h1 className="text-2xl font-extrabold font-display text-foreground">Settings</h1>
+        <h1 className="text-2xl font-extrabold font-display text-foreground">Account</h1>
         <p className="text-sm text-muted mt-1">Your profile, teaching preferences and account.</p>
       </div>
 

@@ -6,8 +6,11 @@ const nextConfig = {
       { source: "/landing", destination: "/", permanent: false },
       { source: "/home.html", destination: "/", permanent: true },
       { source: "/tour", destination: "/demo", permanent: true },
-      // Saved work used to be listed under Recent; it is all in Library now.
-      { source: "/teacher/recent", destination: "/teacher/library", permanent: true },
+      // The chat is the product; the old screens under /teacher are gone, so
+      // every old link and bookmark lands in it. Temporary, so the address
+      // can still change.
+      { source: "/teacher", destination: "/beta", permanent: false },
+      { source: "/teacher/:path*", destination: "/beta", permanent: false },
     ];
   },
   async headers() {

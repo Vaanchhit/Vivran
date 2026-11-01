@@ -23,11 +23,12 @@ import { ActionBar, BlockView, Thinking } from "./ui/blocks";
 import { Icon, InfoTip, Tip, Walkthrough } from "./ui/kit";
 import { DeckPanel, FeaturesView, PaperPanel, SaveDialog, SavedView } from "./ui/panels";
 import { Sidebar, type Since } from "./ui/sidebar";
+import { AccountSettings } from "@/app/components/account-settings";
 import { DotField } from "@/app/components/dot-field";
 import { AddSourceDialog, LibraryView, MemoryView, SourcesView } from "./ui/workspace";
 
 type Panel = { kind: "deck"; deck: DeckReady } | { kind: "paper"; data: AssessmentGenerateResponse } | { kind: "loading"; title: string } | null;
-type View = "chat" | "features" | "saved" | "library" | "sources" | "memory";
+type View = "chat" | "features" | "saved" | "library" | "sources" | "memory" | "account";
 type Active = live.ActiveSource & { reading?: boolean };
 
 export default function BetaPage() {
@@ -537,6 +538,8 @@ export default function BetaPage() {
             <div key="library" className="flex-1 overflow-y-auto"><LibraryView onOpen={openEntry} /></div>
           ) : view === "sources" ? (
             <div key="sources" className="flex-1 overflow-y-auto"><SourcesView active={source} version={sourcesVersion} onUse={useSource} onAddFile={setAdding} /></div>
+          ) : view === "account" ? (
+            <div key="account" className="flex-1 overflow-y-auto px-4 py-8"><AccountSettings onDeleted={() => api.resetAll()} /></div>
           ) : view === "memory" ? (
             <div key="memory" className="flex-1 overflow-y-auto"><MemoryView name={name} theme={theme === "dark" ? "dark" : "light"} onOpenItem={openEntry} onUseSource={useSource} /></div>
           ) : empty ? welcome : thread}
