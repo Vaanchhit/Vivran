@@ -321,7 +321,7 @@ html :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible 
 
 /* Dot field: the product's one texture, used only on entry screens (the chat
    welcome, login), never behind reading surfaces. Drawn on a canvas by
-   public/landing/dotfield.mjs via dot-field.tsx; only the wash is CSS. */
+   public/landing/site/dotfield.mjs via dot-field.tsx; only the wash is CSS. */
 .vv-dotfield { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
 .vv-dotfield > i { position: absolute; inset: 0; display: block; }
 .vv-dotfield .w { background: radial-gradient(ellipse 46% 42% at 50% 46%, var(--glow-1), transparent 72%); }

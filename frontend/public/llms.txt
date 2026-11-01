@@ -1,0 +1,31 @@
+# Vivran
+
+> Vivran (विवरण) is an AI workspace for teachers and professors in India, from Class 6 to final year of college. A teacher uploads their own material (syllabus, textbook chapters, notes, lectures, past papers) and Vivran builds course plans, slides, worksheets, exam papers and revision material from it, with every item pointing back to the page it came from. Free for teachers, in early access. Student and institution products are in development.
+
+Key facts:
+
+- Live today for teachers only; access is by request (info@vivran.co.in) or referral code.
+- Everything Vivran makes is grounded in the teacher's own material and cites its sources; unsupported questions are flagged, not hidden.
+- Pricing: free for teachers, always. Schools and colleges: pilots by conversation.
+- Based at SRCC, New Delhi. Founder: Vaanchhit Agarwal.
+- The product itself (/teacher, /beta) needs a signed-in teacher account and has no public API yet.
+
+## Site
+
+- [Home, as markdown](https://vivran.co.in/index.md): what Vivran is, what it makes, who it is for, pricing and roadmap
+- [Full text for agents](https://vivran.co.in/llms-full.txt): the same content in one file
+- [Interactive demo](https://vivran.co.in/demo): one Class 9 unit followed from teacher to students to institution
+
+## Policies
+
+- [Privacy policy](https://vivran.co.in/privacy)
+- [Terms of service](https://vivran.co.in/terms)
+
+## Contact
+
+- [Email](mailto:info@vivran.co.in): access requests, school pilots, questions
+- [Founder on LinkedIn](https://www.linkedin.com/in/vaanchhit-agarwal-549036296/)
+
+## Optional
+
+- [Log in](https://vivran.co.in/login): for teachers with an account or a referral code
