@@ -41,8 +41,17 @@ def test_every_rewrite_is_slm_and_everything_that_adds_content_is_llm():
 
 
 def test_making_things_and_answering_from_knowledge_never_go_to_the_slm():
-    for task in ("explain", "compare", "summarise", "ideas", "analyse", "general", "slides", "paper", "worksheet", "plan"):
+    for task in ("explain", "compare", "summarise", "ideas", "analyse", "general", "slides", "paper", "worksheet", "plan", "notes", "activity"):
         assert ROUTES[task].intelligence is Intelligence.LLM, task
+
+
+def test_narration_images_and_video_are_media_with_their_own_models():
+    for task, output in (("narration", task_router.Modality.AUDIO), ("image", task_router.Modality.IMAGE), ("video", task_router.Modality.VIDEO)):
+        assert ROUTES[task].intelligence is Intelligence.MEDIA and ROUTES[task].output is output, task
+    assert task_router.describe(ROUTES["narration"])["pins"] == {"speak": "cartesia sonic-3"}
+    assert "veo" in task_router.describe(ROUTES["video"])["pins"]["film"]
+    assert task_router.describe(ROUTES["image"])["provider"] == "pipeline"
+    assert ROUTES["notes"].pipeline == "lesson_notes" and ROUTES["activity"].pipeline == "interactive"
 
 
 def test_reading_the_request_is_rules_first():
@@ -84,12 +93,36 @@ def test_the_route_reports_the_pinned_models_of_a_pipeline():
     ("Compare Girondins and Jacobins", "compare", "Girondins vs Jacobins"),
     ("A worksheet on fractions for Class 6", "worksheet", "Fractions"),
     ("Plan a unit on fractions, 4 weeks", "plan", "Fractions"),
+    ("Lesson notes on photosynthesis for Class 7", "notes", "Photosynthesis"),
+    ("A 20 minute class activity on fractions for Class 6", "activity", "Fractions"),
+    ("A labelled diagram of the human heart", "image", "Human heart"),
+    ("Make a video on the water cycle", "video", "Water cycle"),
 ])
 def test_rules_read_common_requests_without_a_model(calls, text, intent, topic):
     r = chat.read_request(text)
     assert (r["intent"], r["entities"]["topic"]) == (intent, topic)
     assert r["ask"] is None
     assert calls["slm"] == [] and calls["llm"] == []
+
+
+def test_lesson_ideas_stay_ideas_and_a_video_beats_explain(calls):
+    assert chat.read_request("Give me lesson ideas for fractions")["intent"] == "ideas"
+    assert chat.read_request("Make a video explaining inflation")["intent"] == "video"
+
+
+def test_new_tools_carry_their_settings(calls):
+    assert chat.read_request("A 30 minute class activity on fractions")["entities"]["minutes"] == 30
+    assert chat.read_request("A class activity on fractions")["entities"]["minutes"] is None
+    assert chat.read_request("Make a 6 second video on the water cycle")["entities"]["secs"] == 6
+    r = chat.read_request("Narrate this: Good morning, class. Today we begin the French Revolution.")
+    assert r["intent"] == "narration" and r["ask"] is None
+    assert r["entities"]["script"] == "Good morning, class. Today we begin the French Revolution."
+
+
+def test_new_tools_ask_for_what_is_missing(calls):
+    assert chat.read_request("Narrate my script")["ask"]["field"] == "script"
+    assert chat.read_request("Make a video")["ask"]["field"] == "topic"
+    assert chat.read_request("Lesson notes")["ask"]["field"] == "topic"
 
 
 def test_entities_carry_class_and_marks(calls):

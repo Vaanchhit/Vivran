@@ -31,6 +31,11 @@ export function resume(pending: { text: string; intent: string; field: string },
     case "paper": return `A unit test on ${a}`;
     case "worksheet": return `A worksheet on ${a}`;
     case "plan": return `Plan a unit on ${a}`;
+    case "notes": return `Lesson notes on ${a}`;
+    case "activity": { const min = pending.text.match(/\d{1,3}\s*-?\s*min\w*/i)?.[0]; return `A class activity on ${a}${min ? `, ${min}` : ""}`; }
+    case "narration": return `Narrate: ${a}`;
+    case "image": return `An image of ${a}`;
+    case "video": { const secs = pending.text.match(/\b[468]\s*-?\s*s(?:ec\w*)?\b/i)?.[0]; return `A video on ${a}${secs ? `, ${secs}` : ""}`; }
     default: return `${pending.text} ${a}`;
   }
 }
@@ -40,6 +45,7 @@ export function titleFor(r: IntentResult, text: string): string {
   const e = r.entities;
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   if (r.intent === "compare" && e.items?.length === 2) return `Compare: ${cap(e.items[0])} vs ${e.items[1]}`;
+  if (r.intent === "narration" && e.script) return `Narration · ${e.script.length > 32 ? `${e.script.slice(0, 30).trim()}…` : e.script}`;
   if (e.topic && r.intent !== "general") return `${r.label} · ${cap(e.topic)}`;
   return cap(text.length > 42 ? `${text.slice(0, 40).trim()}…` : text);
 }

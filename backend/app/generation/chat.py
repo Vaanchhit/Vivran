@@ -33,12 +33,14 @@ from app.core.errors import FailureClass
 from app.core.logging import logger
 from app.retrieval.context import format_sources, resolve_tags, sources_payload, tag_map
 
-INTENTS = ("explain", "summarise", "compare", "slides", "paper", "worksheet", "plan", "ideas", "analyse", "general")
+INTENTS = ("explain", "summarise", "compare", "slides", "paper", "worksheet", "plan", "notes", "activity",
+           "narration", "image", "video", "ideas", "analyse", "general")
 
 LABELS = {
     "explain": "Explanation", "summarise": "Summary", "compare": "Comparison", "slides": "Slides",
     "paper": "Exam paper", "worksheet": "Worksheet", "plan": "Unit plan", "ideas": "Ideas",
-    "analyse": "Analysis", "general": "General",
+    "analyse": "Analysis", "general": "General", "notes": "Lesson notes", "activity": "Class activity",
+    "narration": "Narration", "image": "Image", "video": "Video",
 }
 
 # The same rules as the chat has always used (frontend lib/slidekit/intent.ts
@@ -51,6 +53,13 @@ _RULES = [
     ("worksheet", re.compile(r"\b(worksheet|activity sheet|homework)\b", re.I), 3),
     ("slides", re.compile(r"\b(slides?|deck|ppt|powerpoint|presentation)\b", re.I), 3),
     ("plan", re.compile(r"\b(unit plan|lesson plan|scheme of work|week by week|weekly plan|plan a unit|plan (?:a|my|the) (?:unit|course|term|month))\b", re.I), 3),
+    # What the old Teach screen made. Weighted to beat "ideas" and "explain",
+    # which share their words ("activities", "explain ... in a video").
+    ("notes", re.compile(r"\b(lesson notes?|teaching notes?|class notes?|notes (?:on|for|about))\b", re.I), 4),
+    ("activity", re.compile(r"\b((?:class|classroom|in-class|group) activit(?:y|ies)|role[- ]?play|interactive (?:lesson|session|activity))\b", re.I), 4),
+    ("narration", re.compile(r"\b(narrat\w*|voice[- ]?over|read (?:this|it|the following) (?:out|aloud)|text to speech)\b", re.I), 5),
+    ("image", re.compile(r"\b(image|picture|illustration|infographic|drawing|draw|diagram)\b", re.I), 3),
+    ("video", re.compile(r"\b(video|clip|animation|animated)\b", re.I), 4),
     ("ideas", re.compile(r"\b(ideas?|brainstorm|activities|engage|hook|fun)\b", re.I), 2),
     ("explain", re.compile(r"\b(explain|what is|what are|why|how does|simply|understand|meaning of|teach me)\b", re.I), 2),
 ]
@@ -67,6 +76,20 @@ _ITEMS = (
 )
 _DOC_REF = re.compile(r"\b(this|the|my|attached)\s+(pdf|chapter|document|file|unit|notes|paper|deck)\b", re.I)
 _GRADE = re.compile(r"\b(class|grade|std\.?)\s*(\d{1,2})\b", re.I)
+_MINUTES = re.compile(r"\b(\d{1,3})\s*-?\s*(?:min|mins|minutes?)\b", re.I)
+_SECS = re.compile(r"\b([468])\s*-?\s*(?:s|sec|secs|seconds?)\b", re.I)
+# "Narrate this: ...", "Read the following aloud - ...": the script is what follows.
+_SCRIPT_LEAD = re.compile(
+    r"^\s*(?:please\s+)?(?:can you\s+)?(?:narrate|voice[- ]?over|read(?:\s+(?:this|it|the following))?(?:\s+(?:out|aloud))*|"
+    r"(?:make|create|record)\s+(?:a|an)?\s*(?:narration|voice[- ]?over|audio)(?:\s+(?:of|for))?)"
+    r"(?:\s+(?:this|the following|my script))?\s*[:\-–—]?\s*", re.I)
+
+
+def _script_of(text: str) -> str:
+    """The words to speak: everything after the instruction, or after a colon."""
+    if ":" in text[:80]:
+        return text.split(":", 1)[1].strip()
+    return _SCRIPT_LEAD.sub("", text, count=1).strip()
 
 
 def _topic_of(text: str) -> Optional[str]:
@@ -78,7 +101,7 @@ def _topic_of(text: str) -> Optional[str]:
         return topic[0].upper() + topic[1:]
     # "Photosynthesis slides", "inflation" — a short request is its own topic
     # once the format words are taken out.
-    bare = re.sub(r"\b(slides?|deck|ppt|presentation|worksheet|quiz|test|paper|exam|explain|summari[sz]e|simply|please|for|my|class|grade|\d+|marks?|ideas?|plan|a|an|the|on|of|about|make|create|write|set|give|me|some|lesson|unit|new)\b", " ", text, flags=re.I)
+    bare = re.sub(r"\b(slides?|deck|ppt|presentation|worksheet|quiz|test|paper|exam|explain|summari[sz]e|simply|please|for|my|class|grade|\d+|marks?|ideas?|plan|a|an|the|on|of|about|make|create|write|set|give|me|some|lesson|unit|new|notes?|activit(?:y|ies)|classroom|group|interactive|minutes?|mins?|image|picture|illustration|infographic|diagram|drawing|draw|video|clip|animation|animated|generate|seconds?|secs?)\b", " ", text, flags=re.I)
     bare = re.sub(r"[^\w\s'’-]", " ", bare)
     bare = " ".join(bare.split())
     if 2 < len(bare) <= 40 and len(bare.split()) <= 5 and not _NOT_TOPIC.match(bare):
@@ -110,8 +133,10 @@ def _rules(text: str) -> tuple[str, float, bool]:
 
 _CLASSIFY_SYSTEM = """Pick what a teacher's message asks for. Return JSON only: {"intent": one of %s, "topic": string or null}.
 explain = explain a concept; summarise = summarise a document; compare = compare two things; slides = a slide deck;
-paper = an exam, test or quiz; worksheet = a worksheet or homework; plan = a unit or course plan; ideas = classroom
-activities or ideas; analyse = analyse student results; general = anything else.""" % (", ".join(f'"{i}"' for i in INTENTS))
+paper = an exam, test or quiz; worksheet = a worksheet or homework; plan = a unit or course plan; notes = lesson or
+teaching notes; activity = a timed class activity with tasks and checks; narration = spoken audio of a script;
+image = a picture, diagram or illustration; video = a short video clip; ideas = brainstormed classroom ideas;
+analyse = analyse student results; general = anything else.""" % (", ".join(f'"{i}"' for i in INTENTS))
 
 
 def _classify_with_slm(text: str) -> Optional[Dict[str, Any]]:
@@ -173,6 +198,14 @@ def read_request(
         "doc": bool(_DOC_REF.search(text)),
         "difficulty": heur.difficulty,
     }
+    if intent == "activity":
+        m = _MINUTES.search(text)
+        entities["minutes"] = min(90, max(5, int(m.group(1)))) if m else None
+    if intent == "narration":
+        entities["script"] = _script_of(text) or None
+    if intent == "video":
+        m = _SECS.search(text)
+        entities["secs"] = int(m.group(1)) if m else None
 
     task = "smalltalk" if is_smalltalk(text) and not forced else intent
     route = route_for(task, text)
@@ -195,9 +228,15 @@ def _ask_for(intent: str, e: Dict[str, Any], has_source: bool, topics: Sequence[
         return {"question": "Which two would you like me to compare?", "options": [], "field": "items", "placeholder": "Type two things, e.g. mitosis and meiosis"}
     if intent == "summarise" and not has_source:
         return {"question": "Which document should I summarise?", "options": [], "field": "doc", "placeholder": "Attach a file with the paperclip, or paste the text here"}
-    if intent in ("slides", "explain", "paper", "worksheet", "plan") and not e["topic"]:
+    if intent == "narration" and len(e.get("script") or "") < 12:
+        return {"question": "What should I narrate? Paste the script, word for word.", "options": [], "field": "script", "placeholder": "Paste or type the lesson script"}
+    if intent in ("image", "video") and not e["topic"]:
+        q = "What should the image show?" if intent == "image" else "What should the video show?"
+        return {"question": q, "options": recent, "field": "topic", "placeholder": "e.g. a labelled diagram of the human heart"}
+    if intent in ("slides", "explain", "paper", "worksheet", "plan", "notes", "activity") and not e["topic"]:
         q = {"slides": "Which topic are the slides for?", "explain": "Which idea should I explain?", "paper": "Which topic is the paper on?",
-             "worksheet": "Which topic is the worksheet on?", "plan": "Which unit should I plan?"}[intent]
+             "worksheet": "Which topic is the worksheet on?", "plan": "Which unit should I plan?",
+             "notes": "Which topic are the notes for?", "activity": "Which topic is the activity for?"}[intent]
         return {"question": q, "options": recent, "field": "topic", "placeholder": "Type a topic, e.g. photosynthesis for Class 7"}
     return None
 

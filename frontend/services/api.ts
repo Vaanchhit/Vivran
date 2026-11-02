@@ -846,7 +846,11 @@ export interface ChatRead {
   intent: string;
   label: string;
   confidence: number;
-  entities: { topic: string | null; items: string[]; grade: string | null; subject: string | null; marks: number | null; doc: boolean; difficulty: string };
+  entities: {
+    topic: string | null; items: string[]; grade: string | null; subject: string | null; marks: number | null; doc: boolean; difficulty: string;
+    /** Class activity length, the script to narrate, and a video's seconds: only on those requests. */
+    minutes?: number | null; script?: string | null; secs?: number | null;
+  };
   ask: { question: string; options: string[]; field: string; placeholder: string } | null;
   task: string;
   route: ChatRoute;

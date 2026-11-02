@@ -3,13 +3,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  AlertTriangle, ArrowRight, Bookmark, BookmarkCheck, Check, ChevronDown, ChevronRight, Copy, Cpu, FileText,
-  Presentation, RotateCcw, Sparkles, Volume2, VolumeX, X,
+  AlertTriangle, ArrowRight, Bookmark, BookmarkCheck, Check, ChevronDown, ChevronRight, Copy, Cpu, Download, FileText,
+  Loader2, Presentation, RotateCcw, Sparkles, Volume2, VolumeX, Wand2, X,
 } from "lucide-react";
 import { BrandMark } from "@/app/components/brand-mark";
-import type { ExampleResult } from "@/services/api";
-import { ACTIONS, ACTIONS_FOR, LEVELS, TIPS } from "../lib/config";
-import type { ActionId, Block, BotMsg, OutlineRow, RouteInfo, Source, TableData } from "../lib/types";
+import { enhancePrompt, type EnhancedPrompt, type ExampleResult, type LessonNotesResult } from "@/services/api";
+import { ACTIONS, ACTIONS_FOR, ACTIVITY_MINUTES, IMAGE_STYLES, LEVELS, TIPS, VIDEO_SECS, VIDEO_STYLES } from "../lib/config";
+import type { ActionId, Block, BotMsg, OutlineRow, RouteInfo, Source, TableData, VideoSecs } from "../lib/types";
 import { Icon, Tip } from "./kit";
 
 /** **bold** and [S1] citations, nothing else. */
@@ -306,6 +306,173 @@ function Notice({ b, onRetry }: { b: Extract<Block, { t: "notice" }>; onRetry: (
   );
 }
 
+/* ── what the old Teach screen made ── */
+
+function Notes({ n }: { n: LessonNotesResult }) {
+  return (
+    <div className="rounded-2xl border border-border bg-surface divide-y divide-border">
+      {n.sections.map((x, i) => (
+        <div key={i} className="px-4 sm:px-5 py-3.5">
+          <div className="text-[14px] font-semibold text-foreground">{x.heading}</div>
+          <p className="mt-1 text-[14px] leading-relaxed text-foreground/85 whitespace-pre-line">{x.content}</p>
+        </div>
+      ))}
+      {!!n.real_life_examples?.length && (
+        <div className="px-4 sm:px-5 py-3.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wider text-faint">Everyday examples</div>
+          <ul className="mt-1.5 space-y-1 text-[14px] text-foreground/85">{n.real_life_examples.map((x, i) => <li key={i} className="flex gap-2"><span className="mt-[9px] w-1.5 h-1.5 rounded-full bg-accent shrink-0" />{x}</li>)}</ul>
+        </div>
+      )}
+      {n.recap && <div className="px-4 sm:px-5 py-3.5 bg-card rounded-b-2xl text-[14px]"><span className="font-semibold text-foreground">Recap: </span><span className="text-foreground/85">{n.recap}</span></div>}
+    </div>
+  );
+}
+
+function ShowAnswer({ answer }: { answer?: string }) {
+  const [open, setOpen] = useState(false);
+  if (!answer) return null;
+  return (
+    <div className="mt-1">
+      <button type="button" onClick={() => setOpen(!open)} className="text-[12px] font-semibold text-accent">{open ? "Hide answer" : "Show answer"}</button>
+      {open && <div className="mt-0.5 text-[13px] text-foreground/85">{answer}</div>}
+    </div>
+  );
+}
+
+function Activity({ b, locked, onLength }: { b: Extract<Block, { t: "activity" }>; locked: boolean; onLength: (minutes: number) => void }) {
+  const str = (v: unknown) => (typeof v === "string" && v.trim() ? v : undefined);
+  const steps = [...b.data.blocks].sort((x, y) => x.position - y.position);
+  return (
+    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+      <ol className="divide-y divide-border">
+        {steps.map((x, i) => {
+          const c = x.content;
+          const qs = Array.isArray(c.questions) ? (c.questions as { text?: string; answer?: string }[]) : [];
+          return (
+            <li key={i} className="flex gap-3 px-4 sm:px-5 py-3.5">
+              <span className="w-5 pt-0.5 text-[12px] text-faint tabular-nums">{i + 1}</span>
+              <div className="flex-1 min-w-0 text-[14px] leading-relaxed text-foreground/90">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-accent">{x.type.replace(/_/g, " ")}</div>
+                {str(c.text) && <p className="mt-1">{str(c.text)}</p>}
+                {str(c.instructions) && <p className="mt-1 text-muted"><span className="font-semibold text-foreground">Task: </span>{str(c.instructions)}</p>}
+                <ShowAnswer answer={str(c.answer)} />
+                {qs.length > 0 && (
+                  <ol className="mt-1.5 list-decimal ml-4 space-y-1.5">{qs.map((q, k) => <li key={k}>{q.text}<ShowAnswer answer={q.answer} /></li>)}</ol>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+      {!locked && (
+        <div className="flex flex-wrap items-center gap-2 px-4 sm:px-5 py-3 border-t border-border bg-card">
+          <span className="text-[12px] text-muted mr-1">Length</span>
+          {ACTIVITY_MINUTES.map((m) => (
+            <button key={m} type="button" disabled={m === b.data.duration_minutes} onClick={() => onLength(m)}
+              className={`px-3 py-1 rounded-full text-[12.5px] border transition-colors ${m === b.data.duration_minutes ? "bg-ink text-ink-fg border-transparent" : "border-border text-muted hover:text-foreground hover:border-border-hi"}`}>{m} min</button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Media({ b }: { b: Extract<Block, { t: "media" }> }) {
+  const name = b.kind === "audio" ? "narration" : b.kind;
+  return (
+    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+      {b.kind === "audio" && <div className="p-4"><audio controls src={b.url} className="w-full" /></div>}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      {b.kind === "image" && <img src={b.url} alt={b.title} className="w-full max-h-[520px] object-contain bg-card" />}
+      {b.kind === "video" && <video controls src={b.url} className="w-full max-h-[520px] bg-black" />}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-t border-border">
+        <span className="flex-1 min-w-0 text-[12.5px] text-muted truncate">{b.title}</span>
+        <a href={b.url} download target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 shrink-0 text-[12.5px] font-semibold text-foreground hover:text-accent"><Download className="w-3.5 h-3.5" /> Download {name}</a>
+      </div>
+    </div>
+  );
+}
+
+/** Style presets, Enhance with AI (both versions one click away) and, for video, the length: the old Teach screen's controls. */
+function MediaSetup({ b, locked, onMake }: { b: Extract<Block, { t: "mediaSetup" }>; locked: boolean; onMake: (prompt: string, secs: VideoSecs) => void }) {
+  const [prompt, setPrompt] = useState(b.prompt);
+  const [secs, setSecs] = useState<VideoSecs>(b.secs);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [enh, setEnh] = useState<{ original: string; enhanced: string; ideas: EnhancedPrompt | null } | null>(null);
+  const styles = b.kind === "image" ? IMAGE_STYLES : VIDEO_STYLES;
+  const style = (modifier: string) => setPrompt((p) => (p.trim() ? `${p.trim()}, ${modifier}` : modifier.replace(/^as /, "")));
+  const enhance = async () => {
+    const original = prompt;
+    setBusy(true); setErr("");
+    try {
+      const r = await enhancePrompt(original, b.kind);
+      if (r.error || !r.enhanced_prompt?.trim()) { setErr(r.error || "Couldn't improve that description. Try again."); return; }
+      setEnh({ original, enhanced: r.enhanced_prompt, ideas: r });
+      setPrompt(r.enhanced_prompt);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't improve that description.");
+    } finally { setBusy(false); }
+  };
+  const version = !enh ? null : prompt === enh.original ? "original" : prompt === enh.enhanced ? "enhanced" : "edited";
+  const ideas = [...(enh?.ideas?.illustration_suggestions ?? []), ...(enh?.ideas?.animation_suggestions ?? [])];
+  return (
+    <div className="rounded-2xl border border-border bg-surface overflow-hidden">
+      <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-b border-border bg-card">
+        <span className="text-[13px] font-semibold text-foreground">{b.kind === "image" ? "Image" : "Video"} · style and description</span>
+        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${locked ? "bg-success-soft text-success" : "bg-accent-soft text-accent"}`}>{locked ? "Started" : "Waiting for you"}</span>
+      </div>
+      <div className="p-4 sm:p-5 space-y-3">
+        <div className="flex flex-wrap gap-1.5">
+          {styles.map((x) => (
+            <button key={x.label} type="button" disabled={locked} onClick={() => style(x.modifier)}
+              className="px-3 py-1 rounded-full border border-border bg-card text-[12.5px] font-medium text-muted hover:text-foreground hover:border-accent-line hover:bg-accent-soft transition-colors disabled:opacity-50">{x.label}</button>
+          ))}
+        </div>
+        {version && !locked && (
+          <div className="flex flex-wrap items-center gap-2 text-[11.5px]">
+            <span className="px-2 py-0.5 rounded-md border border-accent-line bg-accent-soft text-accent font-semibold">
+              {version === "original" ? "Your original wording" : version === "enhanced" ? "The enhanced description" : "The enhanced description, with your edits"}
+            </span>
+            {version !== "original" && <button type="button" onClick={() => setPrompt(enh!.original)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border text-muted hover:text-foreground font-medium"><RotateCcw className="w-3 h-3" /> Back to mine</button>}
+            {version !== "enhanced" && <button type="button" onClick={() => setPrompt(enh!.enhanced)} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border text-muted hover:text-foreground font-medium"><Wand2 className="w-3 h-3" /> Enhanced again</button>}
+          </div>
+        )}
+        <textarea value={prompt} disabled={locked} onChange={(e) => setPrompt(e.target.value)} rows={4} aria-label={`What the ${b.kind} should show`}
+          className="w-full rounded-xl border border-border bg-card p-3 text-[13.5px] leading-relaxed text-foreground outline-none focus:border-accent-line resize-y disabled:opacity-70" />
+        {ideas.length > 0 && !locked && (
+          <div className="rounded-xl border border-border bg-card p-3 text-[12.5px]">
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-faint">Ideas you could add</div>
+            <ul className="mt-1 space-y-0.5 text-muted list-disc ml-4">{ideas.map((x, i) => <li key={i}>{x}</li>)}</ul>
+            <div className="mt-1 text-[11px] text-faint">Nothing is added for you.</div>
+          </div>
+        )}
+        {err && <p className="text-[12.5px] text-danger">{err}</p>}
+        {!locked && (
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button type="button" onClick={enhance} disabled={busy || !prompt.trim()}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-accent-line bg-accent-soft text-accent text-[13px] font-semibold hover:bg-accent-soft-hi disabled:opacity-50">
+              {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}{busy ? "Enhancing…" : enh ? "Enhance again" : "Enhance with AI"}
+            </button>
+            {b.kind === "video" && (
+              <select value={secs} onChange={(e) => setSecs(Number(e.target.value) as VideoSecs)} aria-label="Length"
+                className="px-3 py-2 rounded-full border border-border bg-card text-[13px] text-foreground">
+                {VIDEO_SECS.map((n) => <option key={n} value={n}>{n} seconds</option>)}
+              </select>
+            )}
+            <span className="flex-1" />
+            <button type="button" onClick={() => onMake(prompt.trim(), secs)} disabled={!prompt.trim()}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-ink text-ink-fg text-sm font-semibold hover:opacity-90 disabled:opacity-40">
+              {b.kind === "image" ? "Make the image" : "Make the video"} <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        {b.kind === "video" && !locked && <p className="text-[11.5px] text-muted">A clip takes 1 to 3 minutes. You can keep chatting while it's made.</p>}
+      </div>
+    </div>
+  );
+}
+
 export function Table({ data }: { data: TableData }) {
   return (
     <div className="rounded-2xl border border-border overflow-hidden">
@@ -327,6 +494,8 @@ export interface BlockHandlers {
   onAnswer: (answer: string) => void;
   onApprove: (ref: string, slides: OutlineRow[]) => void;
   onOpen: (b: Extract<Block, { t: "artifact" }>) => void;
+  onMedia: (ref: string, prompt: string, secs: VideoSecs, kind: "image" | "video") => void;
+  onActivityLength: (ref: string, minutes: number) => void;
 }
 
 export function BlockView({ b, live, locked, focus, h }: { b: Block; live: boolean; locked: boolean; focus: string | null; h: BlockHandlers }) {
@@ -356,6 +525,10 @@ export function BlockView({ b, live, locked, focus, h }: { b: Block; live: boole
     );
     case "table": return <Table data={b.data} />;
     case "sources": return <Sources items={b.items} focus={focus} />;
+    case "notes": return <Notes n={b.data} />;
+    case "activity": return <Activity b={b} locked={locked} onLength={(m) => h.onActivityLength(b.ref, m)} />;
+    case "media": return <Media b={b} />;
+    case "mediaSetup": return <MediaSetup b={b} locked={locked} onMake={(p, secs) => h.onMedia(b.ref, p, secs, b.kind)} />;
     case "followups": return locked ? null : (
       <div className="flex flex-wrap gap-2">{b.items.map((s) => (
         <button key={s} type="button" onClick={() => h.onSend(s)} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-border text-[13px] text-muted hover:text-foreground hover:border-border-hi transition-colors">{s} <ArrowRight className="w-3.5 h-3.5" /></button>
@@ -371,7 +544,9 @@ export function ActionBar({ m, saved, speaking, compact, onAction, onSpeak, onCo
 }) {
   const [copied, setCopied] = useState(false);
   if (m.run.blocks.every((b) => b.t === "ask" || b.t === "notice")) return null;
-  const askOnly = m.run.blocks.some((b) => b.t === "ask" || b.t === "choices" || b.t === "outline");
+  const askOnly = m.run.blocks.some((b) => b.t === "ask" || b.t === "choices" || b.t === "outline" || b.t === "mediaSetup");
+  // Rewording only fits answers made of words: not decks, media, or an activity (its length chips change it instead).
+  const leveled = !["slides", "activity", "narration", "image", "video"].includes(m.intent.intent);
   const actions = askOnly || compact ? [] : ACTIONS_FOR[m.intent.intent].filter((a) => a !== "simplify" && a !== "elaborate");
   const lv = LEVELS[m.intent.intent];
   const icon = "inline-flex items-center justify-center w-8 h-8 rounded-full text-muted hover:text-foreground hover:bg-card transition-colors";
@@ -382,7 +557,7 @@ export function ActionBar({ m, saved, speaking, compact, onAction, onSpeak, onCo
         <Tip text={copied ? "Copied" : TIPS.copy}><button type="button" aria-label="Copy" onClick={() => { onCopy(); setCopied(true); setTimeout(() => setCopied(false), 1400); }} className={icon}>{copied ? <Check className="w-4 h-4 text-success" /> : <Copy className="w-4 h-4" />}</button></Tip>
         <Tip text={saved ? "Saved. Click to remove." : TIPS.save}><button type="button" aria-label={saved ? "Remove from saved" : "Save"} onClick={onSave} className={`${icon} ${saved ? "text-accent" : ""}`}>{saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}</button></Tip>
       </span>
-      {!askOnly && !compact && m.intent.intent !== "slides" && (
+      {!askOnly && !compact && leveled && (
         <div className="inline-flex rounded-full border border-border p-0.5">
           <Tip text="Easier words, shorter sentences"><button type="button" onClick={() => onAction("simplify")} className="px-3 py-1 rounded-full text-[12.5px] text-foreground/85 hover:bg-card">{lv?.simplify ?? "Simplify"}</button></Tip>
           <Tip text="More detail, for stronger students"><button type="button" onClick={() => onAction("elaborate")} className="px-3 py-1 rounded-full text-[12.5px] text-foreground/85 hover:bg-card">{lv?.elaborate ?? "Elaborate"}</button></Tip>

@@ -1,9 +1,9 @@
 // Shapes shared by the beta chat's interface and its service layer (api.ts, live.ts).
-import type { ExampleResult } from "@/services/api";
+import type { ExampleResult, InteractiveResult, LessonNotesResult } from "@/services/api";
 
 export type Intent =
   | "explain" | "summarise" | "compare" | "slides" | "paper" | "worksheet"
-  | "plan" | "ideas" | "analyse" | "general";
+  | "plan" | "notes" | "activity" | "narration" | "image" | "video" | "ideas" | "analyse" | "general";
 
 export type ActionId = "summarise" | "further" | "examples" | "bullets" | "table" | "simplify" | "elaborate";
 
@@ -43,7 +43,13 @@ export type Block =
   | { t: "bullets"; title?: string; items: string[] }
   | { t: "table"; data: TableData }
   | { t: "sources"; items: Source[] }
-  | { t: "followups"; items: string[] };
+  | { t: "followups"; items: string[] }
+  | { t: "notes"; data: LessonNotesResult }
+  | { t: "activity"; data: InteractiveResult; ref: string }
+  | { t: "media"; kind: MediaKind; url: string; title: string; libraryId?: string }
+  | { t: "mediaSetup"; kind: "image" | "video"; ref: string; prompt: string; secs: VideoSecs };
+export type MediaKind = "audio" | "image" | "video";
+export type VideoSecs = 4 | 6 | 8;
 
 export interface OutlineRow { type: string; move: string; title: string; point: string }
 
@@ -56,7 +62,10 @@ export interface IntentResult {
   intent: Intent;
   label: string;          // shown on the response ("Comparison")
   confidence: number;     // 0..1, from the rules that matched
-  entities: { topic?: string | null; items?: string[]; doc?: boolean; grade?: string | null; subject?: string | null; marks?: number | null; difficulty?: string };
+  entities: {
+    topic?: string | null; items?: string[]; doc?: boolean; grade?: string | null; subject?: string | null; marks?: number | null; difficulty?: string;
+    minutes?: number | null; script?: string | null; secs?: number | null;
+  };
 }
 
 export interface UserMsg { id: string; role: "user"; text: string; starter?: string; voice?: boolean }

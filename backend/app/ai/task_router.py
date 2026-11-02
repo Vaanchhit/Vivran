@@ -41,6 +41,7 @@ from typing import Any, Dict, Tuple
 from app.ai import groq_client
 from app.ai.language import uses_non_latin_script
 from app.core.config import settings
+from app.media.elevenlabs import DEFAULT_IMAGE_MODEL, DEFAULT_VIDEO_MODEL
 
 
 class Intelligence(str, Enum):
@@ -58,6 +59,7 @@ class Modality(str, Enum):
     IMAGE = "image"
     DECK = "deck"
     PAPER = "paper"
+    VIDEO = "video"
 
 
 T, D, V = Modality.TEXT, Modality.DOCUMENT, Modality.VOICE
@@ -99,6 +101,8 @@ ROUTES: Dict[str, Route] = {r.task: r for r in (
     _r("paper", I.LLM, "assessment", (T, V, D), Modality.PAPER, "On the model measured to get marks arithmetic right, with validate-and-regenerate."),
     _r("worksheet", I.LLM, "worksheet", (T, V, D), T, "Authored questions with answers."),
     _r("plan", I.LLM, "course_plan", (T, V, D), T, "A week-by-week plan is authored structure."),
+    _r("notes", I.LLM, "lesson_notes", (T, V, D), T, "Teaching notes in order, with everyday examples and a recap: authored content."),
+    _r("activity", I.LLM, "interactive", (T, V, D), T, "A timed lesson in steps (explain, do, a scenario, checks), validated before it is returned."),
     # ── quick actions on an answer ───────────────────────────────────────
     _r("rewrite.summarise", I.SLM, "chat.transform", (T,), T, "Shortens an answer the teacher already has."),
     _r("rewrite.bullets", I.SLM, "chat.transform", (T,), T, "Same content, as a list."),
@@ -110,6 +114,9 @@ ROUTES: Dict[str, Route] = {r.task: r for r in (
     # ── speech and pictures ──────────────────────────────────────────────
     _r("speech_to_text", I.MEDIA, "transcribe", (V,), T, "Browser speech recognition first (free); the server transcriber when it is unavailable."),
     _r("read_aloud", I.MEDIA, "narration", (T,), Modality.AUDIO, "Browser speech first (free); Cartesia or ElevenLabs for a downloadable narration."),
+    _r("narration", I.MEDIA, "narration", (T,), Modality.AUDIO, "The teacher's own script, spoken as it is written; no language model touches the words."),
+    _r("image", I.MEDIA, "image", (T, V), Modality.IMAGE, "An image model draws it from the teacher's description; labels can be wrong, so they are checked before use."),
+    _r("video", I.MEDIA, "video", (T, V), Modality.VIDEO, "A video model makes a 4 to 8 second clip. Slow (1 to 3 minutes), so it runs only when asked for."),
 )}
 
 ACTION_TASK = {
@@ -158,6 +165,14 @@ def describe(route: Route, *, modality: Modality = Modality.TEXT) -> Dict[str, A
         pins = {"plan": settings.planner_model, "write": settings.cheap_model}
     elif route.pipeline == "assessment":
         pins = {"write": settings.assessment_model}
+    elif route.pipeline in ("lesson_notes", "interactive"):
+        pins = {"write": settings.cheap_model}
+    elif route.task == "narration":
+        pins = {"speak": "cartesia sonic-3"}
+    elif route.pipeline == "image":
+        pins = {"draw": f"{DEFAULT_IMAGE_MODEL} (via ElevenLabs)"}
+    elif route.pipeline == "video":
+        pins = {"film": f"{DEFAULT_VIDEO_MODEL} (via ElevenLabs)"}
     return {
         "task": route.task,
         "intelligence": route.intelligence.value,

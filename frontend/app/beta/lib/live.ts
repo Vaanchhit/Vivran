@@ -9,18 +9,24 @@
 //   assessment       POST /api/assessments/generate exam papers
 //   worksheet        POST /api/content/worksheet
 //   course_plan      POST /api/projects
+//   lesson_notes     POST /api/content/lesson-notes
+//   interactive      POST /api/content/interactive  class activities
+//   narration        POST /api/content/narration    the teacher's script, spoken
+//   image, video     POST /api/content/image|video  after a style card (enhance, length)
 //
 // Quick actions go to /api/chat/transform and "Improve" to /api/chat/improve.
 // Results come back as the chat's own blocks, so the interface is the same one
 // the preview had; only where the words come from changed.
 import {
   ApiError, chatAnswer, chatImprove, chatRoute, chatTransform, generateAssessmentPaper, generateCoursePlan, generateDeck,
-  generateExample, generateOutline, generateWorksheet, getLibraryItem, getUsualSetup,
+  generateExample, generateImage, generateInteractiveCoursework, generateLessonNotes, generateNarration, generateOutline,
+  generateVideo, generateWorksheet, getLibraryItem, getUsualSetup,
   type AssessmentGenerateResponse, type ChatBlock, type ChatRead, type ChatRoute, type ChatSource, type CoursePlan,
-  type DeckOutline, type DeckReady, type ExampleResult, type LibraryEntry, type WorksheetResult,
+  type DeckOutline, type DeckReady, type ExampleResult, type InteractiveResult, type LessonNotesResult, type LibraryEntry,
+  type WorksheetResult,
 } from "@/services/api";
 import { ACTIONS, LEVELS } from "./config";
-import type { ActionId, Block, BotMsg, Intent, IntentResult, Msg, OutlineRow, Run, Source, Step } from "./types";
+import type { ActionId, Block, BotMsg, Intent, IntentResult, MediaKind, Msg, OutlineRow, Run, Source, Step, VideoSecs } from "./types";
 
 export interface ActiveSource { id: string; title: string }
 export interface Profile { name: string; grade?: string; subject?: string; language?: string }
@@ -28,14 +34,16 @@ export interface Ask { question: string; options: string[]; field: string; place
 
 export type Command =
   | { kind: "writeDeck"; ref: string; slides: OutlineRow[] }
-  | { kind: "writePaper"; ref: string; choice: string };
+  | { kind: "writePaper"; ref: string; choice: string }
+  | { kind: "makeMedia"; ref: string; prompt: string; secs: VideoSecs }
+  | { kind: "activityLength"; ref: string; minutes: number };
 
 export interface Reply { result: IntentResult; run: Run; ask?: Ask; routes: ChatRoute[]; ref?: string }
 
 interface Ctx { source: ActiveSource | null; profile: Profile; history: Msg[]; forced?: Intent; command?: Command; voice?: boolean }
 
 const step = (label: string, detail: string): Step => ({ label, detail, ms: 260 });
-const INTENTS: Intent[] = ["explain", "summarise", "compare", "slides", "paper", "worksheet", "plan", "ideas", "analyse", "general"];
+const INTENTS: Intent[] = ["explain", "summarise", "compare", "slides", "paper", "worksheet", "plan", "notes", "activity", "narration", "image", "video", "ideas", "analyse", "general"];
 
 /* ───────────────────────── what was made, kept by reference ───────────────────────── */
 
@@ -46,7 +54,10 @@ type Stored =
   | { kind: "outline"; params: DeckArgs; outline: DeckOutline; route?: ChatRoute }
   | { kind: "deck"; deck: DeckReady }
   | { kind: "paperSetup"; params: PaperArgs; route?: ChatRoute }
-  | { kind: "paper"; data: AssessmentGenerateResponse; params: PaperArgs; route?: ChatRoute };
+  | { kind: "paper"; data: AssessmentGenerateResponse; params: PaperArgs; route?: ChatRoute }
+  | { kind: "activity"; params: ActivityArgs; route?: ChatRoute }
+  | { kind: "mediaSetup"; media: "image" | "video"; route?: ChatRoute };
+interface ActivityArgs { topic: string; minutes: number; grade?: string; subject?: string }
 interface DeckArgs { topic: string; grade?: string; subject?: string; language?: string; materialId?: string }
 interface PaperArgs { topic: string; grade: string; subject: string; marks: number; difficulty: string; materialId?: string }
 
@@ -129,6 +140,8 @@ const describeRoute = (r: ChatRoute) => r.intelligence === "rules" ? "Read by ru
 export async function respond(text: string, ctx: Ctx): Promise<Reply> {
   if (ctx.command?.kind === "writeDeck") return writeDeck(ctx.command.ref, ctx.command.slides);
   if (ctx.command?.kind === "writePaper") return writePaper(ctx.command.ref, ctx.command.choice);
+  if (ctx.command?.kind === "makeMedia") return makeMedia(ctx.command.ref, ctx.command.prompt, ctx.command.secs);
+  if (ctx.command?.kind === "activityLength") return activityLength(ctx.command.ref, ctx.command.minutes);
 
   let read: ChatRead;
   try {
@@ -157,6 +170,10 @@ export async function respond(text: string, ctx: Ctx): Promise<Reply> {
       case "examples": return await explain(result, routes, first, e.topic!, grade, subject, ctx);
       case "worksheet": return await worksheet(result, routes, first, e.topic!, grade, subject);
       case "course_plan": return await plan(result, routes, first, text, e.topic!, grade, subject);
+      case "lesson_notes": return await notes(result, routes, first, e.topic!, grade, subject);
+      case "interactive": return await activity(result, routes, first, { topic: e.topic!, minutes: e.minutes ?? 15, grade, subject });
+      case "narration": return await narrate(result, routes, first, e.script ?? text);
+      case "image": case "video": return setUpMedia(result, routes, first, read.route.pipeline, text, e.secs);
       default: return await answer(result, routes, first, read.task, text, grade, subject, ctx);
     }
   } catch (err) {
@@ -349,6 +366,105 @@ export function planRun(p: CoursePlan, first?: Step): Run {
   };
 }
 
+/* ── what the old Teach screen made: notes, activities, narration, images, video ── */
+
+async function notes(result: IntentResult, routes: ChatRoute[], first: Step, topic: string, grade?: string, subject?: string): Promise<Reply> {
+  const n = await generateLessonNotes(topic, grade, subject);
+  return { result, routes, run: notesRun(n, first) };
+}
+
+export function notesRun(n: LessonNotesResult, first?: Step): Run {
+  if (n.error || !n.sections?.length) return { steps: first ? [first] : [], blocks: [{ t: "notice", tone: "warn", text: n.error || "The notes came back empty. Try again." }] };
+  const ex = n.real_life_examples?.length ?? 0;
+  return {
+    steps: [...(first ? [first] : []), step(`Writing ${n.sections.length} sections`, n.grounded_on ? `From ${n.grounded_on} passages of your material.` : "From general knowledge.")],
+    blocks: [
+      { t: "text", text: `**${n.title}**: ${n.sections.length} sections${ex ? `, ${ex} everyday example${ex === 1 ? "" : "s"}` : ""} and a recap.${n.library_id ? " Saved to your Library." : ""}` },
+      { t: "notes", data: n },
+      ...sourcesBlock(n.sources),
+      { t: "followups", items: [`Slides on ${n.title}`, `A class activity on ${n.title}`] },
+    ],
+  };
+}
+
+async function activity(result: IntentResult, routes: ChatRoute[], first: Step | null, args: ActivityArgs): Promise<Reply> {
+  const a = await generateInteractiveCoursework(args.topic, args.minutes, args.grade, args.subject);
+  const ref = refs.put({ kind: "activity", params: args, route: routes[routes.length - 1] });
+  return { result, routes, run: activityRun(a, ref, first ?? undefined) };
+}
+
+export function activityRun(a: InteractiveResult, ref: string, first?: Step): Run {
+  if (a.error || !a.blocks?.length) return { steps: first ? [first] : [], blocks: [{ t: "notice", tone: "warn", text: a.error || "The activity came back empty. Try again." }] };
+  const kinds = Array.from(new Set(a.blocks.map((b) => b.type.replace(/_/g, " ")))).join(", ");
+  return {
+    steps: [...(first ? [first] : []), step(`Planning ${a.duration_minutes} minutes`, `${a.blocks.length} steps: ${kinds}.`)],
+    blocks: [
+      { t: "text", text: `**${a.title}**: a ${a.duration_minutes}-minute activity in ${a.blocks.length} steps.${a.library_id ? " Saved to your Library." : ""}` },
+      { t: "activity", data: a, ref },
+      ...sourcesBlock(a.sources),
+    ],
+  };
+}
+
+async function activityLength(ref: string, minutes: number): Promise<Reply> {
+  const result: IntentResult = { intent: "activity", label: "Class activity", confidence: 1, entities: {} };
+  const stored = refs.get(ref);
+  if (!stored || stored.kind !== "activity") return { result, routes: [], run: { steps: [], blocks: [{ t: "notice", tone: "error", text: "That activity is no longer in this browser. Ask for it again." }] } };
+  try {
+    return await activity(result, stored.route ? [stored.route] : [], null, { ...stored.params, minutes });
+  } catch (e) {
+    return { result, routes: [], run: failure(e, `A ${minutes}-minute class activity on ${stored.params.topic}`) };
+  }
+}
+
+async function narrate(result: IntentResult, routes: ChatRoute[], first: Step, script: string): Promise<Reply> {
+  const r = await generateNarration(script);
+  const words = script.split(/\s+/).filter(Boolean).length;
+  routes[routes.length - 1] = { ...routes[routes.length - 1], ran_on: { model: r.provider === "cartesia" ? "sonic-3" : "eleven_multilingual_v2", provider: r.provider } };
+  return { result, routes, run: {
+    steps: [first, step("Speaking your script", `${words} word${words === 1 ? "" : "s"}, read exactly as written.`)],
+    blocks: [
+      { t: "text", text: `Your narration is ready. It reads your script word for word.${r.library_id ? " Saved to your Library." : ""}` },
+      { t: "media", kind: "audio", url: r.media_url, title: script.length > 80 ? `${script.slice(0, 78).trim()}…` : script, libraryId: r.library_id },
+    ],
+  } };
+}
+
+/** Images and videos start with a style card, the way the old Teach screen did: presets, Enhance with AI and, for video, the length. */
+function setUpMedia(result: IntentResult, routes: ChatRoute[], first: Step, kind: string, text: string, secs?: number | null): Reply {
+  const media = kind === "video" ? "video" : "image";
+  const ref = refs.put({ kind: "mediaSetup", media, route: routes[routes.length - 1] });
+  const len: VideoSecs = secs === 4 || secs === 6 ? secs : 8;
+  return { result, routes, ref, run: {
+    steps: [first],
+    blocks: [
+      { t: "text", text: media === "image"
+        ? "Pick a style or edit the description, then make it. Nothing is drawn until you say so."
+        : "Pick a style and a length, or edit the description. A video takes 1 to 3 minutes, so it starts only when you say so." },
+      { t: "mediaSetup", kind: media, ref, prompt: text, secs: len },
+    ],
+  } };
+}
+
+async function makeMedia(ref: string, prompt: string, secs: VideoSecs): Promise<Reply> {
+  const stored = refs.get(ref);
+  const media = stored?.kind === "mediaSetup" ? stored.media : "image";
+  const result: IntentResult = { intent: media, label: media === "video" ? "Video" : "Image", confidence: 1, entities: {} };
+  try {
+    const r = media === "video" ? await generateVideo(prompt, "16:9", secs) : await generateImage(prompt);
+    const routes: ChatRoute[] = stored?.kind === "mediaSetup" && stored.route ? [stored.route] : [];
+    return { result, routes, run: {
+      steps: [step(media === "video" ? `Making a ${secs}-second clip` : "Drawing it", "From your description, as written.")],
+      blocks: [
+        { t: "text", text: `${media === "video" ? "Your video is ready." : "Here it is. Check any labels before you use it in class."}${r.library_id ? " Saved to your Library." : ""}` },
+        { t: "media", kind: media, url: r.media_url, title: prompt.length > 80 ? `${prompt.slice(0, 78).trim()}…` : prompt, libraryId: r.library_id },
+      ],
+    } };
+  } catch (e) {
+    return { result, routes: [], run: failure(e, prompt) };
+  }
+}
+
 /* ───────────────────────── quick actions ───────────────────────── */
 
 export async function transform(msg: BotMsg, action: ActionId, history: Msg[]): Promise<{ run: Run; derived: string; routes: ChatRoute[] }> {
@@ -397,6 +513,13 @@ export function textOf(run: Run): string {
       case "ask": return b.question;
       case "notice": return b.text;
       case "memory": return b.text;
+      case "notes": return [b.data.title, ...b.data.sections.map((x) => `${x.heading}\n${x.content}`), b.data.recap ? `Recap: ${b.data.recap}` : ""].filter(Boolean).join("\n\n");
+      case "activity": return b.data.blocks.map((x) => {
+        const c = x.content as { text?: string; instructions?: string; questions?: { text?: string }[] };
+        return [x.type.replace(/_/g, " "), c.text, c.instructions, ...(c.questions ?? []).map((q) => q.text)].filter(Boolean).join("\n");
+      }).join("\n\n");
+      case "media": return b.title;
+      case "mediaSetup": return b.prompt;
       default: return "";
     }
   }).filter(Boolean).join("\n\n");
@@ -426,5 +549,18 @@ export async function runFromLibrary(entry: LibraryEntry): Promise<{ intent: Int
   if (entry.type === "example") return { intent: "explain", run: exampleRun(c as unknown as ExampleResult) };
   if (entry.type === "worksheet") return { intent: "worksheet", run: worksheetRun(c as unknown as WorksheetResult) };
   if (entry.type === "course_plan") return { intent: "plan", run: planRun(c as unknown as CoursePlan) };
+  if (entry.type === "lesson_notes") return { intent: "notes", run: notesRun(c as unknown as LessonNotesResult) };
+  if (entry.type === "interactive") {
+    const a = c as unknown as InteractiveResult;
+    const p = item.params as { topic?: string; duration_minutes?: number; grade?: string; subject?: string };
+    const ref = refs.put({ kind: "activity", params: { topic: p.topic ?? entry.title, minutes: p.duration_minutes ?? a.duration_minutes ?? 15, grade: p.grade, subject: p.subject } });
+    return { intent: "activity", run: activityRun(a, ref) };
+  }
+  if (entry.type === "narration" || entry.type === "image" || entry.type === "video") {
+    const url = (c as { media_url?: string }).media_url;
+    if (!url) return null;
+    const kind: MediaKind = entry.type === "narration" ? "audio" : entry.type;
+    return { intent: entry.type, run: { steps: [], blocks: [{ t: "media", kind, url, title: entry.title, libraryId: entry.id }] } };
+  }
   return null;
 }

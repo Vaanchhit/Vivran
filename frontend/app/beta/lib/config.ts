@@ -14,6 +14,11 @@ export const PROMPT_CARDS: PromptCard[] = [
 ];
 
 export const STARTERS: Starter[] = [
+  { id: "notes", icon: "notes", label: "Lesson notes", placeholder: "Which topic? e.g. photosynthesis for Class 7", template: "Lesson notes on {input}", intent: "notes" },
+  { id: "activity", icon: "activity", label: "Class activity", placeholder: "Which topic, and how many minutes? e.g. fractions, 20 minutes", template: "A class activity on {input}", intent: "activity" },
+  { id: "narration", icon: "mic", label: "Narration", placeholder: "Paste the script to narrate, word for word", template: "Narrate: {input}", intent: "narration" },
+  { id: "image", icon: "image", label: "Image", placeholder: "What should it show? e.g. a labelled diagram of the heart", template: "An image of {input}", intent: "image" },
+  { id: "video", icon: "video", label: "Video", placeholder: "What should it show? e.g. the water cycle", template: "A video on {input}", intent: "video" },
   { id: "explain", icon: "bulb", label: "Explain a concept", placeholder: "Which concept? e.g. compound interest", template: "Explain {input} simply for my class", intent: "explain" },
   { id: "summarise", icon: "doc", label: "Summarise a document", placeholder: "Which document? Leave blank to use the attached one", template: "Summarise {input}", intent: "summarise" },
   { id: "compare", icon: "columns", label: "Compare two ideas", placeholder: "Which two? e.g. mitosis and meiosis", template: "Compare {input}", intent: "compare" },
@@ -23,6 +28,26 @@ export const STARTERS: Starter[] = [
   { id: "slides", icon: "slides", label: "Make slides", placeholder: "Which topic and class?", template: "Slides on {input}", intent: "slides" },
   { id: "plan", icon: "calendar", label: "Plan a unit", placeholder: "Which unit, and how many weeks?", template: "Plan a unit on {input}", intent: "plan" },
 ];
+
+/** Under the cards: the rest of what Vivran makes, each opening its starter. */
+export const MORE_STARTERS = ["notes", "activity", "narration", "image", "video"];
+
+/** The style presets for images and videos, added to the description (as on the old Teach screen). */
+export const IMAGE_STYLES = [
+  { label: "Labeled diagram", modifier: "as a clean, textbook-style labeled diagram with clear annotations" },
+  { label: "Infographic", modifier: "as a colorful infographic with icons and short text callouts" },
+  { label: "Illustration", modifier: "as a simple, flat-style educational illustration" },
+  { label: "Photo-realistic", modifier: "as a photo-realistic real-world scene" },
+];
+export const VIDEO_STYLES = [
+  { label: "Whiteboard explainer", modifier: "as a hand-drawn whiteboard-style explainer animation" },
+  { label: "Case study narrative", modifier: "as a short narrative case-study video with on-screen text callouts" },
+  { label: "Animated infographic", modifier: "as a clean animated infographic with icons, charts, and motion graphics" },
+  { label: "Slide read-along", modifier: "as a slide-deck-style video with bullet points appearing in sync with narration" },
+];
+export const VIDEO_SECS = [4, 6, 8] as const;
+/** Class activity lengths, as the old Teach screen offered them; 15 when the request names none. */
+export const ACTIVITY_MINUTES = [15, 20, 30, 45, 60, 90];
 
 export const ACTIONS: Record<ActionId, { label: string; icon: string; tip: string; step: string }> = {
   summarise: { label: "Summarise", icon: "list", tip: "The answer above in three lines", step: "Summarising the answer above" },
@@ -43,6 +68,11 @@ export const ACTIONS_FOR: Record<Intent, ActionId[]> = {
   paper: ["summarise"],
   worksheet: ["examples", "table"],
   plan: ["bullets", "further"],
+  notes: ["examples", "further", "bullets"],
+  activity: [],
+  narration: [],
+  image: [],
+  video: [],
   ideas: ["table", "examples"],
   analyse: ["summarise", "bullets"],
   general: ["summarise", "examples", "bullets"],
@@ -65,6 +95,11 @@ export const TOOLS: Tool[] = [
   { name: "Worksheets", icon: "list", status: "Live", give: "A topic", get: "Activities and questions for the class", includes: [], try: "A worksheet on the French Revolution" },
   { name: "Plans and ideas", icon: "calendar", status: "Live", give: "A unit and the weeks you have", get: "A week-by-week plan, or ideas for one lesson", includes: ["From your syllabus", "Openers, activities, exit tickets"], try: "Plan a unit on the French Revolution, 4 weeks" },
   { name: "Explanations", icon: "bulb", status: "Live", give: "A concept, or two to compare", get: "An analogy, how it maps, and where it breaks", includes: ["Side-by-side comparisons (beta)", "Worked examples, maths done by code"], try: "Explain compound interest simply" },
+  { name: "Lesson notes", icon: "notes", status: "Live", give: "A topic and the class", get: "Notes to teach from: explanations in order, everyday examples and a recap", includes: ["Built from your material when you attach it"], try: "Lesson notes on photosynthesis for Class 7" },
+  { name: "Class activities", icon: "activity", status: "Live", give: "A topic and how many minutes", get: "A lesson in steps: explain, do, a scenario, checks with answers", includes: ["15 to 90 minutes", "Change the length after"], try: "A 20-minute class activity on fractions for Class 6" },
+  { name: "Narration", icon: "mic", status: "Live", give: "A lesson script, word for word", get: "Spoken audio to play in class or share", includes: ["Your words, unchanged"], try: "Narrate: Good morning, class. Today we begin the French Revolution." },
+  { name: "Images", icon: "image", status: "Live", give: "What it should show", get: "A diagram, infographic, illustration or photo-real picture", includes: ["Four styles", "Enhance with AI", "Check labels before use"], try: "A labelled diagram of the human heart" },
+  { name: "Short videos", icon: "video", status: "Live", give: "What it should show", get: "A 4 to 8 second clip in one of four styles", includes: ["Whiteboard, case study, infographic, read-along", "Takes 1 to 3 minutes"], try: "A video on the water cycle" },
   { name: "Summaries", icon: "doc", status: "Live", give: "A PDF, Word file, deck or YouTube lecture", get: "Key points and terms, each linked to its page", includes: [], try: "Summarise this PDF" },
   { name: "Class results", icon: "chart", status: "In beta", give: "Marks from a test", get: "Where each section struggles, and what to reteach", includes: [], try: "Analyse my class results from the last unit test" },
 ];
@@ -78,7 +113,7 @@ export const BUILT_IN: { name: string; icon: string; desc: string; beta?: boolea
   { name: "Voice", icon: "mic", desc: "Speak a request; hear any answer read aloud.", beta: true },
 ];
 
-export const COMING = ["Narrated lessons and short videos", "Student revision from what was taught", "Institution insights across sections"];
+export const COMING = ["Student revision from what was taught", "Institution insights across sections"];
 
 export const TIPS = {
   attach: "Add a PDF, Word file or deck. Vivran writes from it and cites its pages.",

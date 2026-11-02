@@ -5,7 +5,8 @@ import React, { useEffect, useLayoutEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowDown, ArrowUp, BarChart3, BookOpen, Brain, Building2, Calculator, CalendarDays, Check, Columns2, FileText,
-  FolderOpen, Globe, GraduationCap, Info, Lightbulb, List, Mic, Play, Plus, Presentation, Quote, Smile, Sparkles, Table2,
+  FolderOpen, Globe, GraduationCap, Image as ImageIcon, Info, Lightbulb, List, MessagesSquare, Mic, NotebookPen, Play, Plus,
+  Presentation, Quote, Smile, Sparkles, Table2, Video,
 } from "lucide-react";
 
 const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -13,6 +14,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   spark: Sparkles, calendar: CalendarDays, list: List, plus: Plus, table: Table2, down: ArrowDown, up: ArrowUp,
   smile: Smile, check: Check, calc: Calculator, folder: FolderOpen, quote: Quote, brain: Brain, mic: Mic,
   globe: Globe, play: Play, grad: GraduationCap, building: Building2,
+  notes: NotebookPen, activity: MessagesSquare, image: ImageIcon, video: Video,
 };
 export function Icon({ name, className = "w-4 h-4" }: { name: string; className?: string }) {
   const I = ICONS[name] ?? Sparkles;

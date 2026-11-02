@@ -13,10 +13,10 @@ import {
 import { BrandMark } from "@/app/components/brand-mark";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
-import { downloadAssessmentPdf, libraryHref, listSources, type AssessmentGenerateResponse, type DeckReady, type LibraryEntry, type Source as SourceRow } from "@/services/api";
+import { downloadAssessmentPdf, listSources, type AssessmentGenerateResponse, type DeckReady, type LibraryEntry, type Source as SourceRow } from "@/services/api";
 import * as api from "./lib/api";
 import * as live from "./lib/live";
-import { TIPS, TOUR } from "./lib/config";
+import { MORE_STARTERS, TIPS, TOUR } from "./lib/config";
 import type { ActionId, Block, BotMsg, Conversation, Folder, Intent, Msg, Saved, Starter } from "./lib/types";
 import { useSpeaker, useSpeechInput } from "./lib/voice";
 import { ActionBar, BlockView, Thinking } from "./ui/blocks";
@@ -129,7 +129,8 @@ export default function BetaPage() {
     if (prev?.role === "assistant" && prev.pending && !opts.command) { text = api.resume(prev.pending, text); forced = prev.pending.intent; }
 
     const botId = api.uid();
-    const first = opts.command?.kind === "writeDeck" ? "Writing your slides" : opts.command?.kind === "writePaper" ? "Writing the paper" : "Reading your request";
+    const FIRST: Record<live.Command["kind"], string> = { writeDeck: "Writing your slides", writePaper: "Writing the paper", makeMedia: "Making it", activityLength: "Changing the length" };
+    const first = opts.command ? FIRST[opts.command.kind] : "Reading your request";
     const bot: BotMsg = {
       id: botId, role: "assistant", run: { steps: [{ label: first, detail: "", ms: 0 }], blocks: [] },
       intent: { intent: forced ?? "general", label: "Working", confidence: 0, entities: {} },
@@ -242,7 +243,7 @@ export default function BetaPage() {
     fresh();
     setPanel({ kind: "loading", title: e.title });
     const r = await live.runFromLibrary(e).catch(() => null);
-    if (!r) { setPanel(null); window.location.href = libraryHref(e); return; }
+    if (!r) { setPanel(null); return; }
     const c = api.conversations.create(e.title);
     const bot: BotMsg = { id: api.uid(), role: "assistant", run: r.run, intent: { intent: r.intent, label: e.title, confidence: 1, entities: {} }, step: r.run.steps.length, shown: r.run.blocks.length, live: false, startedAt: Date.now(), tookMs: 0, derived: "Opened from your Library", request: e.title };
     const msgsNow: Msg[] = [{ id: api.uid(), role: "user", text: `Open “${e.title}”` }, bot];
@@ -435,6 +436,20 @@ export default function BetaPage() {
               );
             })}
           </div>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <span className="text-[12.5px] text-muted mr-0.5">Also make</span>
+            {MORE_STARTERS.map((id) => {
+              const st = config.starters.find((x) => x.id === id);
+              if (!st) return null;
+              const on = starter?.id === st.id;
+              return (
+                <button key={id} type="button" onClick={() => { setStarter(on ? null : st); box.current?.focus(); }}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[12.5px] font-medium transition-colors ${on ? "bg-ink text-ink-fg border-transparent" : "border-border bg-surface text-foreground/85 hover:border-border-hi hover:text-foreground"}`}>
+                  <Icon name={st.icon} className="w-3.5 h-3.5" />{st.label}
+                </button>
+              );
+            })}
+          </div>
           <div className="mt-6 text-center">
             <button type="button" onClick={() => setView("features")} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-foreground hover:text-accent"><LayoutGrid className="w-4 h-4" /> See everything Vivran can do <ArrowRight className="w-3.5 h-3.5" /></button>
           </div>
@@ -464,6 +479,8 @@ export default function BetaPage() {
                         onChoices: (t, ref) => send(t, { command: { kind: "writePaper", ref, choice: t } }),
                         onAnswer: (a) => send(a),
                         onApprove: (ref, slides) => send("Approved. Write the deck.", { command: { kind: "writeDeck", ref, slides } }),
+                        onMedia: (ref, prompt, secs, kind) => send(kind === "video" ? `Make the video (${secs} seconds)` : "Make the image", { command: { kind: "makeMedia", ref, prompt, secs } }),
+                        onActivityLength: (ref, minutes) => send(`Make it ${minutes} minutes`, { command: { kind: "activityLength", ref, minutes } }),
                         onOpen: openArtifact,
                       }} />
                   </motion.div>
